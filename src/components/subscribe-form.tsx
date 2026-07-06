@@ -9,6 +9,7 @@ export const SubscribeForm = () => {
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
   const [isError, setIsError] = useState(false);
+  const [subscribed, setSubscribed] = useState(false);
 
   const onSubmit = async (e: SubmitEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -29,8 +30,7 @@ export const SubscribeForm = () => {
         throw new Error(data.message || "Something went wrong");
       }
 
-      setMessage(data.message);
-      setEmail("");
+      setSubscribed(true);
     } catch (error) {
       setMessage(
         error instanceof Error ? error.message : "Something went wrong"
@@ -40,6 +40,21 @@ export const SubscribeForm = () => {
       setLoading(false);
     }
   };
+
+  if (subscribed) {
+    return (
+      <div className="flex w-full flex-col items-center gap-2">
+        <div className="rounded-full border border-border bg-background px-6 py-3 text-center">
+          <p className="font-semibold text-lg">Thanks for subscribing! 🎉</p>
+          <p className="text-sm text-muted-foreground">
+            We&apos;ve sent you an email to{" "}
+            <strong className="text-foreground">confirm your address</strong>.
+            If you don&apos;t receive it please also check your SPAM.
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex w-full flex-col items-center gap-2">
@@ -72,19 +87,7 @@ export const SubscribeForm = () => {
           </Button>
         </form>
       </BorderBeam>
-      {message && isError && (
-        <p className="text-sm text-muted-foreground">{message}</p>
-      )}
-      {message && !isError && (
-        <div className="text-center">
-          <p className="font-semibold text-lg">Thanks for subscribing! 🎉</p>
-          <div className="text-sm text-muted-foreground">
-            We&apos;ve sent you an email to{" "}
-            <strong className="text-foreground">confirm your address</strong>.
-            If you don&apos;t receive it please also check your SPAM.
-          </div>
-        </div>
-      )}
+      {message && isError && <p className="text-xs text-red-500">{message}</p>}
     </div>
   );
 };
