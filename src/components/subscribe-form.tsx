@@ -1,5 +1,6 @@
 import { BorderBeam } from "border-beam";
 import { useState } from "react";
+import type { SubmitEvent } from "react";
 
 import { Button } from "@/components/ui/button";
 
@@ -7,11 +8,13 @@ export const SubscribeForm = () => {
   const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
+  const [isError, setIsError] = useState(false);
 
-  const onSubmit = async (e: React.FormEvent) => {
+  const onSubmit = async (e: SubmitEvent<HTMLFormElement>) => {
     e.preventDefault();
     setLoading(true);
     setMessage("");
+    setIsError(false);
 
     try {
       const res = await fetch("/api/subscribe.json", {
@@ -32,6 +35,7 @@ export const SubscribeForm = () => {
       setMessage(
         error instanceof Error ? error.message : "Something went wrong"
       );
+      setIsError(true);
     } finally {
       setLoading(false);
     }
@@ -68,7 +72,19 @@ export const SubscribeForm = () => {
           </Button>
         </form>
       </BorderBeam>
-      {message && <p className="text-sm text-muted-foreground">{message}</p>}
+      {message && isError && (
+        <p className="text-sm text-muted-foreground">{message}</p>
+      )}
+      {message && !isError && (
+        <div className="text-center">
+          <p className="font-semibold text-lg">Thanks for subscribing! 🎉</p>
+          <div className="text-sm text-muted-foreground">
+            We&apos;ve sent you an email to{" "}
+            <strong className="text-foreground">confirm your address</strong>.
+            If you don&apos;t receive it please also check your SPAM.
+          </div>
+        </div>
+      )}
     </div>
   );
 };
