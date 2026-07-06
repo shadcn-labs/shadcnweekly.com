@@ -3,7 +3,33 @@ import Layout from "@/layouts/site.astro";
 import { ArrowLeftIcon } from "lucide-react";
 ---
 
-<Layout>
+<Layout
+  title="Privacy Policy"
+  description="Shadcn Weekly privacy policy. We respect your privacy and do not collect, store, or share any personal information from our subscribers."
+>
+  <script
+    is:inline
+    slot="head"
+    type="application/ld+json"
+    set:html={JSON.stringify({
+      "@context": "https://schema.org",
+      "@type": "BreadcrumbList",
+      itemListElement: [
+        {
+          "@type": "ListItem",
+          position: 1,
+          name: "Home",
+          item: "https://shadcnweekly.com",
+        },
+        {
+          "@type": "ListItem",
+          position: 2,
+          name: "Privacy Policy",
+          item: "https://shadcnweekly.com/privacy",
+        },
+      ],
+    })}
+  />
   <div class="flex flex-1 flex-col items-center py-16">
     <div class="flex max-w-2xl flex-col gap-6">
       <a

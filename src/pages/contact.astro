@@ -3,7 +3,33 @@ import Layout from "@/layouts/site.astro";
 import { ArrowLeftIcon } from "lucide-react";
 ---
 
-<Layout>
+<Layout
+  title="Contact"
+  description="Get in touch with Shadcn Weekly. Reach out via email, Twitter, or Discord for questions, suggestions, or feedback."
+>
+  <script
+    is:inline
+    slot="head"
+    type="application/ld+json"
+    set:html={JSON.stringify({
+      "@context": "https://schema.org",
+      "@type": "BreadcrumbList",
+      itemListElement: [
+        {
+          "@type": "ListItem",
+          position: 1,
+          name: "Home",
+          item: "https://shadcnweekly.com",
+        },
+        {
+          "@type": "ListItem",
+          position: 2,
+          name: "Contact",
+          item: "https://shadcnweekly.com/contact",
+        },
+      ],
+    })}
+  />
   <div class="flex flex-1 flex-col items-center py-16">
     <div class="flex max-w-2xl flex-col gap-6">
       <a

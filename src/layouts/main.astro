@@ -1,11 +1,23 @@
 ---
 import Head from "@/components/head.astro";
 import "@/styles/global.css";
+
+interface Props {
+  title?: string;
+  description?: string;
+  image?: string;
+  canonical?: string;
+  noindex?: boolean;
+  nofollow?: boolean;
+  ogType?: "website" | "article";
+}
+
+const seoProps = Astro.props;
 ---
 
 <html lang="en">
   <head>
-    <Head />
+    <Head {...seoProps} />
     <script is:inline>
       const theme = window.matchMedia("(prefers-color-scheme: dark)").matches
         ? "dark"
