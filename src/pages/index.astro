@@ -1,17 +1,75 @@
 ---
 import Layout from "@/layouts/main.astro";
-import { Button } from "@/components/ui/button";
+import { EmailSignup } from "@/components/email-signup";
 ---
 
 <Layout>
-  <div class="flex min-h-svh p-6">
-    <div class="flex max-w-md min-w-0 flex-col gap-4 text-sm leading-loose">
-      <div>
-        <h1 class="font-medium">Project ready!</h1>
-        <p>You may now add components and start building.</p>
-        <p>We've already added the button component for you.</p>
-        <Button client:load className="mt-2">Button</Button>
+  <div class="flex min-h-svh flex-col">
+    <main class="flex flex-1 flex-col items-center justify-center px-6">
+      <div class="flex flex-col items-center gap-8 text-center">
+        <p class="text-lg font-semibold tracking-tight">Shadcn Weekly</p>
+
+        <div class="flex flex-col items-center gap-3">
+          <h1 class="text-4xl font-semibold tracking-tight sm:text-5xl">
+            Stay up-to-date on shadcn
+          </h1>
+          <p class="max-w-lg text-base leading-relaxed text-muted-foreground">
+            A weekly newsletter with the most interesting shadcn <span
+              class="desc-text">News</span
+            >,
+            <span class="desc-text">Tutorials</span>, <span class="desc-text"
+              >Projects</span
+            >, and <span class="desc-text">Tools</span>. The easiest way to keep
+            up with what's happening in the ecosystem.
+          </p>
+          <p class="text-base text-muted-foreground opacity-70">
+            Once-weekly email, best links, no fluff.
+          </p>
+        </div>
+
+        <div class="flex flex-col items-center gap-2 w-full max-w-md">
+          <EmailSignup client:load />
+
+          <p class="text-sm text-muted-foreground">
+            100% free &middot; Delivered every Monday
+          </p>
+        </div>
       </div>
-    </div>
+    </main>
+
+    <footer class="flex flex-col items-center gap-4 px-6 pb-8 pt-4">
+      <div class="flex items-center gap-2 text-sm text-muted-foreground">
+        <a href="/privacy" class="transition-colors hover:text-foreground">
+          Privacy Policy
+        </a>
+        <span>&middot;</span>
+        <a href="/contact" class="transition-colors hover:text-foreground">
+          Contact
+        </a>
+      </div>
+
+      <div
+        class="flex flex-col items-center gap-1 text-[10px] leading-tight text-muted-foreground/60"
+      >
+        <p>
+          &copy; 2026 Shadcn Weekly | Curated by <a
+            href="https://aniketpawar.com"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="transition-colors underline hover:text-foreground"
+          >
+            Aniket Pawar
+          </a>
+        </p>
+        <p>
+          This newsletter is not endorsed by or affiliated with <a
+            href="https://shadcn.com"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="transition-colors underline hover:text-foreground">shadcn</a
+          >.
+        </p>
+      </div>
+    </footer>
   </div>
 </Layout>

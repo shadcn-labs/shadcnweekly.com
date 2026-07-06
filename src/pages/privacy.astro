@@ -1,0 +1,42 @@
+---
+import Layout from "@/layouts/main.astro";
+import { ArrowLeftIcon } from "lucide-react";
+---
+
+<Layout>
+  <div class="flex min-h-svh flex-col items-center px-6 py-16">
+    <div class="flex max-w-2xl flex-col gap-6">
+      <a
+        href="/"
+        class="inline-flex text-sm items-center gap-2 text-muted-foreground transition-colors hover:text-foreground"
+      >
+        <ArrowLeftIcon className="size-4" />
+        Back to home
+      </a>
+      <h1 class="text-3xl font-semibold tracking-tight">Privacy Policy</h1>
+      <div
+        class="prose prose-neutral dark:prose-invert flex flex-col gap-4 text-base leading-relaxed text-muted-foreground"
+      >
+        <p>
+          Shadcn Weekly respects your privacy. We do not collect, store, or
+          share any personal information from our subscribers.
+        </p>
+        <p>
+          Email addresses provided for newsletter subscription are used solely
+          for delivering the weekly newsletter. We do not sell, trade, or
+          otherwise transfer your email to third parties.
+        </p>
+        <p>
+          You can unsubscribe at any time by clicking the unsubscribe link
+          included in every newsletter email.
+        </p>
+        <p>
+          We may use basic analytics to understand aggregate traffic patterns on
+          our website, but this data is anonymous and cannot be used to identify
+          individual visitors.
+        </p>
+        <p class="text-sm text-muted-foreground/60">Last updated: July 2026</p>
+      </div>
+    </div>
+  </div>
+</Layout>

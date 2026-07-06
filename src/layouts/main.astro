@@ -7,7 +7,17 @@ import "@/styles/global.css";
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <title>Astro App</title>
+    <title>Shadcn Weekly - The Best Shadcn Newsletter</title>
+    <meta
+      name="description"
+      content="A weekly newsletter of the best shadcn news, tutorials, projects and tools."
+    />
+    <script is:inline>
+      const theme = window.matchMedia("(prefers-color-scheme: dark)").matches
+        ? "dark"
+        : "light";
+      document.documentElement.classList.toggle("dark", theme === "dark");
+    </script>
   </head>
   <body>
     <slot />
