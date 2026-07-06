@@ -16,7 +16,7 @@ export default defineConfig({
     {
       cssVariable: "--font-sans",
       fallbacks: ["sans-serif"],
-      name: "Geist Sans",
+      name: "Inter",
       provider: fontProviders.fontsource(),
     },
   ],
