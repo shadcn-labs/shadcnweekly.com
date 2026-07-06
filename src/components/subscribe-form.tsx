@@ -56,13 +56,13 @@ export const SubscribeForm = () => {
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             disabled={loading}
-            className="flex-1 bg-transparent px-4 text-base outline-none placeholder:text-muted-foreground disabled:opacity-50"
+            className="flex-1 bg-transparent pl-3 max-sm:pr-3 pr-4 text-base outline-none placeholder:text-muted-foreground disabled:opacity-50"
           />
           <Button
             type="submit"
             size="lg"
             disabled={loading}
-            className="shrink-0 rounded-full px-6"
+            className="rounded-full max-sm:px-2"
           >
             {loading ? "Subscribing..." : "Subscribe"}
           </Button>
