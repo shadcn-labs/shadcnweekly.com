@@ -1,0 +1,13 @@
+---
+import MainLayout from "@/layouts/main.astro";
+import SiteHeader from "@/components/site-header.astro";
+import SiteFooter from "@/components/site-footer.astro";
+---
+
+<MainLayout>
+  <SiteHeader />
+  <main class="relative mx-auto flex flex-1 w-full max-w-4xl flex-col px-6">
+    <slot />
+  </main>
+  <SiteFooter />
+</MainLayout>
