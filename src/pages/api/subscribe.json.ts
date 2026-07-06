@@ -2,6 +2,11 @@ import type { APIRoute } from "astro";
 
 export const prerender = false;
 
+const safeJson = async (res: Response) => {
+  const text = await res.text();
+  return text ? JSON.parse(text) : {};
+};
+
 // oxlint-disable-next-line sonarjs/function-name
 export const POST: APIRoute = async ({ request }) => {
   try {
@@ -12,53 +17,46 @@ export const POST: APIRoute = async ({ request }) => {
       throw new Error("Please provide an email");
     }
 
-    const subRes = await fetch(
-      `https://api.convertkit.com/v3/subscribers?api_secret=${import.meta.env.CONVERTKIT_SECRET_KEY}&email_address=${email}`
-    );
+    const apiKey = import.meta.env.KIT_API_KEY as string;
+    const formId = import.meta.env.KIT_FORM_ID as string;
 
-    if (!subRes.ok) {
-      throw new Error("Something went wrong");
+    const createRes = await fetch("https://api.kit.com/v4/subscribers", {
+      body: JSON.stringify({ email_address: email }),
+      headers: {
+        "Content-Type": "application/json",
+        "X-Kit-Api-Key": apiKey,
+      },
+      method: "POST",
+    });
+
+    if (!createRes.ok) {
+      const data = await safeJson(createRes);
+      throw new Error(data.errors?.[0] || "Failed to create subscriber");
     }
 
-    const subData = await subRes.json();
-    const isSubscribed = subData.total_subscribers > 0;
-
-    if (isSubscribed) {
-      return Response.json({ message: "You're already subscribed!" });
-    }
-
-    const res = await fetch(
-      `https://api.convertkit.com/v3/forms/${import.meta.env.CONVERTKIT_FORM_ID}/subscribe`,
+    const formRes = await fetch(
+      `https://api.kit.com/v4/forms/${formId}/subscribers`,
       {
-        body: JSON.stringify({
-          api_key: import.meta.env.CONVERTKIT_API_KEY,
-          email,
-        }),
-        headers: { "Content-Type": "application/json; charset=utf-8" },
+        body: JSON.stringify({ email_address: email }),
+        headers: {
+          "Content-Type": "application/json",
+          "X-Kit-Api-Key": apiKey,
+        },
         method: "POST",
       }
     );
 
-    if (!res.ok) {
-      throw new Error("Something went wrong with your subscription");
-    }
-
-    const resData = await res.json();
-
-    if (resData.error) {
-      throw new Error(resData.error.message);
+    if (!formRes.ok) {
+      const data = await safeJson(formRes);
+      throw new Error(data.errors?.[0] || "Failed to subscribe to form");
     }
 
     return Response.json({
       message: "Thanks! Please check your email to confirm your subscription.",
     });
   } catch (error) {
-    if (error instanceof Error) {
-      return new Response(null, { status: 400, statusText: error.message });
-    }
-    return new Response(null, {
-      status: 400,
-      statusText: "There is an unexpected error",
-    });
+    const message =
+      error instanceof Error ? error.message : "There is an unexpected error";
+    return Response.json({ message }, { status: 400 });
   }
 };

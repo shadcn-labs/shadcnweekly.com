@@ -43,15 +43,13 @@ export const SubscribeForm = () => {
 
   if (subscribed) {
     return (
-      <div className="flex w-full flex-col items-center gap-2">
-        <div className="rounded-full border border-border bg-background px-6 py-3 text-center">
-          <p className="font-semibold text-lg">Thanks for subscribing! 🎉</p>
-          <p className="text-sm text-muted-foreground">
-            We&apos;ve sent you an email to{" "}
-            <strong className="text-foreground">confirm your address</strong>.
-            If you don&apos;t receive it please also check your SPAM.
-          </p>
-        </div>
+      <div className="mb-6">
+        <p className="font-semibold text-lg">Thanks for subscribing! 🎉</p>
+        <p className="text-sm text-muted-foreground">
+          We&apos;ve sent you an email to{" "}
+          <strong className="text-foreground">confirm your address</strong>. If
+          you don&apos;t receive it please also check your SPAM.
+        </p>
       </div>
     );
   }
