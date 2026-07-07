@@ -18,7 +18,7 @@ const formatDate = (date: Date) =>
 ---
 
 <Layout
-  title="Archive - Shadcn Weekly"
+  title="Archive"
   description="Browse all past issues of Shadcn Weekly. Every weekly roundup of the best shadcn news, tutorials, projects, and tools."
 >
   <script
@@ -87,13 +87,13 @@ const formatDate = (date: Date) =>
             ))}
           </div>
         ) : (
-          <div class="flex flex-col items-center justify-center gap-4 rounded-lg border border-dashed border-border py-20 text-center">
+          <div class="flex flex-col items-center justify-center gap-4 rounded-lg border border-dashed border-border py-20 px-4 text-center">
             <div class="flex size-12 items-center justify-center rounded-full bg-muted">
               <LayoutList className="size-6 text-muted-foreground" />
             </div>
             <div class="flex flex-col gap-1">
               <h2 class="text-lg font-semibold">Coming Soon</h2>
-              <p class="max-w-sm text-sm text-muted-foreground">
+              <p class="max-w-sm text-sm text-muted-foreground text-balance">
                 The archive kicks off with Issue #{NEXT_ISSUE_NUMBER} on{" "}
                 <span class="font-medium text-foreground">
                   {NEXT_ISSUE_DATE}

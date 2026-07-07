@@ -5,7 +5,7 @@ import { NEXT_ISSUE_NUMBER, NEXT_ISSUE_DATE } from "@/lib/constants";
 ---
 
 <Layout
-  title="Tools - Shadcn Weekly"
+  title="Tools"
   description="Hand-picked shadcn tools, libraries, and resources curated by Shadcn Weekly. Discover the best tools for your next project."
 >
   <script
@@ -50,7 +50,7 @@ import { NEXT_ISSUE_NUMBER, NEXT_ISSUE_DATE } from "@/lib/constants";
       </div>
 
       <div
-        class="flex flex-col items-center justify-center gap-4 rounded-lg border border-dashed border-border py-20 text-center"
+        class="flex flex-col items-center justify-center gap-4 rounded-lg border border-dashed border-border py-20 px-4 text-center"
       >
         <div
           class="flex size-12 items-center justify-center rounded-full bg-muted"
@@ -59,9 +59,10 @@ import { NEXT_ISSUE_NUMBER, NEXT_ISSUE_DATE } from "@/lib/constants";
         </div>
         <div class="flex flex-col gap-1">
           <h2 class="text-lg font-semibold">Coming Soon</h2>
-          <p class="max-w-sm text-sm text-muted-foreground">
-            Our curated collection of shadcn tools drops with Issue #
-            {NEXT_ISSUE_NUMBER} on{" "}
+          <p class="max-w-sm text-sm text-muted-foreground text-balance">
+            Our curated collection of shadcn tools drops with Issue #{
+              NEXT_ISSUE_NUMBER
+            } on{" "}
             <span class="font-medium text-foreground">
               {NEXT_ISSUE_DATE}
             </span>
