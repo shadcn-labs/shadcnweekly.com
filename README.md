@@ -1,36 +1,36 @@
-# Astro + React + TypeScript + shadcn/ui
+<p align="center">
+  <img align="center" src="public/favicon.svg" height="96" />
+  <h1 align="center">Shadcn Weekly</h1>
+</p>
 
-This is a template for a new Astro project with React, TypeScript, and shadcn/ui.
+<p align="center">
+  A curated weekly newsletter for the <a href="https://ui.shadcn.com/">shadcn/ui</a> ecosystem.<br/>
+  News, tutorials, projects, and tools — delivered every Monday.
+</p>
 
-## Adding components
+<p align="center">
+  <a href="https://shadcnweekly.com"><img src="https://www.shieldcn.dev/badge/visit-shadcnweekly.com.svg?size=xs&logo=lu:Globe" alt="Website" /></a>
+  <a href="https://x.com/shadcnlabs"><img src="https://www.shieldcn.dev/x/follow/shadcnlabs.svg?variant=branded&size=xs" alt="X Follow" /></a>
+  <a href="https://discord.com/invite/N6G36KhYK4"><img src="https://www.shieldcn.dev/discord/online-members/N6G36KhYK4.svg?variant=branded&size=xs" alt="Discord Members" /></a>
+</p>
 
-To add components to your app, run the following command:
+## Sponsorship
 
-```bash
-npx shadcn@latest add button
-```
+Shadcn Weekly offers limited sponsorship placements. [View pricing and book a slot](https://shadcnweekly.com/sponsor).
 
-This will place the ui components in the `src/components` directory.
+| Placement                     | Price      |
+| ----------------------------- | ---------- |
+| 1st Sponsor                   | $100/issue |
+| 1st Sponsor Bundle (4 issues) | $200       |
+| 2nd Sponsor                   | $50/issue  |
+| 2nd Sponsor Bundle (4 issues) | $100       |
 
-## Using components
+## Contact
 
-To use the components in your app, import them in an `.astro` file:
+- **Email:** [hello@shadcnweekly.com](mailto:hello@shadcnweekly.com)
+- **Twitter:** [@alaymanguy](https://x.com/alaymanguy)
+- **Discord:** [Join the server](https://discord.com/invite/N6G36KhYK4)
 
-```astro
----
-import { Button } from "@/components/ui/button"
----
+## License
 
-<html lang="en">
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width" />
-    <title>Astro App</title>
-  </head>
-  <body>
-    <div class="grid h-screen place-items-center content-center">
-      <Button>Button</Button>
-    </div>
-  </body>
-</html>
-```
+[MIT](LICENSE)
