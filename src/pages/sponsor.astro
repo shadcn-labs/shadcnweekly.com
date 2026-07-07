@@ -1,0 +1,144 @@
+---
+import Layout from "@/layouts/site.astro";
+import { ArrowLeftIcon } from "lucide-react";
+import { Card, CardContent } from "@/components/ui/card";
+import { badgeVariants } from "@/components/ui/badge";
+import { buttonVariants } from "@/components/ui/button";
+import { SponsorModal } from "@/components/sponsor-modal";
+import { cn } from "@/lib/utils";
+import { NEXT_ISSUE_DATE, SPONSOR_PLACEMENTS } from "@/lib/constants";
+---
+
+<Layout
+  title="Sponsor - Shadcn Weekly"
+  description="Sponsor Shadcn Weekly and reach thousands of shadcn developers, designers, and builders every week."
+>
+  <script
+    is:inline
+    slot="head"
+    type="application/ld+json"
+    set:html={JSON.stringify({
+      "@context": "https://schema.org",
+      "@type": "BreadcrumbList",
+      itemListElement: [
+        {
+          "@type": "ListItem",
+          position: 1,
+          name: "Home",
+          item: "https://shadcnweekly.com",
+        },
+        {
+          "@type": "ListItem",
+          position: 2,
+          name: "Sponsor",
+          item: "https://shadcnweekly.com/sponsor",
+        },
+      ],
+    })}
+  />
+  <div class="flex flex-1 flex-col items-center py-16">
+    <div class="flex max-w-2xl flex-col gap-8">
+      <a
+        href="/"
+        class="inline-flex text-sm items-center gap-2 text-muted-foreground transition-colors hover:text-foreground"
+      >
+        <ArrowLeftIcon className="size-4" />
+        Back to home
+      </a>
+
+      <div class="flex flex-col gap-3">
+        <h1 class="text-3xl font-semibold tracking-tight">Sponsor</h1>
+        <p class="text-base text-muted-foreground">
+          Put your product, library, or service in front of developers who
+          actually build with shadcn/ui every day.
+        </p>
+      </div>
+
+      <div class="flex flex-col gap-6">
+        <Card className="rounded-lg border border-border ring-0">
+          <CardContent className="flex flex-col gap-3 p-6">
+            <h2 class="text-lg font-semibold">Why sponsor Shadcn Weekly?</h2>
+            <div
+              class="flex flex-col gap-3 text-sm leading-relaxed text-muted-foreground"
+            >
+              <p>
+                Shadcn Weekly launches on{" "}
+                <span class="font-medium text-foreground"
+                  >{NEXT_ISSUE_DATE}</span
+                >. It's a curated newsletter for the shadcn ecosystem — new
+                releases, community projects, tutorials, and tools. Every link
+                is hand-picked, every word is written by me.
+              </p>
+              <p>
+                This isn't a generic dev blast with 100k subscribers who never
+                open it. The audience here is builders — people who read the
+                changelog, try new component libraries on weekends, and care
+                about clean UI code. If your product speaks to that crowd, this
+                is the place to be.
+              </p>
+              <p>
+                I'm keeping sponsorships limited and the pricing fair. No
+                programmatic ad slots, no "sponsored by" walls. If I feature
+                you, it's because I think the audience would genuinely find it
+                useful.
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+
+        <div class="flex flex-col gap-3">
+          <p class="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+            Ad Placements
+          </p>
+
+          <div class="flex flex-col gap-4">
+            {SPONSOR_PLACEMENTS.map((placement) => (
+              <Card className="rounded-lg border border-border ring-0">
+                <CardContent className="flex flex-col gap-3 p-6">
+                  <div class="flex items-center gap-3">
+                    <h3 class="text-base font-semibold">{placement.title}</h3>
+                    {placement.tag && (
+                      <span class={cn(badgeVariants({ variant: "outline" }), "rounded-full bg-orange-100 px-2.5 py-0.5 text-xs font-medium text-orange-700 border-0 dark:bg-orange-900/30 dark:text-orange-400")}>
+                        {placement.tag}
+                      </span>
+                    )}
+                  </div>
+                  <p class="text-sm leading-relaxed text-muted-foreground">
+                    {placement.description}
+                  </p>
+                  <ul class="flex flex-wrap gap-x-4 gap-y-1 text-sm text-muted-foreground">
+                    {placement.features.map((feature) => (
+                      <li class="flex items-center gap-1.5">
+                        <span class="size-1 shrink-0 rounded-full bg-muted-foreground/40"></span>
+                        {feature}
+                      </li>
+                    ))}
+                  </ul>
+                  <div class="flex items-center justify-between pt-2">
+                    <span class="text-xs text-muted-foreground/60">
+                      Per issue
+                    </span>
+                    <SponsorModal
+                      client:load
+                      defaultPlacement={placement.title}
+                    >
+                      <span
+                        class={cn(buttonVariants({ variant: "default" }))}
+                      >
+                        Book — ${placement.price}
+                      </span>
+                    </SponsorModal>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </div>
+
+        <p class="text-xs text-muted-foreground/60">
+          All rates in USD. Payment processed securely via Creem.
+        </p>
+      </div>
+    </div>
+  </div>
+</Layout>
