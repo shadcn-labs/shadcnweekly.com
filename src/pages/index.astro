@@ -1,6 +1,7 @@
 ---
 import Layout from "@/layouts/site.astro";
 import { SubscribeForm } from "@/components/subscribe-form";
+import { NEXT_ISSUE_NUMBER, NEXT_ISSUE_DATE } from "@/lib/constants";
 ---
 
 <Layout
@@ -21,7 +22,7 @@ import { SubscribeForm } from "@/components/subscribe-form";
           <span class="relative inline-flex size-2 rounded-full bg-blue-500"
           ></span>
         </span>
-        Issue #1 going live on July 13, 2026
+        Issue #{NEXT_ISSUE_NUMBER} going live on {NEXT_ISSUE_DATE}
       </span>
 
       <h1 class="text-4xl font-semibold tracking-tight sm:text-5xl">
