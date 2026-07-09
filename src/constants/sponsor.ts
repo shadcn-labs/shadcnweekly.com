@@ -9,7 +9,7 @@ export const SPONSOR_PLACEMENTS = [
     ],
     paymentUrl: "",
     price: 100,
-    tag: "Premium",
+    tag: "Most Performing",
     title: "1st Sponsor",
   },
   {

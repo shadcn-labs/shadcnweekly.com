@@ -1,5 +1,9 @@
+import { zodResolver } from "@hookform/resolvers/zod";
 import { CheckIcon, UploadIcon, ArrowRightIcon } from "lucide-react";
 import { useState } from "react";
+import { Controller, useForm } from "react-hook-form";
+import type { Control, UseFormReturn } from "react-hook-form";
+import * as z from "zod";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -10,27 +14,41 @@ import {
   DialogTrigger,
   DialogDescription,
 } from "@/components/ui/dialog";
+import {
+  Field,
+  FieldGroup,
+  FieldLabel,
+  FieldError,
+  FieldDescription,
+} from "@/components/ui/field";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { SITE } from "@/constants/site";
 import { SPONSOR_PLACEMENTS } from "@/constants/sponsor";
 import { cn } from "@/lib/utils";
 
-interface FormData {
-  description: string;
-  email: string;
-  logo: File | null;
-  logoPreview: string;
-  productName: string;
-  targetUrl: string;
-}
+const sponsorSchema = z.object({
+  description: z
+    .string()
+    .min(10, "Description must be at least 10 characters")
+    .max(200, "Description must be 200 characters or less"),
+  email: z
+    .string()
+    .min(1, "Email is required")
+    .email("Please enter a valid email address"),
+  logo: z.instanceof(File).nullable().optional(),
+  logoPreview: z.string().optional(),
+  productName: z
+    .string()
+    .min(1, "Product name is required")
+    .max(45, "Product name must be 45 characters or less"),
+  targetUrl: z
+    .string()
+    .min(1, "Target URL is required")
+    .url("Please enter a valid URL"),
+});
 
-const defaultForm: FormData = {
-  description: "",
-  email: "",
-  logo: null,
-  logoPreview: "",
-  productName: "",
-  targetUrl: "",
-};
+type SponsorFormData = z.infer<typeof sponsorSchema>;
 
 const LogoUpload = ({
   preview,
@@ -75,93 +93,130 @@ const LogoUpload = ({
 );
 
 const DetailForm = ({
-  form,
-  onChange,
+  control,
+  watch,
+  setValue,
 }: {
-  form: FormData;
-  onChange: (updates: Partial<FormData>) => void;
-}) => (
-  <div className="flex flex-col gap-5">
-    <LogoUpload
-      preview={form.logoPreview}
-      onChange={(file) =>
-        onChange({
-          logo: file,
-          logoPreview: URL.createObjectURL(file),
-        })
-      }
-    />
+  control: Control<SponsorFormData>;
+  watch: UseFormReturn<SponsorFormData>["watch"];
+  setValue: UseFormReturn<SponsorFormData>["setValue"];
+}) => {
+  const logoPreview = watch("logoPreview") || "";
 
-    <div className="flex flex-col gap-2">
-      <label htmlFor="sponsor-email" className="text-sm font-medium">
-        Work Email <span className="text-destructive">*</span>
-      </label>
-      <input
-        id="sponsor-email"
-        type="email"
-        value={form.email}
-        onChange={(e) => onChange({ email: e.target.value })}
-        className="flex h-9 w-full rounded-lg border border-input bg-transparent px-3 py-1 text-sm shadow-xs transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-        placeholder="you@company.com"
-      />
-    </div>
+  return (
+    <div className="flex flex-col gap-5">
+      <Field>
+        <Controller
+          name="logo"
+          control={control}
+          render={({ field: { onChange } }) => (
+            <LogoUpload
+              preview={logoPreview}
+              onChange={(file) => {
+                onChange(file);
+                setValue("logoPreview", URL.createObjectURL(file));
+              }}
+            />
+          )}
+        />
+      </Field>
 
-    <div className="flex flex-col gap-2">
-      <div className="flex items-center justify-between">
-        <label htmlFor="sponsor-product" className="text-sm font-medium">
-          Product Name <span className="text-destructive">*</span>
-        </label>
-        <span className="text-xs text-muted-foreground/60">
-          {form.productName.length}/45
-        </span>
-      </div>
-      <input
-        id="sponsor-product"
-        type="text"
-        maxLength={45}
-        value={form.productName}
-        onChange={(e) => onChange({ productName: e.target.value })}
-        className="flex h-9 w-full rounded-lg border border-input bg-transparent px-3 py-1 text-sm shadow-xs transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-      />
-    </div>
+      <FieldGroup>
+        <Controller
+          name="email"
+          control={control}
+          render={({ field, fieldState }) => (
+            <Field data-invalid={fieldState.invalid}>
+              <FieldLabel htmlFor="sponsor-email">
+                Work Email <span className="text-destructive">*</span>
+              </FieldLabel>
+              <Input
+                {...field}
+                id="sponsor-email"
+                type="email"
+                aria-invalid={fieldState.invalid}
+                placeholder="you@company.com"
+              />
+              {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
+            </Field>
+          )}
+        />
 
-    <div className="flex flex-col gap-2">
-      <div className="flex items-center justify-between">
-        <label htmlFor="sponsor-desc" className="text-sm font-medium">
-          Description <span className="text-destructive">*</span>
-        </label>
-        <span className="text-xs text-muted-foreground/60">
-          {form.description.length}/200
-        </span>
-      </div>
-      <textarea
-        id="sponsor-desc"
-        maxLength={200}
-        rows={3}
-        value={form.description}
-        onChange={(e) => onChange({ description: e.target.value })}
-        className="flex w-full rounded-lg border border-input bg-transparent px-3 py-2 text-sm shadow-xs transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-      />
-    </div>
+        <Controller
+          name="productName"
+          control={control}
+          render={({ field, fieldState }) => (
+            <Field data-invalid={fieldState.invalid}>
+              <div className="flex items-center justify-between">
+                <FieldLabel htmlFor="sponsor-product">
+                  Product Name <span className="text-destructive">*</span>
+                </FieldLabel>
+                <span className="text-xs text-muted-foreground/60">
+                  {field.value.length}/45
+                </span>
+              </div>
+              <Input
+                {...field}
+                id="sponsor-product"
+                maxLength={45}
+                aria-invalid={fieldState.invalid}
+              />
+              {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
+            </Field>
+          )}
+        />
 
-    <div className="flex flex-col gap-2">
-      <label htmlFor="sponsor-url" className="text-sm font-medium">
-        Target URL <span className="text-destructive">*</span>
-      </label>
-      <input
-        id="sponsor-url"
-        type="url"
-        value={form.targetUrl}
-        onChange={(e) => onChange({ targetUrl: e.target.value })}
-        className="flex h-9 w-full rounded-lg border border-input bg-transparent px-3 py-1 text-sm shadow-xs transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-        placeholder="https://yourproduct.com"
-      />
-      <p className="text-xs text-muted-foreground/60">
-        Users will be taken to this link when they click on your ad.
-      </p>
+        <Controller
+          name="description"
+          control={control}
+          render={({ field, fieldState }) => (
+            <Field data-invalid={fieldState.invalid}>
+              <div className="flex items-center justify-between">
+                <FieldLabel htmlFor="sponsor-desc">
+                  Description <span className="text-destructive">*</span>
+                </FieldLabel>
+                <span className="text-xs text-muted-foreground/60">
+                  {field.value.length}/200
+                </span>
+              </div>
+              <Textarea
+                {...field}
+                id="sponsor-desc"
+                maxLength={200}
+                rows={3}
+                aria-invalid={fieldState.invalid}
+              />
+              {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
+            </Field>
+          )}
+        />
+
+        <Controller
+          name="targetUrl"
+          control={control}
+          render={({ field, fieldState }) => (
+            <Field data-invalid={fieldState.invalid}>
+              <FieldLabel htmlFor="sponsor-url">
+                Target URL <span className="text-destructive">*</span>
+              </FieldLabel>
+              <Input
+                {...field}
+                id="sponsor-url"
+                type="url"
+                aria-invalid={fieldState.invalid}
+                placeholder="https://yourproduct.com"
+              />
+              <FieldDescription>
+                Users will be taken to this link when they click on your ad.
+              </FieldDescription>
+              {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
+            </Field>
+          )}
+        />
+      </FieldGroup>
     </div>
-  </div>
-);
+  );
+};
 
 const PlacementSelect = ({
   selected,
@@ -224,25 +279,33 @@ export const SponsorModal = ({
   const [selectedPlacement, setSelectedPlacement] = useState<string>(
     defaultPlacement || ""
   );
-  const [form, setForm] = useState<FormData>(defaultForm);
+
+  const form = useForm<SponsorFormData>({
+    defaultValues: {
+      description: "",
+      email: "",
+      logo: null,
+      logoPreview: "",
+      productName: "",
+      targetUrl: "",
+    },
+    resolver: zodResolver(sponsorSchema),
+  });
 
   const selected = SPONSOR_PLACEMENTS.find(
     (p) => p.title === selectedPlacement
   );
 
-  const handleFormChange = (updates: Partial<FormData>) =>
-    setForm((prev) => ({ ...prev, ...updates }));
-
   const handleOpenChange = (o: boolean) => {
     setOpen(o);
     if (!o) {
       setStep("details");
-      setForm(defaultForm);
+      setSelectedPlacement(defaultPlacement || "");
+      form.reset();
     }
   };
 
-  const canProceed =
-    form.email && form.productName && form.description && form.targetUrl;
+  const canProceed = form.formState.isValid;
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
@@ -326,7 +389,11 @@ export const SponsorModal = ({
             {/* Content */}
             <div className="flex-1 overflow-y-auto p-6">
               {step === "details" ? (
-                <DetailForm form={form} onChange={handleFormChange} />
+                <DetailForm
+                  control={form.control}
+                  watch={form.watch}
+                  setValue={form.setValue}
+                />
               ) : (
                 <PlacementSelect
                   selected={selectedPlacement}
