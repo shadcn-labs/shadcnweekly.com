@@ -1,0 +1,59 @@
+---
+import { GitFork, ExternalLink } from "lucide-react";
+
+interface Props {
+  title: string;
+  description: string;
+  screenshot?: string;
+  github?: string;
+  deployed?: string;
+  primary: string;
+}
+
+const { title, description, screenshot, github, deployed, primary } =
+  Astro.props;
+---
+
+<a
+  href={primary}
+  target="_blank"
+  rel="noopener noreferrer"
+  class="group flex flex-col overflow-hidden rounded-lg border border-border bg-card transition-colors hover:bg-accent/50"
+>
+  {
+    screenshot && (
+      <div class="aspect-video overflow-hidden bg-muted">
+        <img
+          src={screenshot}
+          alt={title}
+          class="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+          loading="lazy"
+        />
+      </div>
+    )
+  }
+  <div class="flex flex-1 flex-col gap-2 p-4">
+    <h3 class="text-base font-semibold leading-tight">{title}</h3>
+    <p class="flex-1 text-sm leading-relaxed text-muted-foreground">
+      {description}
+    </p>
+    <div class="flex items-center gap-3 pt-1">
+      {
+        github && (
+          <span class="inline-flex items-center gap-1 text-xs text-muted-foreground">
+            <GitFork className="size-3.5" />
+            GitHub
+          </span>
+        )
+      }
+      {
+        deployed && (
+          <span class="inline-flex items-center gap-1 text-xs text-muted-foreground">
+            <ExternalLink className="size-3.5" />
+            Live
+          </span>
+        )
+      }
+    </div>
+  </div>
+</a>
