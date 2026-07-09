@@ -3,6 +3,7 @@ import { Font } from "astro:assets";
 import { SEO } from "astro-seo";
 import Analytics from "@vercel/analytics/astro";
 import { SITE } from "@/constants/site";
+import { ROUTES } from "@/constants/routes";
 
 interface Props {
   title?: string;
@@ -32,7 +33,7 @@ const ogImageURL = new URL(image, Astro.site).href;
 ---
 
 <meta charset="utf-8" />
-<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+<link rel="icon" type="image/svg+xml" href={ROUTES.FAVICON} />
 <meta name="viewport" content="width=device-width" />
 <meta name="generator" content={Astro.generator} />
 <meta name="theme-color" content="#000000" />
@@ -73,7 +74,7 @@ const ogImageURL = new URL(image, Astro.site).href;
     imageAlt: `${SITE.NAME} - Stay up-to-date on shadcn`,
   }}
   extend={{
-    link: [{ rel: "sitemap", href: "/sitemap-index.xml" }],
+    link: [{ rel: "sitemap", href: ROUTES.SITEMAP }],
   }}
 />
 
@@ -90,7 +91,7 @@ const ogImageURL = new URL(image, Astro.site).href;
     "@type": "Organization",
     name: SITE.NAME,
     url: SITE.URL,
-    logo: `${SITE.URL}/favicon.svg`,
+    logo: `${SITE.URL}${ROUTES.FAVICON}`,
     description: SITE.DESCRIPTION.LONG,
     sameAs: [`https://x.com/${SITE.AUTHOR.TWITTER.replace("@", "")}`],
   })}

@@ -2,6 +2,7 @@
 import Layout from "@/layouts/site.astro";
 import { ArrowLeftIcon } from "lucide-react";
 import { SITE } from "@/constants/site";
+import { ROUTES } from "@/constants/routes";
 ---
 
 <Layout
@@ -26,7 +27,7 @@ import { SITE } from "@/constants/site";
           "@type": "ListItem",
           position: 2,
           name: "Privacy Policy",
-          item: `${SITE.URL}/privacy`,
+          item: `${SITE.URL}${ROUTES.PRIVACY}`,
         },
       ],
     })}
@@ -35,7 +36,7 @@ import { SITE } from "@/constants/site";
     <div class="flex max-w-2xl flex-col gap-6">
       <div>
         <a
-          href="/"
+          href={ROUTES.HOME}
           class="inline-flex text-sm items-center gap-2 text-muted-foreground transition-colors hover:text-foreground"
         >
           <ArrowLeftIcon className="size-4" />

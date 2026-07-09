@@ -7,6 +7,7 @@ import { buttonVariants } from "@/components/ui/button";
 import { SponsorModal } from "@/components/sponsor-modal";
 import { cn } from "@/lib/utils";
 import { NEXT_ISSUE_DATE, SITE } from "@/constants/site";
+import { ROUTES } from "@/constants/routes";
 import { SPONSOR_PLACEMENTS } from "@/constants/sponsor";
 ---
 
@@ -32,7 +33,7 @@ import { SPONSOR_PLACEMENTS } from "@/constants/sponsor";
           "@type": "ListItem",
           position: 2,
           name: "Sponsor",
-          item: `${SITE.URL}/sponsor`,
+          item: `${SITE.URL}${ROUTES.SPONSOR}`,
         },
       ],
     })}
@@ -41,7 +42,7 @@ import { SPONSOR_PLACEMENTS } from "@/constants/sponsor";
     <div class="flex max-w-2xl flex-col gap-8">
       <div>
         <a
-          href="/"
+          href={ROUTES.HOME}
           class="inline-flex text-sm items-center gap-2 text-muted-foreground transition-colors hover:text-foreground"
         >
           <ArrowLeftIcon className="size-4" />

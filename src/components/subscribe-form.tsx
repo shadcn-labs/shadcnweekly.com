@@ -3,6 +3,7 @@ import { useState } from "react";
 import type { SubmitEvent } from "react";
 
 import { Button } from "@/components/ui/button";
+import { ROUTES } from "@/constants/routes";
 
 export const SubscribeForm = () => {
   const [email, setEmail] = useState("");
@@ -18,7 +19,7 @@ export const SubscribeForm = () => {
     setIsError(false);
 
     try {
-      const res = await fetch("/api/subscribe.json", {
+      const res = await fetch(ROUTES.SUBSCRIBE_API, {
         body: JSON.stringify({ email }),
         headers: { "Content-Type": "application/json" },
         method: "POST",

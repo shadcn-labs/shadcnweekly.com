@@ -3,6 +3,7 @@ import Layout from "@/layouts/site.astro";
 import { ArrowLeftIcon } from "lucide-react";
 import { getCollection, render } from "astro:content";
 import { SITE } from "@/constants/site";
+import { ROUTES } from "@/constants/routes";
 
 export const prerender = true;
 
@@ -33,7 +34,7 @@ const formatDate = (date: Date) =>
     <div class="flex max-w-2xl flex-col gap-6">
       <div>
         <a
-          href="/archive"
+          href={ROUTES.ARCHIVE}
           class="inline-flex text-sm items-center gap-2 text-muted-foreground transition-colors hover:text-foreground"
         >
           <ArrowLeftIcon className="size-4" />

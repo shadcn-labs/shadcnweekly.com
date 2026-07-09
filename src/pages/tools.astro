@@ -2,6 +2,7 @@
 import Layout from "@/layouts/site.astro";
 import { ArrowLeftIcon, Clock } from "lucide-react";
 import { NEXT_ISSUE_NUMBER, NEXT_ISSUE_DATE, SITE } from "@/constants/site";
+import { ROUTES } from "@/constants/routes";
 ---
 
 <Layout
@@ -26,7 +27,7 @@ import { NEXT_ISSUE_NUMBER, NEXT_ISSUE_DATE, SITE } from "@/constants/site";
           "@type": "ListItem",
           position: 2,
           name: "Tools",
-          item: `${SITE.URL}/tools`,
+          item: `${SITE.URL}${ROUTES.TOOLS}`,
         },
       ],
     })}
@@ -34,7 +35,7 @@ import { NEXT_ISSUE_NUMBER, NEXT_ISSUE_DATE, SITE } from "@/constants/site";
   <div class="flex flex-1 flex-col items-center py-16">
     <div class="flex w-full max-w-3xl flex-col gap-8">
       <a
-        href="/"
+        href={ROUTES.HOME}
         class="inline-flex text-sm items-center gap-2 text-muted-foreground transition-colors hover:text-foreground"
       >
         <ArrowLeftIcon className="size-4" />

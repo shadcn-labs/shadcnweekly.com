@@ -1,14 +1,15 @@
 ---
 import { SITE } from "@/constants/site";
+import { ROUTES } from "@/constants/routes";
 ---
 
 <footer class="flex flex-col items-center gap-4 px-6 pb-8 pt-4">
   <div class="flex items-center gap-2 text-sm text-muted-foreground">
-    <a href="/privacy" class="transition-colors hover:text-foreground">
+    <a href={ROUTES.PRIVACY} class="transition-colors hover:text-foreground">
       Privacy Policy
     </a>
     <span>&middot;</span>
-    <a href="/contact" class="transition-colors hover:text-foreground">
+    <a href={ROUTES.CONTACT} class="transition-colors hover:text-foreground">
       Contact
     </a>
   </div>

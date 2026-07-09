@@ -4,6 +4,7 @@ import { ArrowLeftIcon, LayoutList } from "lucide-react";
 import { getCollection } from "astro:content";
 import { buttonVariants } from "@/components/ui/button";
 import { NEXT_ISSUE_NUMBER, NEXT_ISSUE_DATE, SITE } from "@/constants/site";
+import { ROUTES } from "@/constants/routes";
 
 const archive = await getCollection("archive");
 const sortedArchive = archive.toSorted((a, b) => b.data.issue - a.data.issue);
@@ -40,7 +41,7 @@ const formatDate = (date: Date) =>
           "@type": "ListItem",
           position: 2,
           name: "Archive",
-          item: `${SITE.URL}/archive`,
+          item: `${SITE.URL}${ROUTES.ARCHIVE}`,
         },
       ],
     })}
@@ -48,7 +49,7 @@ const formatDate = (date: Date) =>
   <div class="flex flex-1 flex-col items-center py-16">
     <div class="flex w-full max-w-3xl flex-col gap-8">
       <a
-        href="/"
+        href={ROUTES.HOME}
         class={buttonVariants({ variant: "link" })}
       >
         <ArrowLeftIcon className="size-4" />
@@ -67,7 +68,7 @@ const formatDate = (date: Date) =>
           <div class="flex flex-col gap-3">
             {sortedArchive.map((issue) => (
               <a
-                href={`/archive/${issue.id}`}
+                href={`${ROUTES.ARCHIVE}/${issue.id}`}
                 class="group flex items-start gap-4 rounded-lg border border-border bg-card p-4 transition-colors hover:bg-accent/50"
               >
                 <span class="inline-flex size-10 shrink-0 items-center justify-center rounded-full bg-muted text-sm font-semibold text-muted-foreground">

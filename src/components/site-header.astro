@@ -1,11 +1,12 @@
 ---
 import { buttonVariants } from "@/components/ui/button";
 import { SITE } from "@/constants/site";
+import { ROUTES } from "@/constants/routes";
 ---
 
 <nav class="flex items-center justify-between px-6 py-4">
   <a
-    href="/"
+    href={ROUTES.HOME}
     class="flex items-center gap-2 transition-opacity hover:opacity-80"
   >
     <svg
@@ -30,18 +31,18 @@ import { SITE } from "@/constants/site";
 
   <div class="flex items-center gap-6">
     <a
-      href="/tools"
+      href={ROUTES.TOOLS}
       class="text-sm text-muted-foreground transition-colors hover:text-foreground"
     >
       Tools
     </a>
     <a
-      href="/archive"
+      href={ROUTES.ARCHIVE}
       class="text-sm text-muted-foreground transition-colors hover:text-foreground"
     >
       Archive
     </a>
-    <a href="/sponsor" class={buttonVariants({ variant: "default" })}>
+    <a href={ROUTES.SPONSOR} class={buttonVariants({ variant: "default" })}>
       Sponsor
     </a>
   </div>
