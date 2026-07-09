@@ -2,6 +2,7 @@
 import { buttonVariants } from "@/components/ui/button";
 import { SITE } from "@/constants/site";
 import { ROUTES } from "@/constants/routes";
+import { cn } from "@/lib/utils";
 ---
 
 <nav class="flex items-center justify-between px-6 py-4">
@@ -42,7 +43,10 @@ import { ROUTES } from "@/constants/routes";
     >
       Archive
     </a>
-    <a href={ROUTES.SPONSOR} class={buttonVariants({ variant: "default" })}>
+    <a
+      href={ROUTES.SPONSOR}
+      class={cn(buttonVariants({ variant: "default" }), "rounded-full")}
+    >
       Sponsor
     </a>
   </div>
