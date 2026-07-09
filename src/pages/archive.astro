@@ -48,13 +48,15 @@ const formatDate = (date: Date) =>
   />
   <div class="flex flex-1 flex-col items-center py-16">
     <div class="flex w-full max-w-3xl flex-col gap-8">
-      <a
-        href={ROUTES.HOME}
-        class={buttonVariants({ variant: "link" })}
-      >
-        <ArrowLeftIcon className="size-4" />
-        Back to home
-      </a>
+      <div>
+        <a
+          href={ROUTES.HOME}
+          class="inline-flex text-sm items-center gap-2 text-muted-foreground transition-colors hover:text-foreground"
+        >
+          <ArrowLeftIcon className="size-4" />
+          Back to home
+        </a>
+      </div>
 
       <div class="flex flex-col gap-2">
         <h1 class="text-3xl font-semibold tracking-tight">Archive</h1>
