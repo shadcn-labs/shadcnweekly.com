@@ -1,12 +1,12 @@
 ---
 import Layout from "@/layouts/site.astro";
 import { ArrowLeftIcon, Clock } from "lucide-react";
-import { NEXT_ISSUE_NUMBER, NEXT_ISSUE_DATE } from "@/lib/constants";
+import { NEXT_ISSUE_NUMBER, NEXT_ISSUE_DATE, SITE } from "@/constants/site";
 ---
 
 <Layout
   title="Tools"
-  description="Hand-picked shadcn tools, libraries, and resources curated by Shadcn Weekly. Discover the best tools for your next project."
+  description={`Hand-picked shadcn tools, libraries, and resources curated by ${SITE.NAME}. Discover the best tools for your next project.`}
 >
   <script
     is:inline
@@ -20,13 +20,13 @@ import { NEXT_ISSUE_NUMBER, NEXT_ISSUE_DATE } from "@/lib/constants";
           "@type": "ListItem",
           position: 1,
           name: "Home",
-          item: "https://shadcnweekly.com",
+          item: SITE.URL,
         },
         {
           "@type": "ListItem",
           position: 2,
           name: "Tools",
-          item: "https://shadcnweekly.com/tools",
+          item: `${SITE.URL}/tools`,
         },
       ],
     })}

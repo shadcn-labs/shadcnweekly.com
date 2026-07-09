@@ -1,5 +1,6 @@
 ---
-
+import { buttonVariants } from "@/components/ui/button";
+import { SITE } from "@/constants/site";
 ---
 
 <nav class="flex items-center justify-between px-6 py-4">
@@ -24,7 +25,7 @@
       ></path>
       <path d="m15.34 9.14-2.4 2.4m1.92-5.04-4.56 4.56"></path>
     </svg>
-    <span class="text-lg font-semibold tracking-tight">Shadcn Weekly</span>
+    <span class="text-lg font-semibold tracking-tight">{SITE.NAME}</span>
   </a>
 
   <div class="flex items-center gap-6">
@@ -39,6 +40,9 @@
       class="text-sm text-muted-foreground transition-colors hover:text-foreground"
     >
       Archive
+    </a>
+    <a href="/sponsor" class={buttonVariants({ variant: "default" })}>
+      Sponsor
     </a>
   </div>
 </nav>

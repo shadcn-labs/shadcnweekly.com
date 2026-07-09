@@ -1,5 +1,5 @@
 ---
-
+import { SITE } from "@/constants/site";
 ---
 
 <footer class="flex flex-col items-center gap-4 px-6 pb-8 pt-4">
@@ -17,13 +17,13 @@
     class="flex flex-col items-center gap-1 text-[10px] leading-tight text-muted-foreground/60"
   >
     <p>
-      &copy; 2026 Shadcn Weekly | Curated by <a
-        href="https://aniketpawar.com"
+      &copy; 2026 {SITE.NAME} | Curated by <a
+        href={SITE.AUTHOR.URL}
         target="_blank"
         rel="noopener noreferrer"
         class="transition-colors underline hover:text-foreground"
       >
-        Aniket Pawar
+        {SITE.AUTHOR.NAME}
       </a>
     </p>
     <p>

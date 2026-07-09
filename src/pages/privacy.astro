@@ -1,11 +1,12 @@
 ---
 import Layout from "@/layouts/site.astro";
 import { ArrowLeftIcon } from "lucide-react";
+import { SITE } from "@/constants/site";
 ---
 
 <Layout
   title="Privacy Policy"
-  description="Shadcn Weekly privacy policy. We respect your privacy and do not collect, store, or share any personal information from our subscribers."
+  description={`${SITE.NAME} privacy policy. We respect your privacy and do not collect, store, or share any personal information from our subscribers.`}
 >
   <script
     is:inline
@@ -19,33 +20,37 @@ import { ArrowLeftIcon } from "lucide-react";
           "@type": "ListItem",
           position: 1,
           name: "Home",
-          item: "https://shadcnweekly.com",
+          item: SITE.URL,
         },
         {
           "@type": "ListItem",
           position: 2,
           name: "Privacy Policy",
-          item: "https://shadcnweekly.com/privacy",
+          item: `${SITE.URL}/privacy`,
         },
       ],
     })}
   />
   <div class="flex flex-1 flex-col items-center py-16">
     <div class="flex max-w-2xl flex-col gap-6">
-      <a
-        href="/"
-        class="inline-flex text-sm items-center gap-2 text-muted-foreground transition-colors hover:text-foreground"
-      >
-        <ArrowLeftIcon className="size-4" />
-        Back to home
-      </a>
+      <div>
+        <a
+          href="/"
+          class="inline-flex text-sm items-center gap-2 text-muted-foreground transition-colors hover:text-foreground"
+        >
+          <ArrowLeftIcon className="size-4" />
+          Back to home
+        </a>
+      </div>
+
       <h1 class="text-3xl font-semibold tracking-tight">Privacy Policy</h1>
+
       <div
         class="prose prose-neutral dark:prose-invert flex flex-col gap-4 text-base leading-relaxed text-muted-foreground"
       >
         <p>
-          Shadcn Weekly respects your privacy. We do not collect, store, or
-          share any personal information from our subscribers.
+          {SITE.NAME} respects your privacy. We do not collect, store, or share any
+          personal information from our subscribers.
         </p>
         <p>
           Email addresses provided for newsletter subscription are used solely

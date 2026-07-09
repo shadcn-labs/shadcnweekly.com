@@ -1,7 +1,3 @@
-export const NEXT_ISSUE_NUMBER = 1;
-export const NEXT_ISSUE_DATE = "July 13, 2026";
-export const NEXT_ISSUE_DATE_ISO = "2026-07-13";
-
 export const SPONSOR_PLACEMENTS = [
   {
     description:

@@ -10,7 +10,8 @@ import {
   DialogTrigger,
   DialogDescription,
 } from "@/components/ui/dialog";
-import { SPONSOR_PLACEMENTS } from "@/lib/constants";
+import { SITE } from "@/constants/site";
+import { SPONSOR_PLACEMENTS } from "@/constants/sponsor";
 import { cn } from "@/lib/utils";
 
 interface FormData {
@@ -251,7 +252,7 @@ export const SponsorModal = ({
         showCloseButton={true}
       >
         <DialogHeader className="sr-only">
-          <DialogTitle>Sponsor Shadcn Weekly</DialogTitle>
+          <DialogTitle>Sponsor {SITE.NAME}</DialogTitle>
           <DialogDescription>
             Fill in your details and select a sponsorship placement.
           </DialogDescription>

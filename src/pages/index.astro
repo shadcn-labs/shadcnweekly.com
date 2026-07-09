@@ -1,12 +1,12 @@
 ---
 import Layout from "@/layouts/site.astro";
 import { SubscribeForm } from "@/components/subscribe-form";
-import { NEXT_ISSUE_NUMBER, NEXT_ISSUE_DATE } from "@/lib/constants";
+import { NEXT_ISSUE_NUMBER, NEXT_ISSUE_DATE, SITE } from "@/constants/site";
 ---
 
 <Layout
-  title="Shadcn Weekly - The Best Shadcn Newsletter"
-  description="A weekly newsletter of the best shadcn news, tutorials, projects and tools. Stay up-to-date with what's happening in the shadcn ecosystem."
+  title={`${SITE.NAME} - ${SITE.DESCRIPTION.SHORT}`}
+  description={`${SITE.DESCRIPTION.LONG} Stay up-to-date with what's happening in the shadcn ecosystem.`}
 >
   <div
     class="flex flex-1 flex-col items-center justify-center text-center gap-8 py-16"
