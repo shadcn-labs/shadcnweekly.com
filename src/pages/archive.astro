@@ -2,7 +2,8 @@
 import Layout from "@/layouts/site.astro";
 import { ArrowLeftIcon, LayoutList } from "lucide-react";
 import { getCollection } from "astro:content";
-import { NEXT_ISSUE_NUMBER, NEXT_ISSUE_DATE } from "@/lib/constants";
+import { NEXT_ISSUE_NUMBER, NEXT_ISSUE_DATE, SITE } from "@/constants/site";
+import { ROUTES } from "@/constants/routes";
 
 const archive = await getCollection("archive");
 const sortedArchive = archive.toSorted((a, b) => b.data.issue - a.data.issue);
@@ -19,7 +20,7 @@ const formatDate = (date: Date) =>
 
 <Layout
   title="Archive"
-  description="Browse all past issues of Shadcn Weekly. Every weekly roundup of the best shadcn news, tutorials, projects, and tools."
+  description={`Browse all past issues of ${SITE.NAME}. Every weekly roundup of the best shadcn news, tutorials, projects, and tools.`}
 >
   <script
     is:inline
@@ -33,26 +34,28 @@ const formatDate = (date: Date) =>
           "@type": "ListItem",
           position: 1,
           name: "Home",
-          item: "https://shadcnweekly.com",
+          item: SITE.URL,
         },
         {
           "@type": "ListItem",
           position: 2,
           name: "Archive",
-          item: "https://shadcnweekly.com/archive",
+          item: `${SITE.URL}${ROUTES.ARCHIVE}`,
         },
       ],
     })}
   />
   <div class="flex flex-1 flex-col items-center py-16">
     <div class="flex w-full max-w-3xl flex-col gap-8">
-      <a
-        href="/"
-        class="inline-flex text-sm items-center gap-2 text-muted-foreground transition-colors hover:text-foreground"
-      >
-        <ArrowLeftIcon className="size-4" />
-        Back to home
-      </a>
+      <div>
+        <a
+          href={ROUTES.HOME}
+          class="inline-flex text-sm items-center gap-2 text-muted-foreground transition-colors hover:text-foreground"
+        >
+          <ArrowLeftIcon className="size-4" />
+          Back to home
+        </a>
+      </div>
 
       <div class="flex flex-col gap-2">
         <h1 class="text-3xl font-semibold tracking-tight">Archive</h1>
@@ -66,7 +69,7 @@ const formatDate = (date: Date) =>
           <div class="flex flex-col gap-3">
             {sortedArchive.map((issue) => (
               <a
-                href={`/archive/${issue.id}`}
+                href={`${ROUTES.ARCHIVE}/${issue.id}`}
                 class="group flex items-start gap-4 rounded-lg border border-border bg-card p-4 transition-colors hover:bg-accent/50"
               >
                 <span class="inline-flex size-10 shrink-0 items-center justify-center rounded-full bg-muted text-sm font-semibold text-muted-foreground">
