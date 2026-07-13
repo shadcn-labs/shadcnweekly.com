@@ -1,10 +1,11 @@
-import { readFile } from "node:fs/promises";
-import { fileURLToPath } from "node:url";
+import { Buffer } from "node:buffer";
 
 import { Resvg } from "@resvg/resvg-js";
 import type { ReactNode } from "react";
 import satori from "satori";
 
+import regularFontUrl from "@/assets/fonts/inter-latin-400-normal.woff?inline";
+import boldFontUrl from "@/assets/fonts/inter-latin-700-normal.woff?inline";
 import { Logo } from "@/components/logo";
 import { ROUTES } from "@/constants/routes";
 import { SITE } from "@/constants/site";
@@ -16,20 +17,20 @@ export const OG_IMAGE_TYPE = "image/png";
 export const OG_BORDER = "#27272a";
 export const OG_MUTED = "#a1a1aa";
 
-// Vite rewrites these URLs and emits the files next to the server bundle,
-// so fonts resolve on Vercel (unlike require.resolve into node_modules).
-const fonts = Promise.all([
-  readFile(
-    fileURLToPath(
-      new URL("../assets/fonts/inter-latin-400-normal.woff", import.meta.url)
-    )
-  ),
-  readFile(
-    fileURLToPath(
-      new URL("../assets/fonts/inter-latin-700-normal.woff", import.meta.url)
-    )
-  ),
-]);
+const decodeFont = (dataUrl: string) => {
+  const encodedFont = dataUrl.split(",", 2)[1];
+
+  if (!encodedFont) {
+    throw new Error("Invalid embedded font data URL");
+  }
+
+  return Buffer.from(encodedFont, "base64");
+};
+
+// Keep fonts in the server bundle so Astro's build-time prerenderer and the
+// deployed function do not depend on different filesystem layouts.
+const regularFont = decodeFont(regularFontUrl);
+const boldFont = decodeFont(boldFontUrl);
 
 export const clampOgText = (value: string, max: number) =>
   value.length > max ? `${value.slice(0, max - 1).trimEnd()}…` : value;
@@ -133,8 +134,6 @@ export const OgFrame = ({ children }: { children: ReactNode }) => (
 );
 
 export const renderOgPng = async (element: ReactNode) => {
-  const [regularFont, boldFont] = await fonts;
-
   const svg = await satori(element, {
     fonts: [
       {
