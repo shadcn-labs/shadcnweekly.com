@@ -1,5 +1,6 @@
 ---
 import { mdxComponents } from "@/components/mdx";
+import ArchiveTogetherWith from "@/components/archive-together-with.astro";
 import Layout from "@/layouts/site.astro";
 import { ArrowLeftIcon } from "lucide-react";
 import { getCollection, render } from "astro:content";
@@ -60,10 +61,10 @@ const formattedDate = issue.data.date.toLocaleDateString("en-US", {
   />
 
   <div class="flex flex-1 flex-col items-center py-16">
-    <div class="flex max-w-2xl flex-col gap-6">
+    <div class="flex w-full max-w-2xl flex-col gap-8">
       <div>
         <a
-          href="/issues"
+          href={ROUTES.ISSUES}
           class="inline-flex items-center gap-2 text-sm text-muted-foreground transition-colors hover:text-foreground"
         >
           <ArrowLeftIcon className="size-4" />
@@ -71,22 +72,29 @@ const formattedDate = issue.data.date.toLocaleDateString("en-US", {
         </a>
       </div>
 
-      <div class="flex flex-col gap-2">
-        <span class="text-sm text-muted-foreground">
-          Issue #{issue.data.issue}
-        </span>
-        <h1 class="text-3xl font-semibold tracking-tight">
+      <header class="flex flex-col items-center gap-6 text-center">
+        <p class="text-sm text-muted-foreground">
+          <span>Issue #{issue.data.issue}</span>
+          <span aria-hidden="true" class="mx-1">·</span>
+          <time datetime={issue.data.date.toISOString()}>{formattedDate}</time>
+        </p>
+
+        <h1
+          class="text-3xl font-semibold tracking-tight text-balance sm:text-4xl"
+        >
           {issue.data.title}
         </h1>
-        <time
-          datetime={issue.data.date.toISOString()}
-          class="text-sm text-muted-foreground/60"
-        >
-          {formattedDate}
-        </time>
-      </div>
 
-      <div class="typeset typeset-issue">
+        <hr class="w-full border-border" />
+
+        {
+          issue.data.sponsor ? (
+            <ArchiveTogetherWith website={issue.data.sponsor} />
+          ) : null
+        }
+      </header>
+
+      <div class="typeset typeset-issue text-left">
         <Content components={mdxComponents} />
         <div>
           <p>

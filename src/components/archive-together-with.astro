@@ -1,0 +1,41 @@
+---
+import { fetchPageMeta } from "@/lib/page-meta";
+
+interface Props {
+  website: string;
+  name?: string;
+  logo?: string;
+}
+
+const { website, name: nameOverride, logo: logoOverride } = Astro.props;
+
+const meta = await fetchPageMeta(website);
+const name = nameOverride ?? meta.title;
+const logo = logoOverride ?? meta.logo;
+---
+
+<div
+  class="not-typeset flex flex-row flex-wrap items-center justify-center gap-x-2.5 gap-y-1"
+>
+  <p class="text-sm text-muted-foreground">Together with</p>
+  <a
+    href={website}
+    target="_blank"
+    rel="noopener noreferrer"
+    class="inline-flex items-center gap-1 text-foreground no-underline transition-opacity hover:opacity-80"
+  >
+    {
+      logo ? (
+        <img
+          src={logo}
+          alt=""
+          width="20"
+          height="20"
+          class="size-5 rounded-sm"
+          loading="lazy"
+        />
+      ) : null
+    }
+    <span class="text-sm font-semibold tracking-tight">{name}</span>
+  </a>
+</div>

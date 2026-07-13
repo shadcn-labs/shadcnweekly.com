@@ -1,0 +1,74 @@
+---
+import { fetchPageMeta } from "@/lib/page-meta";
+import { cn } from "@/lib/utils";
+
+interface Props {
+  website: string;
+  name?: string;
+  title?: string;
+  description?: string;
+  image?: string;
+  class?: string;
+}
+
+const {
+  website,
+  name: nameOverride,
+  title: titleOverride,
+  description: descriptionOverride,
+  image: imageOverride,
+  class: className,
+} = Astro.props;
+
+const meta = await fetchPageMeta(website);
+const title = titleOverride ?? meta.title;
+const description = descriptionOverride ?? meta.description;
+const image = imageOverride ?? meta.image;
+const name = nameOverride ?? title;
+
+const linkClass = "not-typeset no-underline text-foreground hover:underline";
+---
+
+<section class={cn("flex flex-col gap-3", className)}>
+  <h2>⚡️ Sponsor: {name}</h2>
+
+  {
+    image ? (
+      <a
+        href={website}
+        target="_blank"
+        rel="noopener noreferrer"
+        class={linkClass}
+      >
+        <img
+          src={image}
+          alt={title}
+          class="w-full rounded-md border border-border"
+          loading="lazy"
+        />
+      </a>
+    ) : null
+  }
+
+  <div>
+    <a
+      href={website}
+      target="_blank"
+      rel="noopener noreferrer"
+      class={cn(
+        linkClass,
+        "inline w-fit self-start text-[1.125em] font-semibold",
+      )}
+    >
+      {title}
+    </a>
+
+    {
+      description ? (
+        <p class="not-typeset line-clamp-2 m-0 text-base leading-relaxed text-muted-foreground">
+          {description}
+        </p>
+      ) : null
+    }
+  </div>
+</section>

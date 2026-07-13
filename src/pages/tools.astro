@@ -1,8 +1,15 @@
 ---
+import { getCollection } from "astro:content";
 import Layout from "@/layouts/site.astro";
-import { ArrowLeftIcon, Clock } from "lucide-react";
-import { NEXT_ISSUE_NUMBER, NEXT_ISSUE_DATE, SITE } from "@/constants/site";
+import ToolCard from "@/components/tool-card.astro";
+import { ArrowLeftIcon } from "lucide-react";
+import { SITE } from "@/constants/site";
 import { ROUTES } from "@/constants/routes";
+
+const toolsCollection = await getCollection("tools");
+const tools = toolsCollection.toSorted(
+  (a, b) => b.data.issue - a.data.issue || a.data.title.localeCompare(b.data.title),
+);
 ---
 
 <Layout
@@ -52,30 +59,17 @@ import { ROUTES } from "@/constants/routes";
         </p>
       </div>
 
-      <div
-        class="flex flex-col items-center justify-center gap-4 rounded-lg border border-dashed border-border py-20 px-4 text-center"
-      >
-        <div
-          class="flex size-12 items-center justify-center rounded-full bg-muted"
-        >
-          <Clock className="size-6 text-muted-foreground" />
-        </div>
-        <div class="flex flex-col gap-1">
-          <h2 class="text-lg font-semibold">Coming Soon</h2>
-          <p class="max-w-sm text-sm text-muted-foreground text-balance">
-            Our curated collection of shadcn tools drops with Issue #{
-              NEXT_ISSUE_NUMBER
-            } on{" "}
-            <span class="font-medium text-foreground">
-              {NEXT_ISSUE_DATE}
-            </span>
-            . We're putting together the most useful libraries, components, and developer
-            tools so you don't have to dig through the noise.
-          </p>
-        </div>
-        <p class="text-xs text-muted-foreground/60">
-          Subscribe to get the best tools delivered to your inbox.
-        </p>
+      <div class="grid gap-4 sm:grid-cols-2">
+        {
+          tools.map((tool) => (
+            <ToolCard
+              title={tool.data.title}
+              description={tool.data.description}
+              screenshot={tool.data.image}
+              primary={tool.data.url}
+            />
+          ))
+        }
       </div>
     </div>
   </div>

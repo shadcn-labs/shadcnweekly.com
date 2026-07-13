@@ -1,17 +1,14 @@
 ---
-import { GitFork, ExternalLink } from "lucide-react";
+import { ExternalLink } from "lucide-react";
 
 interface Props {
   title: string;
   description: string;
   screenshot?: string;
-  github?: string;
-  deployed?: string;
   primary: string;
 }
 
-const { title, description, screenshot, github, deployed, primary } =
-  Astro.props;
+const { title, description, screenshot, primary } = Astro.props;
 ---
 
 <a
@@ -33,27 +30,14 @@ const { title, description, screenshot, github, deployed, primary } =
     )
   }
   <div class="flex flex-1 flex-col gap-2 p-4">
-    <h3 class="text-base font-semibold leading-tight">{title}</h3>
+    <div class="flex items-start justify-between gap-2">
+      <h3 class="text-base font-semibold leading-tight">{title}</h3>
+      <ExternalLink
+        className="mt-0.5 size-3.5 shrink-0 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100"
+      />
+    </div>
     <p class="flex-1 text-sm leading-relaxed text-muted-foreground">
       {description}
     </p>
-    <div class="flex items-center gap-3 pt-1">
-      {
-        github && (
-          <span class="inline-flex items-center gap-1 text-xs text-muted-foreground">
-            <GitFork className="size-3.5" />
-            GitHub
-          </span>
-        )
-      }
-      {
-        deployed && (
-          <span class="inline-flex items-center gap-1 text-xs text-muted-foreground">
-            <ExternalLink className="size-3.5" />
-            Live
-          </span>
-        )
-      }
-    </div>
   </div>
 </a>

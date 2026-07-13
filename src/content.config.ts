@@ -10,8 +10,20 @@ const archive = defineCollection({
     description: z.string(),
     highlights: z.array(z.string()).default([]),
     issue: z.number(),
+    sponsor: z.url().optional(),
     title: z.string(),
   }),
 });
 
-export const collections = { archive };
+const tools = defineCollection({
+  loader: glob({ base: "./src/content/tools", pattern: "**/*.{md,mdx}" }),
+  schema: z.object({
+    description: z.string(),
+    image: z.url().optional(),
+    issue: z.number(),
+    title: z.string(),
+    url: z.url(),
+  }),
+});
+
+export const collections = { archive, tools };

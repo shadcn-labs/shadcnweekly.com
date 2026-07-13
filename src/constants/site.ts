@@ -17,7 +17,3 @@ export const META_THEME_COLORS = {
   dark: "#000000",
   light: "#ffffff",
 };
-
-export const NEXT_ISSUE_NUMBER = 1;
-export const NEXT_ISSUE_DATE = "July 13, 2026";
-export const NEXT_ISSUE_DATE_ISO = "2026-07-13";
