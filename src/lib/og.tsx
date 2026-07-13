@@ -1,8 +1,7 @@
 import { Buffer } from "node:buffer";
 
-import { Resvg } from "@resvg/resvg-js";
 import type { ReactNode } from "react";
-import satori from "satori";
+import { satoriAstroOG } from "satori-astro";
 
 import regularFontUrl from "@/assets/fonts/inter-latin-400-normal.woff?inline";
 import boldFontUrl from "@/assets/fonts/inter-latin-700-normal.woff?inline";
@@ -18,7 +17,7 @@ export const OG_BORDER = "#27272a";
 export const OG_MUTED = "#a1a1aa";
 
 const decodeFont = (dataUrl: string) => {
-  const encodedFont = dataUrl.split(",", 2)[1];
+  const [, encodedFont] = dataUrl.split(",", 2);
 
   if (!encodedFont) {
     throw new Error("Invalid embedded font data URL");
@@ -133,25 +132,26 @@ export const OgFrame = ({ children }: { children: ReactNode }) => (
   </div>
 );
 
-export const renderOgPng = async (element: ReactNode) => {
-  const svg = await satori(element, {
-    fonts: [
-      {
-        data: regularFont,
-        name: "Inter",
-        style: "normal",
-        weight: 400,
-      },
-      {
-        data: boldFont,
-        name: "Inter",
-        style: "normal",
-        weight: 700,
-      },
-    ],
+export const renderOgPng = (element: ReactNode) =>
+  satoriAstroOG({
     height: OG_IMAGE_HEIGHT,
+    template: element,
     width: OG_IMAGE_WIDTH,
+  }).toImage({
+    satori: {
+      fonts: [
+        {
+          data: regularFont,
+          name: "Inter",
+          style: "normal",
+          weight: 400,
+        },
+        {
+          data: boldFont,
+          name: "Inter",
+          style: "normal",
+          weight: 700,
+        },
+      ],
+    },
   });
-
-  return new Resvg(svg).render().asPng();
-};
