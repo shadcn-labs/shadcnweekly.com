@@ -2,7 +2,7 @@
 import Layout from "@/layouts/site.astro";
 import { ArrowLeftIcon, LayoutList } from "lucide-react";
 import { getCollection } from "astro:content";
-import { NEXT_ISSUE_NUMBER, NEXT_ISSUE_DATE } from "@/lib/constants";
+import { NEXT_ISSUE_NUMBER, NEXT_ISSUE_DATE } from "@/constants/site";
 
 const archive = await getCollection("archive");
 const sortedArchive = archive.toSorted((a, b) => b.data.issue - a.data.issue);
