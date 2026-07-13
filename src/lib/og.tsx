@@ -1,5 +1,5 @@
 import { readFile } from "node:fs/promises";
-import { createRequire } from "node:module";
+import { fileURLToPath } from "node:url";
 
 import { Resvg } from "@resvg/resvg-js";
 import type { ReactNode } from "react";
@@ -16,14 +16,18 @@ export const OG_IMAGE_TYPE = "image/png";
 export const OG_BORDER = "#27272a";
 export const OG_MUTED = "#a1a1aa";
 
-const require = createRequire(import.meta.url);
-
+// Vite rewrites these URLs and emits the files next to the server bundle,
+// so fonts resolve on Vercel (unlike require.resolve into node_modules).
 const fonts = Promise.all([
   readFile(
-    require.resolve("@fontsource/inter/files/inter-latin-400-normal.woff")
+    fileURLToPath(
+      new URL("../assets/fonts/inter-latin-400-normal.woff", import.meta.url)
+    )
   ),
   readFile(
-    require.resolve("@fontsource/inter/files/inter-latin-700-normal.woff")
+    fileURLToPath(
+      new URL("../assets/fonts/inter-latin-700-normal.woff", import.meta.url)
+    )
   ),
 ]);
 

@@ -31,6 +31,10 @@ const site = getSite();
 // https://astro.build/config
 export default defineConfig({
   adapter: vercel({
+    includeFiles: [
+      "src/assets/fonts/inter-latin-400-normal.woff",
+      "src/assets/fonts/inter-latin-700-normal.woff",
+    ],
     webAnalytics: {
       enabled: false,
     },
