@@ -4,11 +4,23 @@ import { SEO } from "astro-seo";
 import Analytics from "@vercel/analytics/astro";
 import { SITE } from "@/constants/site";
 import { ROUTES } from "@/constants/routes";
+import {
+  buildOgImagePath,
+  OG_IMAGE_HEIGHT,
+  OG_IMAGE_TYPE,
+  OG_IMAGE_WIDTH,
+} from "@/lib/og";
+
+const DEFAULT_HEADLINE = "Stay up-to-date on shadcn";
 
 interface Props {
   title?: string;
   description?: string;
   image?: string;
+  imageAlt?: string;
+  imageWidth?: number;
+  imageHeight?: number;
+  imageType?: string;
   canonical?: string;
   noindex?: boolean;
   nofollow?: boolean;
@@ -16,9 +28,13 @@ interface Props {
 }
 
 const {
-  title = `${SITE.NAME} - ${SITE.DESCRIPTION.SHORT}`,
+  title = DEFAULT_HEADLINE,
   description = SITE.DESCRIPTION.LONG,
-  image = SITE.OG_IMAGE,
+  image,
+  imageAlt = `${SITE.NAME} - ${DEFAULT_HEADLINE}`,
+  imageWidth = OG_IMAGE_WIDTH,
+  imageHeight = OG_IMAGE_HEIGHT,
+  imageType = OG_IMAGE_TYPE,
   canonical,
   noindex = false,
   nofollow = false,
@@ -26,10 +42,20 @@ const {
 } = Astro.props;
 
 const canonicalURL = canonical
-  ? new URL(canonical, Astro.site)
-  : new URL(Astro.url.pathname, Astro.site);
+  ? new URL(canonical, SITE.URL)
+  : new URL(Astro.url.pathname, SITE.URL);
 
-const ogImageURL = new URL(image, Astro.site).href;
+const isHome = Astro.url.pathname === ROUTES.HOME;
+const pageTitle = isHome ? title : `${title} | ${SITE.NAME}`;
+
+const ogImagePath =
+  image ??
+  buildOgImagePath({
+    description,
+    title: isHome ? DEFAULT_HEADLINE : title,
+  });
+
+const ogImageURL = new URL(ogImagePath, SITE.URL).href;
 ---
 
 <meta charset="utf-8" />
@@ -39,8 +65,7 @@ const ogImageURL = new URL(image, Astro.site).href;
 <meta name="theme-color" content="#000000" />
 
 <SEO
-  title={title}
-  titleTemplate={`%s | ${SITE.NAME}`}
+  title={pageTitle}
   description={description}
   canonical={canonicalURL.href}
   noindex={noindex}
@@ -48,7 +73,7 @@ const ogImageURL = new URL(image, Astro.site).href;
   robotsExtras="max-snippet:-1, max-image-preview:large, max-video-preview:-1"
   openGraph={{
     basic: {
-      title,
+      title: pageTitle,
       type: ogType,
       image: ogImageURL,
       url: canonicalURL.href,
@@ -59,19 +84,19 @@ const ogImageURL = new URL(image, Astro.site).href;
       locale: SITE.LOCALE,
     },
     image: {
-      alt: `${SITE.NAME} - Stay up-to-date on shadcn`,
-      width: 1024,
-      height: 537,
-      type: "image/jpeg",
+      alt: imageAlt,
+      width: imageWidth,
+      height: imageHeight,
+      type: imageType,
     },
   }}
   twitter={{
     card: "summary_large_image",
     site: SITE.AUTHOR.TWITTER,
-    title,
+    title: pageTitle,
     description,
     image: ogImageURL,
-    imageAlt: `${SITE.NAME} - Stay up-to-date on shadcn`,
+    imageAlt,
   }}
   extend={{
     link: [{ rel: "sitemap", href: ROUTES.SITEMAP }],

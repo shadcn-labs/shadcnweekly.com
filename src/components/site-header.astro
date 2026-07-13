@@ -1,6 +1,7 @@
 ---
 import { SITE } from "@/constants/site";
 import { ROUTES } from "@/constants/routes";
+import { Logo } from "@/components/logo";
 ---
 
 <header class="flex items-center justify-between px-6 py-4">
@@ -8,23 +9,7 @@ import { ROUTES } from "@/constants/routes";
     href={ROUTES.HOME}
     class="flex items-center gap-2 transition-opacity hover:opacity-80"
   >
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      stroke-width="1.5"
-      stroke-linecap="round"
-      stroke-linejoin="round"
-      class="size-5"
-      aria-hidden="true"
-    >
-      <path d="M22 12h-6l-2 3h-4l-2-3H2"></path>
-      <path
-        d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11"
-      ></path>
-      <path d="m15.34 9.14-2.4 2.4m1.92-5.04-4.56 4.56"></path>
-    </svg>
+    <Logo className="size-5" />
     <span class="text-lg font-semibold tracking-tight">{SITE.NAME}</span>
   </a>
 
@@ -36,7 +21,7 @@ import { ROUTES } from "@/constants/routes";
       Tools
     </a>
     <a
-      href={ROUTES.ARCHIVE}
+      href={ROUTES.ISSUES}
       class="text-sm text-muted-foreground transition-colors hover:text-foreground"
     >
       Archive

@@ -3,6 +3,7 @@ import Layout from "@/layouts/site.astro";
 import { ArrowLeftIcon } from "lucide-react";
 import { SITE } from "@/constants/site";
 import { ROUTES } from "@/constants/routes";
+import { LINKS } from "@/constants/links";
 ---
 
 <Layout
@@ -57,16 +58,16 @@ import { ROUTES } from "@/constants/routes";
           <li>
             Email:
             <a
-              href={`mailto:hello@${new URL(SITE.URL).hostname}`}
+              href={`mailto:${LINKS.EMAIL}`}
               class="underline underline-offset-4 hover:text-foreground"
             >
-              hello@{new URL(SITE.URL).hostname}
+              {LINKS.EMAIL}
             </a>
           </li>
           <li>
             Twitter:
             <a
-              href={`https://x.com/${SITE.AUTHOR.TWITTER}`}
+              href={LINKS.TWITTER}
               target="_blank"
               rel="noopener noreferrer"
               class="underline underline-offset-4 hover:text-foreground"
@@ -77,7 +78,7 @@ import { ROUTES } from "@/constants/routes";
           <li>
             Discord:
             <a
-              href="https://discord.com/invite/N6G36KhYK4"
+              href={LINKS.DISCORD}
               target="_blank"
               rel="noopener noreferrer"
               class="underline underline-offset-4 hover:text-foreground"

@@ -1,0 +1,116 @@
+---
+date: 2026-07-13
+description: "shadcn/typeset launches, TermCN brings shadcn to the terminal, a CSS-in-JS port drops, and the Base UI ecosystem reaction continues."
+highlights:
+  - shadcn/typeset typography system
+  - TermCN terminal UI components
+  - shadcn-cssinjs StyleX port
+  - /improve-animations skill by Emil Kowalski
+  - Chat UI primitives and Message components
+issue: 1
+title: "Typeset, TermCN & CSS-in-JS"
+---
+
+### [shadcn/typeset: A Typography System for HTML & Markdown](https://ui.shadcn.com/docs/changelog/2026-07-typeset)
+
+On July 10, 2026, shadcn released shadcn/typeset — a styling system for HTML and rendered markdown in one CSS file.
+
+Instead of manually tweaking font sizes, line heights, and spacing for every project (blog → docs → chat), you drop in a single `typeset.css` file. Everything inside a `.typeset` container gets consistently styled based on just three controls: size, leading, and flow. All other values derive automatically.
+
+Key features include streaming-markdown support with no layout shifts, container-aware presets (compact for chat, roomier for docs), theme and dark-mode awareness, and a visual Typeset Builder to pick fonts, preview contexts, and copy the full setup. Guillermo Rauch called it "the best UI infrastructure for agents and for humans."
+
+---
+
+### [TermCN: shadcn/ui for the Terminal](https://x.com/rammcodes/status/2075558867883450806)
+
+TermCN from shadcn-labs is essentially "shadcn/ui for terminal apps" — a free, open-source collection of copy-paste terminal UI components for React, released around July 10, 2026.
+
+Built on Ink and OpenTUI, it works with the shadcn CLI and includes charts (bar, line, gauge, heat maps), AI components (chat, streaming text, thinking blocks), and navigation (command palettes, tabs, menus). MIT licensed and ideal for CLIs, AI agents, or any terminal-based app that needs to look professional.
+
+---
+
+### [shadcn-cssinjs: CSS-in-JS Port with StyleX](https://x.com/alaymanguy/status/2075942755520680410)
+
+Released July 11, 2026 by @shadcnlabs (Aniket Pawar), shadcn-cssinjs is a CSS-in-JS port of shadcn/ui built entirely with StyleX.
+
+It is a drop-in replacement — same CLI workflow (`npx shadcn@latest add button`), zero-config setup, fully customizable with StyleX themes and tokens, and officially recommended by the StyleX team. 100% free and open source.
+
+---
+
+### [/improve-animations Skill by Emil Kowalski](https://x.com/emilkowalski/status/2075929554594500772)
+
+On July 11, 2026, Emil Kowalski released `/improve-animations`, inspired by shadcn's `/improve` skill. It uses your most capable model to audit all animations in your project, identifies issues like sluggish easing and inconsistent curves, then outputs precise executable plans for cheaper models to implement. Read-only by design — it audits and plans without touching code.
+
+---
+
+## Base UI Ecosystem Fallout (July 6–12)
+
+While the Base UI default announcement dropped on July 3 (outside our window), the ecosystem reaction and migration tooling dominated this week:
+
+- **[Pro Blocks](https://x.com/matsugfx/status/2074147357365600758)** rebuilt all 390+ blocks for Base UI with automatic variant detection.
+- **[ShadcnStudio](https://x.com/ajaypatel_aj/status/2074143668374790526)** updated every block to Base UI and shipped new templates: Promptly (AI Chat App), Calendrix (Booking), and 5 AdminCN Dashboard Layouts.
+- **[ShadcnSpace](https://x.com/ShadcnSpace/status/2075307936176542016)** added 5 landing pages, 5+ topbar blocks, and 25+ new UI components. Catalog now exceeds 350 blocks and 350+ components.
+- **[UIAble.com](https://x.com/rakesh_nakrani/status/2074089950233108983)** added a `<Message>` chat component with groups, avatars, attachments, and quick actions.
+- **[Base UI 1.6 Compatibility Release](https://baseui-cn.com/)** (July 9) updated the registry baseline and moved OTP Field to stable.
+- Developers report smooth migrations — one user migrated a complex custom implementation from Radix to Base UI in ~1.5 hours using the shadcn skill.
+
+<SubscribeSection
+  class="not-typeset border px-4 py-4 rounded-lg bg-muted [margin-block:calc(var(--typeset-flow)*1.4)] [scroll-margin-block-start:calc(var(--typeset-flow)*1.4)]"
+  formClass="mt-3"
+/>
+
+## 📙 Articles, Tutorials & News
+
+### [Card Components with shadcn/ui and Shadcn Space](https://www.freecodecamp.org/news/how-to-build)
+
+A July 10, 2026 tutorial from freeCodeCamp showing how to build production-ready cards with hover states, dark mode, and responsive design using shadcn/ui and Shadcn Space.
+
+### [Radix vs Base UI: Technical Comparison](https://www.shadcndeck.com/blog/radix-vs-base-ui)
+
+A detailed breakdown of the differences between Radix and Base UI — API design, bundle size, accessibility, animation handling, and migration paths for shadcn/ui projects.
+
+---
+
+## 📦 Projects, Packages & Tools
+
+### [Chat UI Components](https://x.com/RoundtableSpace/status/2074150124914168315)
+
+shadcn released a full set of composable chat UI primitives — streaming support, auto-scrolling, message bubbles, attachments, and markers. Designed from the ground up, not wrappers around existing libraries. The Figma library was also updated with new Message components: Attachment, Bubble, Message, Message Scroller, and Marker.
+
+### [Figma to shadcn/ui Plugin v57](https://www.figma.com/community/plugin/1427238109341529865/figma-to-shadcn-ui)
+
+Released July 6, 2026 — generate code for your stack with new AI models (Claude Opus 4.8, Fable 5, Sonnet 5, Gemini 3.5 Flash). Stack selectors let you pick component library (Radix UI or Base UI) and framework (Next.js, Vite, React Router, TanStack Start). Generated code now matches your project with correct render props, Link imports, and "use client" placement.
+
+### [Hyperiux Vault](https://vault.hyperiux.com)
+
+Launched July 9 — a source-first interaction effects library for React and Next.js with 115 scroll, cursor, text, transition, loader, background, and WebGL effects. Positioned alongside shadcn/ui, not against it. Free Core tier with 32 effects available now.
+
+### [React Flow UI Update](https://reactflow.dev/ui)
+
+Updated to support the latest shadcn/ui on React 19 and Tailwind 4.
+
+### [ABP Framework React UI](https://abp.io/community/announcements/react-ui-for-abp-framework-is-finally-here-7rfmgb2v)
+
+The ABP Framework shipped React UI support in v10.4 RC, built with shadcn/ui, Tailwind CSS, TanStack Router, and Vite.
+
+### [Pocket ID v2.10.0](https://pocket-id.org/changelog)
+
+Upgraded shadcn components in their authentication platform on July 10.
+
+### [RetroUI](https://retroui.dev/themes)
+
+50+ neobrutalist React components plus 158+ blocks and templates, built on both Radix UI and Base UI. Install with the shadcn CLI.
+
+---
+
+## 🌈 Related
+
+### [21st.dev Magic MCP](https://mcp.directory/blog/21st-dev-magic-mcp-complete-guide-2026)
+
+Turns `/ui` prompts into React components in Cursor, Claude Code & VS Code. Part of the growing MCP ecosystem for shadcn/ui.
+
+### [Registry Search Engine](https://x.com/diwansachindu/status/2075821971095662779)
+
+A developer built a central search engine for 200+ shadcn/ui registries after searching through them all.
+
+---

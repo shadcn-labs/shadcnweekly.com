@@ -8,6 +8,7 @@ export default defineConfig({
   ignorePatterns: core.ignorePatterns,
   rules: {
     "github/filenames-match-regex": "off",
+    "react-doctor/no-inline-exhaustive-style": "off",
     "react-doctor/only-export-components": "off",
     "sonarjs/function-name": "off",
     "sonarjs/no-wildcard-import": "off",

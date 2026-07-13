@@ -10,8 +10,7 @@ export const SITE = {
   },
   LOCALE: "en_US",
   NAME: "Shadcn Weekly",
-  OG_IMAGE: "/og.jpg",
-  URL: "https://shadcnweekly.com",
+  URL: import.meta.env.SITE as string,
 };
 
 export const META_THEME_COLORS = {

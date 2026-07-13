@@ -1,0 +1,39 @@
+---
+import { SubscribeForm } from "@/components/subscribe-form";
+import { cn } from "@/lib/utils";
+
+interface Props {
+  class?: string;
+  formClass?: string;
+}
+
+const { class: className, formClass: formClassName } = Astro.props;
+---
+
+<div class={cn("flex flex-col items-center text-center gap-3", className)}>
+  <p class="max-w-lg text-base leading-relaxed text-muted-foreground">
+    A weekly newsletter with the most interesting shadcn{" "}
+    <span class="desc-text">News</span>,
+    <span class="desc-text">Tutorials</span>,
+    <span class="desc-text">Projects</span>, and
+    <span class="desc-text">Tools</span>. The easiest way to keep up with what's
+    happening in the ecosystem.
+  </p>
+
+  <p class="text-base text-muted-foreground opacity-70">
+    Once-weekly email, best links, no fluff.
+  </p>
+
+  <div
+    class={cn(
+      "flex w-full max-w-md items-center flex-col gap-2",
+      formClassName,
+    )}
+  >
+    <SubscribeForm client:load />
+
+    <p class="text-sm text-muted-foreground">
+      100% free &middot; Delivered every Monday
+    </p>
+  </div>
+</div>

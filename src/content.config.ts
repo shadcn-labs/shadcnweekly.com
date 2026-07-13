@@ -8,6 +8,7 @@ const archive = defineCollection({
     cover: z.string().optional(),
     date: z.coerce.date(),
     description: z.string(),
+    highlights: z.array(z.string()).default([]),
     issue: z.number(),
     title: z.string(),
   }),
