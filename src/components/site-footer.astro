@@ -1,14 +1,15 @@
 ---
-
+import { SITE } from "@/constants/site";
+import { ROUTES } from "@/constants/routes";
 ---
 
 <footer class="flex flex-col items-center gap-4 px-6 pb-8 pt-4">
   <div class="flex items-center gap-2 text-sm text-muted-foreground">
-    <a href="/privacy" class="transition-colors hover:text-foreground">
+    <a href={ROUTES.PRIVACY} class="transition-colors hover:text-foreground">
       Privacy Policy
     </a>
     <span>&middot;</span>
-    <a href="/contact" class="transition-colors hover:text-foreground">
+    <a href={ROUTES.CONTACT} class="transition-colors hover:text-foreground">
       Contact
     </a>
   </div>
@@ -17,13 +18,13 @@
     class="flex flex-col items-center gap-1 text-[10px] leading-tight text-muted-foreground/60"
   >
     <p>
-      &copy; 2026 Shadcn Weekly | Curated by <a
-        href="https://aniketpawar.com"
+      &copy; 2026 {SITE.NAME} | Curated by <a
+        href={SITE.AUTHOR.URL}
         target="_blank"
         rel="noopener noreferrer"
-        class="transition-colors underline hover:text-foreground"
+        class="link"
       >
-        Aniket Pawar
+        {SITE.AUTHOR.NAME}
       </a>
     </p>
     <p>
@@ -31,7 +32,7 @@
         href="https://shadcn.com"
         target="_blank"
         rel="noopener noreferrer"
-        class="transition-colors underline hover:text-foreground">shadcn</a
+        class="link">shadcn</a
       >.
     </p>
   </div>

@@ -2,6 +2,8 @@
 import { Font } from "astro:assets";
 import { SEO } from "astro-seo";
 import Analytics from "@vercel/analytics/astro";
+import { SITE } from "@/constants/site";
+import { ROUTES } from "@/constants/routes";
 
 interface Props {
   title?: string;
@@ -14,9 +16,9 @@ interface Props {
 }
 
 const {
-  title = "Shadcn Weekly - The Best Shadcn Newsletter",
-  description = "A weekly newsletter of the best shadcn news, tutorials, projects and tools.",
-  image = "/og.jpg",
+  title = `${SITE.NAME} - ${SITE.DESCRIPTION.SHORT}`,
+  description = SITE.DESCRIPTION.LONG,
+  image = SITE.OG_IMAGE,
   canonical,
   noindex = false,
   nofollow = false,
@@ -31,14 +33,14 @@ const ogImageURL = new URL(image, Astro.site).href;
 ---
 
 <meta charset="utf-8" />
-<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+<link rel="icon" type="image/svg+xml" href={ROUTES.FAVICON} />
 <meta name="viewport" content="width=device-width" />
 <meta name="generator" content={Astro.generator} />
 <meta name="theme-color" content="#000000" />
 
 <SEO
   title={title}
-  titleTemplate="%s | Shadcn Weekly"
+  titleTemplate={`%s | ${SITE.NAME}`}
   description={description}
   canonical={canonicalURL.href}
   noindex={noindex}
@@ -53,11 +55,11 @@ const ogImageURL = new URL(image, Astro.site).href;
     },
     optional: {
       description,
-      siteName: "Shadcn Weekly",
-      locale: "en_US",
+      siteName: SITE.NAME,
+      locale: SITE.LOCALE,
     },
     image: {
-      alt: "Shadcn Weekly - Stay up-to-date on shadcn",
+      alt: `${SITE.NAME} - Stay up-to-date on shadcn`,
       width: 1024,
       height: 537,
       type: "image/jpeg",
@@ -65,14 +67,14 @@ const ogImageURL = new URL(image, Astro.site).href;
   }}
   twitter={{
     card: "summary_large_image",
-    site: "@alaymanguy",
+    site: SITE.AUTHOR.TWITTER,
     title,
     description,
     image: ogImageURL,
-    imageAlt: "Shadcn Weekly - Stay up-to-date on shadcn",
+    imageAlt: `${SITE.NAME} - Stay up-to-date on shadcn`,
   }}
   extend={{
-    link: [{ rel: "sitemap", href: "/sitemap-index.xml" }],
+    link: [{ rel: "sitemap", href: ROUTES.SITEMAP }],
   }}
 />
 
@@ -87,11 +89,10 @@ const ogImageURL = new URL(image, Astro.site).href;
   set:html={JSON.stringify({
     "@context": "https://schema.org",
     "@type": "Organization",
-    name: "Shadcn Weekly",
-    url: "https://shadcnweekly.com",
-    logo: "https://shadcnweekly.com/favicon.svg",
-    description:
-      "A weekly newsletter of the best shadcn news, tutorials, projects and tools.",
-    sameAs: ["https://x.com/alaymanguy"],
+    name: SITE.NAME,
+    url: SITE.URL,
+    logo: `${SITE.URL}${ROUTES.FAVICON}`,
+    description: SITE.DESCRIPTION.LONG,
+    sameAs: [`https://x.com/${SITE.AUTHOR.TWITTER.replace("@", "")}`],
   })}
 />

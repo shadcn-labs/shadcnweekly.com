@@ -1,10 +1,11 @@
 ---
-
+import { SITE } from "@/constants/site";
+import { ROUTES } from "@/constants/routes";
 ---
 
-<nav class="flex items-center justify-between px-6 py-4">
+<header class="flex items-center justify-between px-6 py-4">
   <a
-    href="/"
+    href={ROUTES.HOME}
     class="flex items-center gap-2 transition-opacity hover:opacity-80"
   >
     <svg
@@ -24,21 +25,21 @@
       ></path>
       <path d="m15.34 9.14-2.4 2.4m1.92-5.04-4.56 4.56"></path>
     </svg>
-    <span class="text-lg font-semibold tracking-tight">Shadcn Weekly</span>
+    <span class="text-lg font-semibold tracking-tight">{SITE.NAME}</span>
   </a>
 
-  <div class="flex items-center gap-6">
+  <nav class="flex items-center gap-6">
     <a
-      href="/tools"
+      href={ROUTES.TOOLS}
       class="text-sm text-muted-foreground transition-colors hover:text-foreground"
     >
       Tools
     </a>
     <a
-      href="/archive"
+      href={ROUTES.ARCHIVE}
       class="text-sm text-muted-foreground transition-colors hover:text-foreground"
     >
       Archive
     </a>
-  </div>
-</nav>
+  </nav>
+</header>

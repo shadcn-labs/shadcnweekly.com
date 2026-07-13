@@ -130,3 +130,7 @@
 @utility desc-text {
   @apply text-primary underline decoration-muted-foreground/50 underline-offset-2;
 }
+
+@utility link {
+  @apply underline transition-colors hover:text-foreground;
+}
