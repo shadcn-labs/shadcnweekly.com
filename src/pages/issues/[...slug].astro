@@ -1,6 +1,7 @@
 ---
 import { mdxComponents } from "@/components/mdx";
 import ArchiveTogetherWith from "@/components/archive-together-with.astro";
+import { IssueReader } from "@/components/issue-reader";
 import Layout from "@/layouts/site.astro";
 import { ArrowLeftIcon } from "lucide-react";
 import { getCollection, render } from "astro:content";
@@ -20,8 +21,16 @@ export const getStaticPaths = async () => {
 };
 
 const { issue } = Astro.props;
-const { Content } = await render(issue);
+const { Content, headings } = await render(issue);
 const imageSlug = issue.id.split("/").map(encodeURIComponent).join("/");
+const sections = headings.flatMap(({ depth, slug, text }) =>
+  depth === 2 || depth === 3 ? [{ depth, id: slug, label: text }] : []
+);
+const summary = issue.data.summary ?? {
+  bullets: issue.data.highlights,
+  explainer: `This issue is a curated guide to ${issue.data.highlights.join(", ")}. Open any section to learn what changed and follow the original source.`,
+  overview: issue.data.description,
+};
 
 const formattedDate = issue.data.date.toLocaleDateString("en-US", {
   day: "numeric",
@@ -94,9 +103,9 @@ const formattedDate = issue.data.date.toLocaleDateString("en-US", {
         }
       </header>
 
-      <div class="typeset typeset-issue text-left">
+      <article id="issue-article" class="typeset typeset-issue text-left">
         <Content components={mdxComponents} />
-        <div>
+        <div data-reader-ignore>
           <p>
             Have a link you want to share? Send me an email at{" "}
             <a href={`mailto:${LINKS.EMAIL}`}>{LINKS.EMAIL}</a>
@@ -106,7 +115,19 @@ const formattedDate = issue.data.date.toLocaleDateString("en-US", {
           </p>
           <p class="text-muted-foreground">👋 See you next week!</p>
         </div>
-      </div>
+      </article>
     </div>
   </div>
+
+  {
+    sections.length > 0 ? (
+      <IssueReader
+        articleId="issue-article"
+        client:load
+        sections={sections}
+        summary={summary}
+        title={issue.data.title}
+      />
+    ) : null
+  }
 </Layout>

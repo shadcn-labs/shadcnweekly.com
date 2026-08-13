@@ -11,6 +11,13 @@ const archive = defineCollection({
     highlights: z.array(z.string()).default([]),
     issue: z.number(),
     sponsor: z.url().optional(),
+    summary: z
+      .object({
+        bullets: z.array(z.string()),
+        explainer: z.string(),
+        overview: z.string(),
+      })
+      .optional(),
     title: z.string(),
   }),
 });
