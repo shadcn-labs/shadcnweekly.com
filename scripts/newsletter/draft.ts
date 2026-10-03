@@ -11,6 +11,7 @@ import type {
 import {
   HOUSE_SPONSOR,
   SPONSOR_BOOKINGS,
+  weekStart,
 } from "../../src/constants/sponsor-bookings.ts";
 import { fetchPageMeta } from "../../src/lib/page-meta.ts";
 import { collectCandidates } from "./collect.ts";
@@ -279,11 +280,6 @@ const section = (heading: string, entries: Entry[], candidates: Candidate[]) =>
 
 const componentPattern = (name: string) =>
   new RegExp(`<${name}\\b[\\s\\S]*?\\/>`, "u");
-
-const weekStart = (isoDate: string) => {
-  const day = new Date(`${isoDate}T00:00:00Z`).getUTCDay();
-  return addDays(isoDate, -((day + 6) % 7));
-};
 
 export interface IssueSponsors {
   primary: SponsorContent;

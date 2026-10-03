@@ -93,7 +93,7 @@ jobs:
 
           - Read the rendered issue on the Vercel Preview deployment for this PR at \`/issues/$ISSUE\`.
           - Edit anything directly in this PR: \`src/content/archive/$ISSUE.mdx\`, plus any new files in \`src/content/tools/\`.
-          - Sponsors (from \`src/constants/sponsor-bookings.ts\`): $SPONSORS
+          - Sponsors (from \`src/data/sponsor-bookings.json\`): $SPONSORS
           - **Merging publishes the issue and emails it to all Kit subscribers.** Close the PR to skip this week.
           EOF
           gh pr create --base main --head "$branch" \
