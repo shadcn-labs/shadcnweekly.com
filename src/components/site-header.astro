@@ -96,8 +96,8 @@ const bar =
       }
     </nav>
     <div class="mt-2 flex items-center justify-between border-t px-1 pt-3">
-      <GithubLink class="size-9" iconClass="size-5" />
-      <ThemeToggle size="md" />
+      <GithubLink class="h-9 min-w-9" iconClass="size-5" />
+      <ThemeToggle class="size-9" iconClass="size-5" />
     </div>
   </div>
 </header>
@@ -144,25 +144,25 @@ const bar =
 
   // Theme: persist the choice; the inline script in layouts/main.astro
   // applies it before first paint on later visits.
-  const themeButtons = document.querySelectorAll<HTMLButtonElement>(
-    "[data-theme-value]"
+  const themeToggles = document.querySelectorAll<HTMLButtonElement>(
+    "[data-theme-toggle]"
   );
-  const syncPressed = () => {
+  const syncLabel = () => {
     const dark = document.documentElement.classList.contains("dark");
-    for (const button of themeButtons) {
+    for (const button of themeToggles) {
       button.setAttribute(
-        "aria-pressed",
-        String((button.dataset.themeValue === "dark") === dark)
+        "aria-label",
+        dark ? "Switch to light theme" : "Switch to dark theme"
       );
     }
   };
-  for (const button of themeButtons) {
+  for (const button of themeToggles) {
     button.addEventListener("click", () => {
-      const theme = button.dataset.themeValue === "dark" ? "dark" : "light";
-      localStorage.setItem("theme", theme);
-      document.documentElement.classList.toggle("dark", theme === "dark");
-      syncPressed();
+      const dark = !document.documentElement.classList.contains("dark");
+      localStorage.setItem("theme", dark ? "dark" : "light");
+      document.documentElement.classList.toggle("dark", dark);
+      syncLabel();
     });
   }
-  syncPressed();
+  syncLabel();
 </script>
