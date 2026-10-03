@@ -44,16 +44,19 @@ const main = async () => {
   // The issue number is explicit (from the merged PR), so editing an older
   // issue later can never resend it.
   const number = Number(process.argv[2]);
+  // --preview creates an unscheduled draft (nothing is sent) under a distinct
+  // subject, so it never blocks the real send's duplicate check.
+  const preview = process.argv.includes("--preview");
   const issues = await readIssues();
   const issue = issues.find((entry) => entry.issue === number);
   if (!issue) {
     throw new Error(
-      `Usage: newsletter:send <issue>; issue "${process.argv[2]}" not found`
+      `Usage: newsletter:send <issue> [--preview]; issue "${process.argv[2]}" not found`
     );
   }
 
   const title = String(issue.frontmatter.title);
-  const subject = `Shadcn Weekly #${issue.issue}: ${title}`;
+  const subject = `${preview ? "[Preview] " : ""}Shadcn Weekly #${issue.issue}: ${title}`;
   const headers = {
     "Content-Type": "application/json",
     "X-Kit-Api-Key": apiKey,
@@ -81,7 +84,9 @@ const main = async () => {
   }
 
   const webUrl = `${SITE_URL}/issues/${issue.issue}`;
-  if (await waitUntilLive(webUrl)) {
+  if (preview) {
+    log("Preview draft: not waiting for the issue page");
+  } else if (await waitUntilLive(webUrl)) {
     log(`${webUrl} is live`);
   } else {
     warn(
@@ -104,7 +109,7 @@ const main = async () => {
         preview_text: String(issue.frontmatter.description ?? ""),
         public: false,
         published_at: new Date(now).toISOString(),
-        send_at: new Date(now + SEND_DELAY_MS).toISOString(),
+        send_at: preview ? null : new Date(now + SEND_DELAY_MS).toISOString(),
         subject,
       }),
       headers,
@@ -112,7 +117,11 @@ const main = async () => {
     },
     { retries: 0 }
   );
-  log(`Scheduled Kit broadcast ${broadcast.id} for ${broadcast.send_at}`);
+  log(
+    preview
+      ? `Created draft broadcast ${broadcast.id} "${subject}" (not scheduled; open Broadcasts in Kit)`
+      : `Scheduled Kit broadcast ${broadcast.id} for ${broadcast.send_at}`
+  );
 };
 
 if (process.argv[1] === import.meta.filename) {
