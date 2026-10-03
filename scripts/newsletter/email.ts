@@ -181,5 +181,6 @@ export const renderEmailPreview = async (issue: Issue, webUrl: string) => {
   return template
     .replace("{{ message_content }}", await renderEmailHtml(issue, webUrl))
     .replace("{{ unsubscribe_url }}", "#unsubscribe")
+    .replace("{{ subscriber_preferences_url }}", "#preferences")
     .replace("{{ address }}", "Your mailing address (from Kit settings)");
 };
