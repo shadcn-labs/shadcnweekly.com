@@ -1,0 +1,111 @@
+name: Weekly newsletter
+
+on:
+  schedule:
+    # Mondays 06:00 UTC. The 10:00 run is a safety net: every step is
+    # idempotent, so it only finishes whatever the first run could not.
+    - cron: "0 6 * * 1"
+    - cron: "0 10 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  deployments: read
+
+concurrency:
+  group: newsletter
+  cancel-in-progress: false
+
+env:
+  LEFTHOOK: 0
+  # Commits are authored as the site owner so Vercel builds them.
+  GIT_AUTHOR_NAME: Aniket-508
+  GIT_AUTHOR_EMAIL: pawaraniket508@gmail.com
+  GIT_COMMITTER_NAME: github-actions[bot]
+  GIT_COMMITTER_EMAIL: 41898282+github-actions[bot]@users.noreply.github.com
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 75
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: Draft issue
+        id: draft
+        run: pnpm newsletter:draft
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          TINYFISH_API_KEY: ${{ secrets.TINYFISH_API_KEY }}
+          FIRECRAWL_API_KEY: ${{ secrets.FIRECRAWL_API_KEY }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Validate site build
+        run: pnpm build
+
+      # `main` requires a successful Vercel Preview deployment of a commit
+      # before it can land, so: push a branch, wait for its Preview, then
+      # fast-forward `main` to that exact commit (Vercel then deploys prod).
+      - name: Commit issue to branch
+        id: commit
+        env:
+          ISSUE: ${{ steps.draft.outputs.issue }}
+        run: |
+          git add src/content
+          if git diff --cached --quiet; then
+            echo "Issue #$ISSUE is already committed"
+            exit 0
+          fi
+          branch="newsletter/issue-$ISSUE"
+          git commit -m "feat: add newsletter issue #$ISSUE"
+          git push --force origin "HEAD:refs/heads/$branch"
+          echo "branch=$branch" >> "$GITHUB_OUTPUT"
+          echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+
+      - name: Wait for Vercel Preview deployment
+        if: steps.commit.outputs.sha
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SHA: ${{ steps.commit.outputs.sha }}
+        run: |
+          for _ in $(seq 1 90); do
+            id=$(gh api "repos/$GITHUB_REPOSITORY/deployments?sha=$SHA&environment=Preview" --jq '.[0].id // empty')
+            if [ -n "$id" ]; then
+              state=$(gh api "repos/$GITHUB_REPOSITORY/deployments/$id/statuses" --jq '.[0].state // "pending"')
+              echo "Preview deployment $id: $state"
+              case "$state" in
+                success) exit 0 ;;
+                failure|error) echo "::error::Vercel Preview deployment failed"; exit 1 ;;
+              esac
+            else
+              echo "Waiting for Vercel to create the Preview deployment..."
+            fi
+            sleep 20
+          done
+          echo "::error::Timed out waiting for the Vercel Preview deployment"
+          exit 1
+
+      - name: Fast-forward main
+        if: steps.commit.outputs.sha
+        env:
+          BRANCH: ${{ steps.commit.outputs.branch }}
+          SHA: ${{ steps.commit.outputs.sha }}
+        run: |
+          git push origin "$SHA:refs/heads/main"
+          git push origin --delete "$BRANCH"
+
+      - name: Send via Kit
+        run: pnpm newsletter:send
+        env:
+          KIT_API_KEY: ${{ secrets.KIT_API_KEY }}
