@@ -1,1 +1,12 @@
-[]
+[
+  {
+    "paymentId": "pay_smoketest_1791031748",
+    "placement": "primary",
+    "weeks": [
+      "2026-10-26"
+    ],
+    "website": "https://example.com",
+    "name": "Smoke Test (ignore)",
+    "description": "Automated test booking; this PR will be closed."
+  }
+]
