@@ -135,8 +135,8 @@ export const openBookingPullRequest = async (
     `- **Image:** ${booking.image ?? "(website preview image)"}`,
     "",
     conflicts.length > 0
-      ? `> [!WARNING]\n> Already booked on \`main\` for ${conflicts.join(", ")}. Move this booking to free weeks (or refund) before merging.`
-      : "No conflicts with bookings on `main`.",
+      ? `> [!WARNING]\n> Already booked on \`${BASE}\` for ${conflicts.join(", ")}. Move this booking to free weeks (or refund) before merging.`
+      : `No conflicts with bookings on \`${BASE}\`.`,
     "",
     "Review the copy, then merge to schedule it. Issues drafted for these weeks will include the sponsor automatically.",
   ].join("\n");
