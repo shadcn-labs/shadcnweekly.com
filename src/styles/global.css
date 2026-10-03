@@ -135,3 +135,8 @@
 @utility link {
   @apply underline transition-colors hover:text-foreground;
 }
+
+.issue-reader-block-active {
+  background-color: oklch(0.82 0.1 232 / 0.32);
+  border-radius: 0.25rem;
+}
