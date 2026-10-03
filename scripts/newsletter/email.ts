@@ -4,8 +4,9 @@ import { Marked } from "marked";
 
 import { LINKS } from "../../src/constants/links.ts";
 import { fetchPageMeta } from "../../src/lib/page-meta.ts";
+import { isSvgUrl, sponsorLogoHost } from "../../src/lib/sponsor-logo.ts";
 import type { Issue } from "./lib.ts";
-import { SITE_URL } from "./lib.ts";
+import { request, SITE_URL } from "./lib.ts";
 
 /**
  * Email rendering mirrors the issue page (`src/pages/issues/[...slug].astro`
@@ -91,7 +92,30 @@ const prop = (attributes: string, name: string) => {
 
 /** SVG images are dropped because Gmail and Outlook do not render them. */
 const emailImage = (src: string | undefined) =>
-  src && !/\.svg(?:$|\?)/iu.test(src) ? src : undefined;
+  src && !isSvgUrl(src) ? src : undefined;
+
+/**
+ * Raster logos are used as-is. SVG logos use the site's build-time PNG
+ * conversion (`src/pages/email/sponsor-logos/[host].png.ts`) once deployed;
+ * without it the logo is omitted.
+ */
+const sponsorLogo = async (
+  website: string,
+  logo: string | undefined
+): Promise<string | undefined> => {
+  if (!logo || !isSvgUrl(logo)) {
+    return logo;
+  }
+  const converted = `${SITE_URL}/email/sponsor-logos/${sponsorLogoHost(website)}.png`;
+  try {
+    const res = await request(converted, { method: "HEAD" }, { retries: 1 });
+    if (res.ok) {
+      return converted;
+    }
+  } catch {
+    // Unreachable or not deployed yet: the logo is omitted.
+  }
+};
 
 const sponsorSection = async (attributes: string) => {
   const website = prop(attributes, "website");
@@ -118,7 +142,7 @@ const sponsorSection = async (attributes: string) => {
 
 const togetherWith = async (website: string) => {
   const meta = await fetchPageMeta(website);
-  const logo = emailImage(meta.logo);
+  const logo = await sponsorLogo(website, meta.logo);
   const logoHtml = logo
     ? `<img src="${escapeHtml(logo)}" alt="" width="20" height="20" style="vertical-align:middle;border-radius:4px;margin-right:6px" />`
     : "";

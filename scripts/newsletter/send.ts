@@ -62,13 +62,14 @@ const main = async () => {
     "X-Kit-Api-Key": apiKey,
   };
 
+  // Duplicate protection guards real sends; previews may be re-created freely.
   const { broadcasts } = await requestJson<{
     broadcasts: { id: number; subject: string }[];
   }>(`${KIT_API}/broadcasts?slim=true&per_page=100`, { headers });
   const duplicate = broadcasts.find(
     (broadcast) => broadcast.subject === subject
   );
-  if (duplicate) {
+  if (duplicate && !preview) {
     log(`Kit broadcast ${duplicate.id} already exists for "${subject}"`);
     return;
   }
