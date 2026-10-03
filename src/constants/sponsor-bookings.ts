@@ -1,30 +1,54 @@
+import { z } from "zod";
+
+import bookingsData from "../data/sponsor-bookings.json" with { type: "json" };
+
 /**
- * Sponsor schedule used when the weekly issue is drafted
- * (`scripts/newsletter/draft.ts`).
+ * Sponsor schedule, stored in `src/data/sponsor-bookings.json` so the Dodo
+ * webhook can add paid bookings by pull request. Read by the issue drafter
+ * (`scripts/newsletter/draft.ts`), the /sponsor page and the checkout API.
  *
  * - `primary`: "Together with" in the issue header plus the sponsor block in
  *   the first half (the "1st Sponsor" placement).
  * - `secondary`: sponsor block after "Projects, Packages & Tools" (the
  *   "2nd Sponsor" placement).
  *
- * A booking runs in every week listed in `weeks`; any date inside the target
- * week (Monday–Sunday) works, e.g. the Monday the issue goes out. A 4-issue
- * bundle lists 4 weeks; give each week its own booking when the copy differs.
- *
- * Unset `name` / `title` / `description` / `image` are read from the
- * sponsor's website metadata at build time.
+ * `weeks` holds the Monday (YYYY-MM-DD) of each issue week the booking runs;
+ * any date inside a Monday–Sunday week matches that week. Unset `name` /
+ * `title` / `description` / `image` are read from the sponsor's website
+ * metadata at build time. Add bookings by hand for deals made off-site.
  */
-export interface SponsorBooking {
-  placement: "primary" | "secondary";
-  weeks: string[];
-  website: string;
-  name?: string;
-  title?: string;
-  description?: string;
-  image?: string;
-}
+/** Sponsor links render as hrefs on the site and in email: http(s) only. */
+export const httpUrl = z.url({ protocol: /^https?$/u }).max(500);
 
-export type SponsorContent = Omit<SponsorBooking, "placement" | "weeks">;
+export const sponsorContentSchema = z.object({
+  description: z.string().min(10).max(200).optional(),
+  image: httpUrl.optional(),
+  name: z.string().min(1).max(45).optional(),
+  title: z.string().min(1).max(80).optional(),
+  website: httpUrl,
+});
+
+export const sponsorPlacementSchema = z.enum(["primary", "secondary"]);
+
+const isoDateSchema = z
+  .string()
+  .regex(/^\d{4}-\d{2}-\d{2}$/u, "Use YYYY-MM-DD");
+
+export const sponsorBookingSchema = sponsorContentSchema.extend({
+  /** Dodo payment that bought this booking; absent for manual bookings. */
+  paymentId: z.string().optional(),
+  placement: sponsorPlacementSchema,
+  weeks: z.array(isoDateSchema).min(1),
+});
+
+export type SponsorContent = z.infer<typeof sponsorContentSchema>;
+export type SponsorPlacement = z.infer<typeof sponsorPlacementSchema>;
+export type SponsorBooking = z.infer<typeof sponsorBookingSchema>;
+
+/** Fails the build on a malformed booking instead of sending a broken issue. */
+export const SPONSOR_BOOKINGS: SponsorBooking[] = z
+  .array(sponsorBookingSchema)
+  .parse(bookingsData);
 
 /** Fills the primary slot in weeks without a primary booking. */
 export const HOUSE_SPONSOR: SponsorContent = {
@@ -32,13 +56,55 @@ export const HOUSE_SPONSOR: SponsorContent = {
   website: "https://www.shadcn-labs.com",
 };
 
-export const SPONSOR_BOOKINGS: SponsorBooking[] = [
-  // {
-  //   placement: "primary",
-  //   weeks: ["2026-10-12", "2026-10-19", "2026-10-26", "2026-11-02"],
-  //   website: "https://example.com/?utm_source=shadcnweekly&utm_medium=newsletter",
-  //   title: "Headline shown under the image",
-  //   description: "One or two sentences of sponsor copy.",
-  //   image: "https://example.com/banner.png",
-  // },
-];
+const DAY_MS = 86_400_000;
+
+/** Monday (YYYY-MM-DD, UTC) of the week containing `isoDate`. */
+export const weekStart = (isoDate: string) => {
+  const date = new Date(`${isoDate}T00:00:00Z`);
+  const offset = (date.getUTCDay() + 6) % 7;
+  return new Date(date.getTime() - offset * DAY_MS).toISOString().slice(0, 10);
+};
+
+/** Mondays of issue weeks already taken for `placement`. */
+export const bookedWeeks = (
+  placement: SponsorPlacement,
+  bookings: SponsorBooking[] = SPONSOR_BOOKINGS
+) => {
+  const taken = new Set<string>();
+  for (const booking of bookings) {
+    if (booking.placement === placement) {
+      for (const week of booking.weeks) {
+        taken.add(weekStart(week));
+      }
+    }
+  }
+  return taken;
+};
+
+/** Time to review and merge a booking PR before that week's issue is drafted. */
+const MIN_LEAD_DAYS = 3;
+
+/**
+ * Upcoming issue Mondays still open for `placement`: the next `count` Mondays
+ * at least MIN_LEAD_DAYS after `today`, minus booked weeks.
+ */
+export const availableWeeks = (
+  placement: SponsorPlacement,
+  { count = 12, today = new Date(), bookings = SPONSOR_BOOKINGS } = {}
+) => {
+  const taken = bookedWeeks(placement, bookings);
+  const earliest = today.getTime() + MIN_LEAD_DAYS * DAY_MS;
+  const thisMonday = weekStart(today.toISOString().slice(0, 10));
+  let monday = Date.parse(`${thisMonday}T00:00:00Z`) + 7 * DAY_MS;
+  if (monday < earliest) {
+    monday += 7 * DAY_MS;
+  }
+  const open: string[] = [];
+  for (let index = 0; index < count; index += 1, monday += 7 * DAY_MS) {
+    const week = new Date(monday).toISOString().slice(0, 10);
+    if (!taken.has(week)) {
+      open.push(week);
+    }
+  }
+  return open;
+};

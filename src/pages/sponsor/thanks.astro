@@ -1,0 +1,45 @@
+---
+import { ArrowLeftIcon } from "lucide-react";
+
+import { LINKS } from "@/constants/links";
+import { ROUTES } from "@/constants/routes";
+import { SITE } from "@/constants/site";
+import Layout from "@/layouts/site.astro";
+
+export const prerender = true;
+---
+
+<Layout
+  title="Thanks for sponsoring"
+  description={`Your ${SITE.NAME} sponsorship booking.`}
+>
+  <meta slot="head" name="robots" content="noindex" />
+  <div class="flex flex-1 flex-col items-center py-16">
+    <div class="flex max-w-2xl flex-col gap-6">
+      <div>
+        <a
+          href={ROUTES.SPONSOR}
+          class="inline-flex text-sm items-center gap-2 text-muted-foreground transition-colors hover:text-foreground"
+        >
+          <ArrowLeftIcon className="size-4" />
+          Back to sponsorships
+        </a>
+      </div>
+      <h1 class="text-3xl font-semibold tracking-tight">
+        Thanks for sponsoring {SITE.NAME}!
+      </h1>
+      <div class="flex flex-col gap-3 leading-relaxed text-muted-foreground">
+        <p>
+          Once your payment is confirmed, your booking is queued for review and
+          you'll receive a receipt by email. Your sponsorship runs in the
+          issue weeks you picked.
+        </p>
+        <p>
+          Need to change your copy, image, or weeks? Email{" "}
+          <a href={`mailto:${LINKS.EMAIL}`} class="link">{LINKS.EMAIL}</a> with
+          your payment receipt.
+        </p>
+      </div>
+    </div>
+  </div>
+</Layout>

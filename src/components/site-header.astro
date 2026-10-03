@@ -2,6 +2,8 @@
 import { SITE } from "@/constants/site";
 import { ROUTES } from "@/constants/routes";
 import { Logo } from "@/components/logo";
+import { buttonVariants } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 ---
 
 <header class="flex items-center justify-between px-6 py-4">
@@ -25,6 +27,12 @@ import { Logo } from "@/components/logo";
       class="text-sm text-muted-foreground transition-colors hover:text-foreground"
     >
       Archive
+    </a>
+    <a
+      href={ROUTES.SPONSOR}
+      class={cn(buttonVariants({ variant: "default" }), "rounded-full")}
+    >
+      Sponsor
     </a>
   </nav>
 </header>
