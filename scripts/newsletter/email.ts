@@ -77,9 +77,17 @@ const markdown = new Marked({
   },
 });
 
-const prop = (attributes: string, name: string) =>
-  new RegExp(`\\b${name}="(?<value>[^"]*)"`, "u").exec(attributes)?.groups
-    ?.value;
+/** Reads `name="value"` or `name={"json string"}` from JSX attributes. */
+const prop = (attributes: string, name: string) => {
+  const groups = new RegExp(
+    `\\b${name}=(?:"(?<plain>[^"]*)"|\\{(?<json>"(?:[^"\\\\]|\\\\.)*")\\})`,
+    "u"
+  ).exec(attributes)?.groups;
+  if (groups?.json) {
+    return JSON.parse(groups.json) as string;
+  }
+  return groups?.plain;
+};
 
 /** SVG images are dropped because Gmail and Outlook do not render them. */
 const emailImage = (src: string | undefined) =>
@@ -121,20 +129,28 @@ const togetherWith = async (website: string) => {
 export const renderEmailHtml = async (issue: Issue, webUrl: string) => {
   // MDX block components start a line; anchoring avoids matching JSX-like
   // text inside code spans (e.g. `<Message>`).
-  const sponsorMatch = /^<ArchiveSponsorSection\b(?<attrs>[\s\S]*?)\/>/mu.exec(
-    issue.body
+  const sponsorBlocks = [
+    ...issue.body.matchAll(/^<ArchiveSponsorSection\b(?<attrs>[\s\S]*?)\/>/gmu),
+  ];
+  const sponsors = await Promise.all(
+    sponsorBlocks.map((match) => sponsorSection(match.groups?.attrs ?? ""))
   );
-  const sponsor = sponsorMatch?.groups
-    ? await sponsorSection(sponsorMatch.groups.attrs)
-    : "";
+  let sponsorIndex = 0;
   const source = issue.body
-    .replace(/^<ArchiveSponsorSection\b[\s\S]*?\/>/mu, "SPONSOR_PLACEHOLDER")
+    .replaceAll(/^<ArchiveSponsorSection\b[\s\S]*?\/>/gmu, () => {
+      const placeholder = `SPONSOR_PLACEHOLDER_${sponsorIndex}`;
+      sponsorIndex += 1;
+      return placeholder;
+    })
     // Remaining JSX components (e.g. SubscribeSection) are site-only.
     .replaceAll(/^<[A-Z][A-Za-z]*\b[\s\S]*?\/>/gmu, "");
   const rendered = await markdown.parse(source);
-  const body = rendered.replace(
-    /<p style="[^"]*">SPONSOR_PLACEHOLDER<\/p>/u,
-    sponsor
+  const body = rendered.replaceAll(
+    /<p style="[^"]*">SPONSOR_PLACEHOLDER_(?<index>\d+)<\/p>/gu,
+    (...args) => {
+      const groups = args.at(-1) as { index: string };
+      return sponsors[Number(groups.index)] ?? "";
+    }
   );
 
   const title = String(issue.frontmatter.title);

@@ -4,6 +4,14 @@ import { writeFile } from "node:fs/promises";
 import { stringify as stringifyYaml } from "yaml";
 import { z } from "zod";
 
+import type {
+  SponsorBooking,
+  SponsorContent,
+} from "../../src/constants/sponsor-bookings.ts";
+import {
+  HOUSE_SPONSOR,
+  SPONSOR_BOOKINGS,
+} from "../../src/constants/sponsor-bookings.ts";
 import { fetchPageMeta } from "../../src/lib/page-meta.ts";
 import { collectCandidates } from "./collect.ts";
 import type { Candidate, Issue } from "./lib.ts";
@@ -272,24 +280,74 @@ const section = (heading: string, entries: Entry[], candidates: Candidate[]) =>
 const componentPattern = (name: string) =>
   new RegExp(`<${name}\\b[\\s\\S]*?\\/>`, "u");
 
+const weekStart = (isoDate: string) => {
+  const day = new Date(`${isoDate}T00:00:00Z`).getUTCDay();
+  return addDays(isoDate, -((day + 6) % 7));
+};
+
+export interface IssueSponsors {
+  primary: SponsorContent;
+  primaryBooked: boolean;
+  secondary?: SponsorContent;
+}
+
+/** Sponsors booked for the issue's Monday–Sunday week. */
+export const pickSponsors = (
+  date: string,
+  bookings: SponsorBooking[] = SPONSOR_BOOKINGS
+): IssueSponsors => {
+  const week = weekStart(date);
+  const booked = (placement: SponsorBooking["placement"]) => {
+    const matches = bookings.filter(
+      (booking) =>
+        booking.placement === placement &&
+        booking.weeks.some((day) => weekStart(day) === week)
+    );
+    if (matches.length > 1) {
+      warn(
+        `${matches.length} ${placement} sponsor bookings for the week of ${week}; using the first`
+      );
+    }
+    return matches.at(0);
+  };
+  const primary = booked("primary");
+  return {
+    primary: primary ?? HOUSE_SPONSOR,
+    primaryBooked: Boolean(primary),
+    secondary: booked("secondary"),
+  };
+};
+
+/** JSON expression attributes keep quotes and braces in sponsor copy safe. */
+const sponsorComponent = (sponsor: SponsorContent) => {
+  const attributes = (
+    ["website", "name", "title", "description", "image"] as const
+  )
+    .filter((key) => sponsor[key])
+    .map((key) => `  ${key}={${JSON.stringify(sponsor[key])}}`);
+  return `<ArchiveSponsorSection\n${attributes.join("\n")}\n/>`;
+};
+
 export const renderIssueMdx = (
   draft: Draft,
   candidates: Candidate[],
-  meta: { issue: number; date: string; previous?: Issue }
+  meta: {
+    issue: number;
+    date: string;
+    sponsors: IssueSponsors;
+    previous?: Issue;
+  }
 ): string => {
-  const sponsor = meta.previous?.frontmatter.sponsor;
+  const { sponsors } = meta;
   const frontmatter = stringifyYaml({
     date: meta.date,
     description: draft.description,
     highlights: draft.highlights,
     issue: meta.issue,
-    ...(typeof sponsor === "string" ? { sponsor } : {}),
+    sponsor: sponsors.primary.website,
     title: draft.title,
   }).trim();
 
-  const sponsorBlock = meta.previous?.body.match(
-    componentPattern("ArchiveSponsorSection")
-  )?.[0];
   const subscribeBlock =
     meta.previous?.body.match(componentPattern("SubscribeSection"))?.[0] ??
     DEFAULT_SUBSCRIBE_SECTION;
@@ -305,10 +363,11 @@ export const renderIssueMdx = (
     );
   }
 
-  const middle = [sponsorBlock, subscribeBlock].filter(Boolean).join("\n\n");
+  const middle = `${sponsorComponent(sponsors.primary)}\n\n${subscribeBlock}`;
   const sections = [
     ...section("📙 Articles, Tutorials & News", draft.articles, candidates),
     ...section("📦 Projects, Packages & Tools", draft.projects, candidates),
+    ...(sponsors.secondary ? [sponsorComponent(sponsors.secondary)] : []),
     ...section("🌈 Related", draft.related, candidates),
   ];
 
@@ -381,13 +440,23 @@ const main = async () => {
   }
 
   const draft = await writeDraft(candidates, previous?.body ?? "");
+  const sponsors = pickSponsors(today);
   await writeFile(
     `${ARCHIVE_DIR}/${issue}.mdx`,
-    renderIssueMdx(draft, candidates, { date: today, issue, previous })
+    renderIssueMdx(draft, candidates, {
+      date: today,
+      issue,
+      previous,
+      sponsors,
+    })
   );
   await writeTools(draft, candidates, issue);
   await setOutput("issue", String(issue));
   await setOutput("title", draft.title.replaceAll("\n", " "));
+  await setOutput(
+    "sponsors",
+    `1st: ${sponsors.primary.website}${sponsors.primaryBooked ? "" : " (house, no booking)"} · 2nd: ${sponsors.secondary?.website ?? "none booked"}`
+  );
   log(`Wrote ${ARCHIVE_DIR}/${issue}.mdx`);
 };
 
