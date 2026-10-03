@@ -10,6 +10,11 @@ export const SITE = {
   },
   LOCALE: "en_US",
   NAME: "Shadcn Weekly",
+  /** Organization that publishes the newsletter (copyright holder). */
+  ORG: {
+    NAME: "Shadcn Labs",
+    URL: "https://www.shadcn-labs.com",
+  },
   URL: import.meta.env.SITE as string,
 };
 

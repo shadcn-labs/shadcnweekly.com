@@ -23,10 +23,14 @@ const seoProps = Astro.props;
   <head>
     <Head {...seoProps} />
     <script is:inline>
-      const theme = window.matchMedia("(prefers-color-scheme: dark)").matches
-        ? "dark"
-        : "light";
-      document.documentElement.classList.toggle("dark", theme === "dark");
+      // Saved choice from the header toggle wins; otherwise follow the system.
+      // Inline so the class is set before first paint (no flash).
+      const saved = localStorage.getItem("theme");
+      const dark =
+        saved === "dark" ||
+        (saved !== "light" &&
+          window.matchMedia("(prefers-color-scheme: dark)").matches);
+      document.documentElement.classList.toggle("dark", dark);
     </script>
   </head>
   <body class="antialiased flex flex-col min-h-svh">

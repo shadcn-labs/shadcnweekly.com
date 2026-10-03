@@ -6,15 +6,11 @@ import { ROUTES } from "@/constants/routes";
 <footer class="flex flex-col items-center gap-4 px-6 pb-8 pt-4">
   <div class="flex items-center gap-2 text-sm text-muted-foreground">
     <a href={ROUTES.PRIVACY} class="transition-colors hover:text-foreground">
-      Privacy Policy
+      Privacy
     </a>
     <span>&middot;</span>
     <a href={ROUTES.CONTACT} class="transition-colors hover:text-foreground">
       Contact
-    </a>
-    <span>&middot;</span>
-    <a href={ROUTES.SPONSOR} class="transition-colors hover:text-foreground">
-      Sponsor
     </a>
   </div>
 
@@ -22,7 +18,12 @@ import { ROUTES } from "@/constants/routes";
     class="flex flex-col items-center gap-1 text-[10px] leading-tight text-muted-foreground/60"
   >
     <p>
-      &copy; 2026 {SITE.NAME} | Curated by <a
+      &copy; 2026 <a
+        href={SITE.ORG.URL}
+        target="_blank"
+        rel="noopener noreferrer"
+        class="link">{SITE.ORG.NAME}</a
+      > | Curated by <a
         href={SITE.AUTHOR.URL}
         target="_blank"
         rel="noopener noreferrer"
