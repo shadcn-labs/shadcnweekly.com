@@ -11,7 +11,10 @@
     "typecheck": "astro check",
     "check": "ultracite check",
     "fix": "ultracite fix",
-    "prepare": "lefthook install"
+    "prepare": "lefthook install",
+    "newsletter:draft": "node scripts/newsletter/draft.ts",
+    "newsletter:send": "node scripts/newsletter/send.ts",
+    "newsletter:preview": "node scripts/newsletter/preview.ts"
   },
   "dependencies": {
     "@astrojs/mdx": "^5.0.6",
@@ -48,11 +51,13 @@
     "eslint-plugin-github": "6.0.0",
     "eslint-plugin-sonarjs": "^4.1.0",
     "lefthook": "^2.1.9",
+    "marked": "^18.0.14",
     "oxfmt": "^0.57.0",
     "oxlint": "^1.72.0",
     "oxlint-plugin-react-doctor": "^0.7.1",
     "typescript": "~6",
-    "ultracite": "7.9.2"
+    "ultracite": "7.9.2",
+    "yaml": "^2.9.1"
   },
   "engines": {
     "node": ">=22.12.0"
