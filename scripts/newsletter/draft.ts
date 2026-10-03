@@ -387,6 +387,7 @@ const main = async () => {
   );
   await writeTools(draft, candidates, issue);
   await setOutput("issue", String(issue));
+  await setOutput("title", draft.title.replaceAll("\n", " "));
   log(`Wrote ${ARCHIVE_DIR}/${issue}.mdx`);
 };
 

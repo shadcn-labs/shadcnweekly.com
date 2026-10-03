@@ -1,0 +1,98 @@
+name: Draft newsletter issue
+
+on:
+  schedule:
+    # Mondays 06:00 UTC. The 10:00 run is a safety net: it does nothing if
+    # the first run already opened the PR.
+    - cron: "0 6 * * 1"
+    - cron: "0 10 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: newsletter-draft
+  cancel-in-progress: false
+
+env:
+  LEFTHOOK: 0
+  # Commits are authored as the site owner so Vercel builds a Preview for them.
+  GIT_AUTHOR_NAME: Aniket-508
+  GIT_AUTHOR_EMAIL: pawaraniket508@gmail.com
+  GIT_COMMITTER_NAME: github-actions[bot]
+  GIT_COMMITTER_EMAIL: 41898282+github-actions[bot]@users.noreply.github.com
+  GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+jobs:
+  draft:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+
+      # An unmerged draft PR means last issue's number is still pending; a new
+      # draft would reuse it and overwrite your review edits.
+      - name: Skip if a draft PR is still open
+        id: open
+        run: |
+          open=$(gh pr list --state open --json headRefName,url \
+            --jq '[.[] | select(.headRefName | startswith("newsletter/issue-"))][0].url // empty')
+          if [ -n "$open" ]; then
+            echo "::notice::Newsletter PR still open, merge or close it first: $open"
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - uses: pnpm/action-setup@v4
+        if: steps.open.outputs.skip != 'true'
+        with:
+          version: 10
+
+      - uses: actions/setup-node@v4
+        if: steps.open.outputs.skip != 'true'
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - if: steps.open.outputs.skip != 'true'
+        run: pnpm install --frozen-lockfile
+
+      - name: Draft issue
+        id: draft
+        if: steps.open.outputs.skip != 'true'
+        run: pnpm newsletter:draft
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          TINYFISH_API_KEY: ${{ secrets.TINYFISH_API_KEY }}
+          FIRECRAWL_API_KEY: ${{ secrets.FIRECRAWL_API_KEY }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Validate site build
+        if: steps.open.outputs.skip != 'true'
+        run: pnpm build
+
+      - name: Open pull request
+        if: steps.open.outputs.skip != 'true'
+        env:
+          ISSUE: ${{ steps.draft.outputs.issue }}
+          TITLE: ${{ steps.draft.outputs.title }}
+        run: |
+          git add src/content
+          if git diff --cached --quiet; then
+            echo "Issue #$ISSUE is already on main"
+            exit 0
+          fi
+          branch="newsletter/issue-$ISSUE"
+          git switch -c "$branch"
+          git commit -m "feat: add newsletter issue #$ISSUE"
+          git push --force origin "$branch"
+          cat > "$RUNNER_TEMP/body.md" <<EOF
+          Automated draft of **Shadcn Weekly #$ISSUE**.
+
+          - Read the rendered issue on the Vercel Preview deployment for this PR at \`/issues/$ISSUE\`.
+          - Edit anything directly in this PR: \`src/content/archive/$ISSUE.mdx\`, plus any new files in \`src/content/tools/\`.
+          - **Merging publishes the issue and emails it to all Kit subscribers.** Close the PR to skip this week.
+          EOF
+          gh pr create --base main --head "$branch" \
+            --title "Newsletter #$ISSUE: $TITLE" --body-file "$RUNNER_TEMP/body.md"

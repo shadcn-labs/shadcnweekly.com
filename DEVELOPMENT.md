@@ -54,25 +54,25 @@ pnpm preview
 
 ## Scripts
 
-| Script           | Description              |
-| ---------------- | ------------------------ |
-| `pnpm dev`       | Start development server |
-| `pnpm build`     | Build for production     |
-| `pnpm preview`   | Preview production build |
-| `pnpm typecheck` | Run type checking        |
-| `pnpm fix`       | Lint and fix code        |
-| `pnpm check`     | Lint code                |
+| Script | Description |
+| --- | --- |
+| `pnpm dev` | Start development server |
+| `pnpm build` | Build for production |
+| `pnpm preview` | Preview production build |
+| `pnpm typecheck` | Run type checking |
+| `pnpm fix` | Lint and fix code |
+| `pnpm check` | Lint code |
 | `pnpm newsletter:draft` | Collect sources and write the next issue (`--dry-run` prints candidates only) |
-| `pnpm newsletter:send`  | Schedule the latest issue as a Kit broadcast |
+| `pnpm newsletter:send <n>` | Schedule issue `<n>` as a Kit broadcast |
 
 ## Newsletter Automation
 
-`.github/workflows/newsletter.yml` publishes an issue every Monday (06:00 UTC, with an idempotent 10:00 UTC safety run):
+Every Monday (06:00 UTC, with a 10:00 UTC safety run) `.github/workflows/newsletter-draft.yml` opens a PR with the next issue; merging it sends the email.
 
 1. **Collect** (`scripts/newsletter/collect.ts`) items since the last issue (max 7 days): X via FxTwitter search, new entries in the official shadcn/ui registry directory, new awesome-shadcn-ui rows, TinyFish web search (Firecrawl fallback), Hacker News and new GitHub repos. Already-published URLs are dropped; a failing source is skipped with a warning.
 2. **Draft** (`scripts/newsletter/draft.ts`) with Gemini (free tier). The model references collected items by id, so every link comes from a source. Output is validated, rendered to `src/content/archive/<n>.mdx` in the standard layout (sponsor and subscribe blocks copied from the previous issue), and new projects are added to `src/content/tools/`.
 3. **Validate** with `pnpm build`.
-4. **Publish**: push branch `newsletter/issue-<n>`, wait for its Vercel Preview deployment (required by the `main` ruleset), fast-forward `main` to that commit; Vercel deploys production.
-5. **Send** (`scripts/newsletter/send.ts`): wait for `/issues/<n>` to be live, then schedule a Kit broadcast (all subscribers, 5 minutes out). Skipped if a broadcast with the same subject exists.
+4. **Open PR** from branch `newsletter/issue-<n>`. Vercel deploys a Preview for review; edit content in the PR as needed. If a previous newsletter PR is still open, drafting is skipped until it is merged or closed.
+5. **Send on merge** (`.github/workflows/newsletter-send.yml`, `scripts/newsletter/send.ts`): when a push to `main` adds an archive issue, wait for `/issues/<n>` to be live, then schedule a Kit broadcast (all subscribers, 5 minutes out). Editing an existing issue never resends it; a broadcast with the same subject is never created twice. Resend manually via "Run workflow" with the issue number.
 
 Required repository secrets: `GEMINI_API_KEY`, `TINYFISH_API_KEY`, `KIT_API_KEY`. Optional: `FIRECRAWL_API_KEY` (search fallback). Run manually from the Actions tab via "Run workflow". Failed runs email the repository owner.

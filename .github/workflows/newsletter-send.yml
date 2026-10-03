@@ -1,0 +1,72 @@
+name: Send newsletter issue
+
+on:
+  # Fires when a reviewed draft PR is merged (or an issue is pushed directly).
+  push:
+    branches: [main]
+    paths: ["src/content/archive/**"]
+  workflow_dispatch:
+    inputs:
+      issue:
+        description: Issue number to (re)send; skipped if Kit already has it
+        required: true
+
+permissions:
+  contents: read
+
+concurrency:
+  group: newsletter-send
+  cancel-in-progress: false
+
+jobs:
+  send:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      # Only issues *added* by this push are sent, so editing an old issue
+      # never emails it again.
+      - name: Find new issues
+        id: issues
+        env:
+          BEFORE: ${{ github.event.before }}
+          AFTER: ${{ github.sha }}
+          INPUT: ${{ inputs.issue }}
+        run: |
+          if [ -n "$INPUT" ]; then
+            list="$INPUT"
+          else
+            list=$(git diff --name-only --diff-filter=A "$BEFORE" "$AFTER" -- src/content/archive \
+              | sed -E 's#.*/([0-9]+)\.mdx?$#\1#' | tr '\n' ' ')
+          fi
+          echo "Issues to send: ${list:-none}"
+          echo "list=$list" >> "$GITHUB_OUTPUT"
+
+      - uses: pnpm/action-setup@v4
+        if: steps.issues.outputs.list != ''
+        with:
+          version: 10
+
+      - uses: actions/setup-node@v4
+        if: steps.issues.outputs.list != ''
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - if: steps.issues.outputs.list != ''
+        run: pnpm install --frozen-lockfile
+        env:
+          LEFTHOOK: 0
+
+      - name: Send via Kit
+        if: steps.issues.outputs.list != ''
+        env:
+          KIT_API_KEY: ${{ secrets.KIT_API_KEY }}
+          LIST: ${{ steps.issues.outputs.list }}
+        run: |
+          for issue in $LIST; do
+            pnpm newsletter:send "$issue"
+          done

@@ -3,7 +3,6 @@ import { marked } from "marked";
 import { fetchPageMeta } from "../../src/lib/page-meta.ts";
 import type { Issue } from "./lib.ts";
 import {
-  addDays,
   log,
   readIssues,
   request,
@@ -11,13 +10,10 @@ import {
   requireEnv,
   SITE_URL,
   sleep,
-  toIsoDate,
   warn,
 } from "./lib.ts";
 
 const KIT_API = "https://api.kit.com/v4";
-/** Only issues this recent are sent, so a manual run never resends history. */
-const MAX_ISSUE_AGE_DAYS = 3;
 const LIVE_TIMEOUT_MS = 20 * 60_000;
 const LIVE_POLL_MS = 20_000;
 const SEND_DELAY_MS = 5 * 60_000;
@@ -102,12 +98,15 @@ const waitUntilLive = async (url: string) => {
 
 const main = async () => {
   const apiKey = requireEnv("KIT_API_KEY");
-  const today = toIsoDate(new Date());
+  // The issue number is explicit (from the merged PR), so editing an older
+  // issue later can never resend it.
+  const number = Number(process.argv[2]);
   const issues = await readIssues();
-  const issue = issues.at(-1);
-  if (!issue || issue.date < addDays(today, -MAX_ISSUE_AGE_DAYS)) {
-    warn(`No issue from the last ${MAX_ISSUE_AGE_DAYS} days to send`);
-    return;
+  const issue = issues.find((entry) => entry.issue === number);
+  if (!issue) {
+    throw new Error(
+      `Usage: newsletter:send <issue>; issue "${process.argv[2]}" not found`
+    );
   }
 
   const title = String(issue.frontmatter.title);
