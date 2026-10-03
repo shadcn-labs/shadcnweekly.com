@@ -1,16 +1,24 @@
 ---
+import { buttonVariants } from "@/components/ui/button";
 import { LINKS } from "@/constants/links";
 import { formatStars, getGithubStars } from "@/lib/github-stars";
 import { cn } from "@/lib/utils";
 
 interface Props {
-  class?: string;
-  iconClass?: string;
+  /** Bigger tap target (mobile menu). */
+  large?: boolean;
 }
 
-const { class: className, iconClass = "size-4" } = Astro.props;
+const { large = false } = Astro.props;
+const iconClass = large ? "size-5" : "size-4";
 const stars = await getGithubStars();
 const showStars = stars !== null && stars > 0;
+// Text + icon when there's a count, square icon button otherwise.
+const SIZES = {
+  icon: { large: "icon-lg", normal: "icon" },
+  text: { large: "lg", normal: "default" },
+} as const;
+const size = SIZES[showStars ? "text" : "icon"][large ? "large" : "normal"];
 ---
 
 <a
@@ -21,8 +29,10 @@ const showStars = stars !== null && stars > 0;
     ? `GitHub repository (${stars} stars)`
     : "GitHub repository"}
   class={cn(
-    "inline-flex h-8 min-w-8 items-center justify-center gap-1.5 rounded-full px-1 text-muted-foreground transition-colors hover:text-foreground",
-    className
+    buttonVariants({ size, variant: "ghost" }),
+    // 8px side padding keeps the visible gap to the dividers at ~16px.
+    showStars && "px-2",
+    "font-normal text-muted-foreground"
   )}
 >
   {/* lucide-react 1.x ships no brand icons. */}

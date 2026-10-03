@@ -1,12 +1,14 @@
 ---
+import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
 interface Props {
-  class?: string;
-  iconClass?: string;
+  /** Bigger tap target (mobile menu). */
+  large?: boolean;
 }
 
-const { class: className, iconClass = "size-[18px]" } = Astro.props;
+const { large = false } = Astro.props;
+const iconClass = large ? "size-5" : "size-[18px]";
 ---
 
 {/* One button flips light/dark. The half-filled icon turns 180° with the root `dark` class, so it animates on every toggle and is correct on first paint. The header script wires clicks. */}
@@ -15,8 +17,8 @@ const { class: className, iconClass = "size-[18px]" } = Astro.props;
   data-theme-toggle
   aria-label="Toggle theme"
   class={cn(
-    "inline-flex size-8 items-center justify-center rounded-full text-muted-foreground transition-colors hover:text-foreground",
-    className
+    buttonVariants({ size: large ? "icon-lg" : "icon", variant: "ghost" }),
+    "text-muted-foreground"
   )}
 >
   <svg

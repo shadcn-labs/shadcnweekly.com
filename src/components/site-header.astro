@@ -30,8 +30,8 @@ const bar =
       <span class="text-lg font-semibold tracking-tight">{SITE.NAME}</span>
     </a>
 
-    <div class="hidden items-center gap-4 sm:flex">
-      <nav class="flex items-center gap-6" aria-label="Main">
+    <div class="hidden items-center gap-2 sm:flex">
+      <nav class="flex items-center gap-4" aria-label="Main">
         {
           NAV_LINKS.map((link) => (
             <a
@@ -44,7 +44,7 @@ const bar =
           ))
         }
       </nav>
-      <span class="h-4 w-px bg-border" aria-hidden="true"></span>
+      <span class="ml-2 h-4 w-px bg-border" aria-hidden="true"></span>
       <GithubLink />
       <span class="h-4 w-px bg-border" aria-hidden="true"></span>
       <ThemeToggle />
@@ -96,8 +96,8 @@ const bar =
       }
     </nav>
     <div class="mt-2 flex items-center justify-between border-t px-1 pt-3">
-      <GithubLink class="h-9 min-w-9" iconClass="size-5" />
-      <ThemeToggle class="size-9" iconClass="size-5" />
+      <GithubLink large />
+      <ThemeToggle large />
     </div>
   </div>
 </header>
