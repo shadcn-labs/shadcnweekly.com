@@ -8,10 +8,12 @@ export const ROUTES = {
   LOGO: "/logo.png",
   OG: "/og",
   PRIVACY: "/privacy",
+  REFUNDS: "/refunds",
   SITEMAP: "/sitemap-index.xml",
   SPONSOR: "/sponsor",
   SPONSOR_CHECKOUT_API: "/api/sponsor/checkout",
   SPONSOR_THANKS: "/sponsor/thanks",
   SUBSCRIBE_API: "/api/subscribe.json",
+  TERMS: "/terms",
   TOOLS: "/tools",
 } as const;

@@ -1,0 +1,60 @@
+---
+import { ArrowLeftIcon } from "lucide-react";
+
+import { ROUTES } from "@/constants/routes";
+import { SITE } from "@/constants/site";
+import Layout from "@/layouts/site.astro";
+
+interface Props {
+  title: string;
+  description: string;
+  path: string;
+  /** e.g. "October 2026" */
+  updated: string;
+}
+
+const { title, description, path, updated } = Astro.props;
+---
+
+<Layout title={title} description={description}>
+  <script
+    is:inline
+    slot="head"
+    type="application/ld+json"
+    set:html={JSON.stringify({
+      "@context": "https://schema.org",
+      "@type": "BreadcrumbList",
+      itemListElement: [
+        { "@type": "ListItem", item: SITE.URL, name: "Home", position: 1 },
+        {
+          "@type": "ListItem",
+          item: `${SITE.URL}${path}`,
+          name: title,
+          position: 2,
+        },
+      ],
+    })}
+  />
+  <div class="flex flex-1 flex-col items-center py-16">
+    <div class="flex w-full max-w-2xl flex-col gap-6">
+      <div>
+        <a
+          href={ROUTES.HOME}
+          class="inline-flex text-sm items-center gap-2 text-muted-foreground transition-colors hover:text-foreground"
+        >
+          <ArrowLeftIcon className="size-4" />
+          Back to home
+        </a>
+      </div>
+
+      <h1 class="text-3xl font-semibold tracking-tight">{title}</h1>
+
+      <div
+        class="flex flex-col gap-4 text-base leading-relaxed text-muted-foreground [&_h2]:mt-4 [&_h2]:text-xl [&_h2]:font-semibold [&_h2]:text-foreground [&_ul]:flex [&_ul]:list-disc [&_ul]:flex-col [&_ul]:gap-1.5 [&_ul]:pl-5"
+      >
+        <slot />
+        <p class="text-sm text-muted-foreground/60">Last updated: {updated}</p>
+      </div>
+    </div>
+  </div>
+</Layout>

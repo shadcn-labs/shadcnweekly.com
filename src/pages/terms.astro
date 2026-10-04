@@ -1,0 +1,88 @@
+---
+import { LINKS } from "@/constants/links";
+import { ROUTES } from "@/constants/routes";
+import { SITE } from "@/constants/site";
+import LegalLayout from "@/layouts/legal.astro";
+---
+
+<LegalLayout
+  title="Terms of Service"
+  description={`Terms for reading ${SITE.NAME} and for buying sponsorship placements.`}
+  path={ROUTES.TERMS}
+  updated="October 2026"
+>
+  <p>
+    {SITE.NAME} is a free weekly newsletter about the shadcn/ui ecosystem, run
+    by {SITE.AUTHOR.NAME} as an individual and published under {
+      SITE.ORG.NAME
+    }. By subscribing, reading the site, or buying a sponsorship you agree to
+    these terms.
+  </p>
+
+  <h2>The newsletter</h2>
+  <p>
+    Subscribing is free. One issue goes out every Monday, and every issue is
+    also published in the <a href={ROUTES.ISSUES} class="link">archive</a>. You
+    can unsubscribe at any time from the link in every email. Linked projects
+    belong to their authors; we don't endorse or guarantee third-party
+    products.
+  </p>
+
+  <h2>Sponsorships</h2>
+  <p>
+    The <a href={ROUTES.SPONSOR} class="link">sponsor page</a> lists the
+    placements we sell, their prices in USD, and the open issue weeks. When you
+    buy a placement:
+  </p>
+  <ul>
+    <li>
+      You get your sponsor block (name, headline, description, link and image)
+      in the issue(s) for the week(s) you picked, both in the email and on the
+      issue's page on this site. A bundle covers four issues.
+    </li>
+    <li>
+      Every booking is reviewed before it runs. We may ask you to change copy,
+      and we decline content that is misleading, illegal, adult, gambling,
+      crypto-investment, or unrelated to developers. A declined booking is
+      refunded in full.
+    </li>
+    <li>
+      You're responsible for your content and confirm you have the right to use
+      the name, text, images and links you submit.
+    </li>
+    <li>
+      We don't guarantee a number of opens, clicks or conversions.
+    </li>
+    <li>
+      Weeks can be booked at least 3 days ahead. To move a week, email us
+      before that issue goes out.
+    </li>
+  </ul>
+  <p>
+    Cancellations and refunds are covered by the <a
+      href={ROUTES.REFUNDS}
+      class="link">refund policy</a
+    >.
+  </p>
+
+  <h2>Payments</h2>
+  <p>
+    Payments are processed by <a
+      href="https://dodopayments.com"
+      target="_blank"
+      rel="noopener noreferrer"
+      class="link">Dodo Payments</a
+    >, which acts as the merchant of record: Dodo Payments is the seller of
+    record for your purchase and handles payment processing, sales tax and VAT,
+    and receipts. Your purchase is also subject to Dodo Payments' buyer terms.
+  </p>
+
+  <h2>Changes and contact</h2>
+  <p>
+    We may update these terms; the date below shows the latest version, and
+    bookings already paid keep the terms in place when you bought them.
+    Questions? Email <a href={`mailto:${LINKS.EMAIL}`} class="link"
+      >{LINKS.EMAIL}</a
+    > or use the <a href={ROUTES.CONTACT} class="link">contact form</a>.
+  </p>
+</LegalLayout>
