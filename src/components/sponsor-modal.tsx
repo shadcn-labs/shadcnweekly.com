@@ -14,6 +14,15 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import {
+  Drawer,
+  DrawerClose,
+  DrawerContent,
+  DrawerDescription,
+  DrawerHeader,
+  DrawerTitle,
+  DrawerTrigger,
+} from "@/components/ui/drawer";
+import {
   Field,
   FieldDescription,
   FieldError,
@@ -25,8 +34,13 @@ import { Textarea } from "@/components/ui/textarea";
 import { LINKS } from "@/constants/links";
 import { ROUTES } from "@/constants/routes";
 import type { SponsorPlacementOffer } from "@/constants/sponsor";
+import { useMediaQuery } from "@/hooks/use-media-query";
 import { sponsorCheckoutSchema } from "@/lib/sponsor-checkout";
 import { cn } from "@/lib/utils";
+
+const TITLE = "Book a sponsorship";
+const DESCRIPTION =
+  "Enter your details, pick a placement and issue weeks, then pay.";
 
 /** Selectable tiles (placements, weeks), with the site's neutral selected state. */
 const TILE_CLASS =
@@ -42,8 +56,11 @@ export interface SponsorOffer {
   description: string;
   price: number;
   issues: SponsorPlacementOffer["issues"];
+  placements: SponsorPlacementOffer["placements"];
   tag: SponsorPlacementOffer["tag"];
-  /** Open issue Mondays (YYYY-MM-DD) for this offer's slot. */
+  /** Screenshot URLs of the offer's slot in an issue. */
+  thumbnail: { light: string; dark: string };
+  /** Open issue Mondays (YYYY-MM-DD) for this offer's slot(s). */
   weeks: string[];
 }
 
@@ -235,6 +252,104 @@ const WeekPicker = ({
   </div>
 );
 
+/**
+ * Selectable offer with its slot screenshot: `stacked` (thumbnail above, the
+ * desktop sidebar) or `row` (thumbnail beside, the mobile carousel).
+ */
+const PlacementCard = ({
+  offer,
+  selected,
+  onSelect,
+  layout,
+}: {
+  offer: SponsorOffer;
+  selected: boolean;
+  onSelect: () => void;
+  layout: "stacked" | "row";
+}) => (
+  <button
+    type="button"
+    aria-pressed={selected}
+    onClick={onSelect}
+    className={cn(
+      "relative flex shrink-0 overflow-hidden rounded-xl border bg-background text-left text-sm transition-colors",
+      layout === "stacked" ? "flex-col" : "w-64 snap-start items-center",
+      selected
+        ? "border-foreground ring-1 ring-foreground"
+        : "hover:border-foreground/30"
+    )}
+  >
+    <span
+      className={cn(
+        "shrink-0 overflow-hidden bg-muted",
+        layout === "stacked" ? "h-24 border-b" : "h-20 w-24 border-r"
+      )}
+    >
+      <img
+        src={offer.thumbnail.light}
+        alt=""
+        className="w-full dark:hidden"
+        loading="lazy"
+      />
+      <img
+        src={offer.thumbnail.dark}
+        alt=""
+        className="hidden w-full dark:block"
+        loading="lazy"
+      />
+    </span>
+    {selected ? (
+      <CheckIcon
+        aria-hidden="true"
+        className="absolute top-2 right-2 size-5 rounded-full bg-foreground p-1 text-background"
+      />
+    ) : null}
+    <span
+      className={cn(
+        "flex min-w-0 gap-2 p-3",
+        layout === "stacked"
+          ? "items-center justify-between"
+          : "flex-col items-start pr-8"
+      )}
+    >
+      <span className="font-medium">{offer.title}</span>
+      <span className="rounded-md bg-muted px-2 py-0.5 text-xs font-medium">
+        ${offer.price}
+      </span>
+    </span>
+  </button>
+);
+
+/**
+ * Upsell from a single-slot, single-issue offer to the multi-slot combo,
+ * priced against booking each of the combo's slots separately.
+ */
+const comboUpsell = (offers: SponsorOffer[], offer: SponsorOffer) => {
+  const combo = offers.find((entry) => entry.placements.length > 1);
+  if (!combo || offer.issues !== 1 || offer.placements.length !== 1) {
+    return;
+  }
+  let listPrice = 0;
+  for (const placement of combo.placements) {
+    const single = offers.find(
+      (entry) =>
+        entry.issues === 1 &&
+        entry.placements.length === 1 &&
+        entry.placements[0] === placement
+    );
+    listPrice += single?.price ?? 0;
+  }
+  const savings = listPrice - combo.price;
+  if (savings <= 0) {
+    return;
+  }
+  return {
+    offer: combo,
+    percent: Math.round((savings / listPrice) * 100),
+    savings,
+  };
+};
+
 export const SponsorModal = ({
   children,
   offers,
@@ -244,6 +359,8 @@ export const SponsorModal = ({
   offers: SponsorOffer[];
   defaultOffer: SponsorOffer["id"];
 }) => {
+  // Desktop on the server, so SSR markup matches the common case.
+  const isDesktop = useMediaQuery("(min-width: 640px)", true);
   const [open, setOpen] = useState(false);
   const [step, setStep] = useState<"details" | "slot">("details");
   const [offerId, setOfferId] = useState(defaultOffer);
@@ -321,6 +438,8 @@ export const SponsorModal = ({
   const progress =
     step === "slot" ? ` · ${weeks.length}/${offer.issues} ${weekUnit}` : "";
 
+  const upsell = comboUpsell(offers, offer);
+
   const action =
     step === "details" ? (
       <Button onClick={() => setStep("slot")} disabled={!detailsValid}>
@@ -336,98 +455,168 @@ export const SponsorModal = ({
       </Button>
     );
 
-  return (
-    <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogTrigger render={<span />}>{children}</DialogTrigger>
-      <DialogContent
-        className="sm:max-w-3xl p-0 gap-0 overflow-hidden"
-        showCloseButton
+  const steps = (
+    <div className="flex shrink-0 items-center gap-2 border-b px-6 py-3">
+      <button
+        type="button"
+        onClick={() => setStep("details")}
+        className={cn(
+          STEP_CLASS,
+          step === "details" ? "text-foreground" : STEP_IDLE_CLASS
+        )}
       >
-        <DialogHeader className="sr-only">
-          <DialogTitle>Book a sponsorship</DialogTitle>
-          <DialogDescription>
-            Enter your details, pick a placement and issue weeks, then pay.
-          </DialogDescription>
-        </DialogHeader>
+        Enter details
+      </button>
+      <ChevronRightIcon
+        aria-hidden="true"
+        className="size-3.5 text-muted-foreground"
+      />
+      <button
+        type="button"
+        onClick={() => detailsValid && setStep("slot")}
+        className={cn(
+          STEP_CLASS,
+          step === "slot" ? "text-foreground" : STEP_IDLE_CLASS,
+          !detailsValid && "pointer-events-none opacity-50"
+        )}
+      >
+        Pick weeks
+      </button>
+    </div>
+  );
 
-        <div className="flex min-h-[520px]">
-          <div className="hidden w-64 shrink-0 flex-col gap-3 border-r bg-muted/50 p-4 sm:flex">
-            <p className="text-sm font-medium">Placement</p>
-            <div className="flex flex-col gap-2">
+  const stepContent = (
+    <>
+      {step === "details" ? (
+        <DetailsStep control={form.control} />
+      ) : (
+        <WeekPicker offer={offer} selected={weeks} onToggle={toggleWeek} />
+      )}
+      {error ? (
+        <p className="mt-4 text-sm text-destructive" role="alert">
+          {error}
+        </p>
+      ) : null}
+    </>
+  );
+
+  const summary = (
+    <div className="flex min-w-0 flex-col gap-0.5">
+      {upsell ? (
+        <button
+          type="button"
+          onClick={() => selectOffer(upsell.offer.id)}
+          className="text-left text-sm text-green-700 hover:underline dark:text-green-400"
+        >
+          <span className="font-semibold">
+            Save {upsell.percent}% (${upsell.savings})
+          </span>{" "}
+          with {upsell.offer.title} for ${upsell.offer.price}.
+        </button>
+      ) : null}
+      <p
+        className={cn("text-muted-foreground", upsell ? "text-xs" : "text-sm")}
+      >
+        {offer.title} · ${offer.price}
+        {progress}
+      </p>
+    </div>
+  );
+
+  const footer = isDesktop ? (
+    <div className="flex shrink-0 items-center justify-between gap-4 border-t bg-muted/50 px-6 py-4">
+      {summary}
+      {action}
+    </div>
+  ) : (
+    <div className="flex shrink-0 flex-col gap-3 border-t bg-muted/50 px-6 py-4">
+      {summary}
+      <div className="grid grid-cols-2 gap-2 *:w-full">
+        <DrawerClose render={<Button variant="outline" />}>Close</DrawerClose>
+        {action}
+      </div>
+    </div>
+  );
+
+  if (!isDesktop) {
+    return (
+      <Drawer open={open} onOpenChange={handleOpenChange} showSwipeHandle>
+        {/* flex: lets a full-width trigger child (mobile Book CTA) stretch. */}
+        <DrawerTrigger nativeButton={false} render={<span className="flex" />}>
+          {children}
+        </DrawerTrigger>
+        <DrawerContent>
+          <DrawerHeader className="sr-only">
+            <DrawerTitle>{TITLE}</DrawerTitle>
+            <DrawerDescription>{DESCRIPTION}</DrawerDescription>
+          </DrawerHeader>
+          {steps}
+          <div className="min-h-0 flex-1 overflow-y-auto p-6">
+            {stepContent}
+          </div>
+          {/* Outside the scroller, so placements stay pinned above the footer. */}
+          <div className="flex shrink-0 flex-col gap-3 border-t py-4">
+            <p className="px-6 text-sm font-medium">Placements</p>
+            <div className="flex snap-x snap-mandatory scroll-px-6 gap-3 overflow-x-auto px-6 py-0.5">
               {offers.map((entry) => (
-                <button
+                <PlacementCard
                   key={entry.id}
-                  type="button"
-                  onClick={() => selectOffer(entry.id)}
-                  className={cn(
-                    TILE_CLASS,
-                    "p-3",
-                    offer.id === entry.id
-                      ? TILE_SELECTED_CLASS
-                      : "bg-background hover:bg-muted"
-                  )}
-                >
-                  <span className="font-medium">{entry.title}</span>
-                  <span className="text-muted-foreground">${entry.price}</span>
-                </button>
+                  offer={entry}
+                  selected={offer.id === entry.id}
+                  onSelect={() => selectOffer(entry.id)}
+                  layout="row"
+                />
               ))}
             </div>
           </div>
+          {footer}
+        </DrawerContent>
+      </Drawer>
+    );
+  }
 
-          <div className="flex flex-1 flex-col">
-            <div className="flex items-center gap-2 border-b px-6 py-3">
-              <button
-                type="button"
-                onClick={() => setStep("details")}
-                className={cn(
-                  STEP_CLASS,
-                  step === "details" ? "text-foreground" : STEP_IDLE_CLASS
-                )}
-              >
-                Enter details
-              </button>
-              <ChevronRightIcon
-                aria-hidden="true"
-                className="size-3.5 text-muted-foreground"
-              />
-              <button
-                type="button"
-                onClick={() => detailsValid && setStep("slot")}
-                className={cn(
-                  STEP_CLASS,
-                  step === "slot" ? "text-foreground" : STEP_IDLE_CLASS,
-                  !detailsValid && "pointer-events-none opacity-50"
-                )}
-              >
-                Pick weeks
-              </button>
-            </div>
+  return (
+    <Dialog open={open} onOpenChange={handleOpenChange}>
+      <DialogTrigger nativeButton={false} render={<span />}>
+        {children}
+      </DialogTrigger>
+      <DialogContent
+        className="sm:max-w-4xl p-0 gap-0 overflow-hidden"
+        showCloseButton
+      >
+        <DialogHeader className="sr-only">
+          <DialogTitle>{TITLE}</DialogTitle>
+          <DialogDescription>{DESCRIPTION}</DialogDescription>
+        </DialogHeader>
 
-            <div className="flex-1 overflow-y-auto p-6">
-              {step === "details" ? (
-                <DetailsStep control={form.control} />
-              ) : (
-                <WeekPicker
-                  offer={offer}
-                  selected={weeks}
-                  onToggle={toggleWeek}
-                />
-              )}
-              {error ? (
-                <p className="mt-4 text-sm text-destructive" role="alert">
-                  {error}
-                </p>
-              ) : null}
-            </div>
-
-            <div className="flex items-center justify-between gap-4 border-t px-6 py-4">
-              <p className="text-sm text-muted-foreground">
-                {offer.title} · ${offer.price}
-                {progress}
+        <div className="flex h-[min(680px,calc(100dvh-4rem))] flex-col">
+          <div className="flex min-h-0 flex-1">
+            {/* Heading outside the scroller, so it stays put while cards scroll. */}
+            <div className="flex w-72 shrink-0 flex-col border-r bg-muted/50">
+              <p className="shrink-0 p-4 pb-3 text-sm font-medium">
+                Placements
               </p>
-              {action}
+              <div className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto px-4 pt-0.5 pb-4">
+                {offers.map((entry) => (
+                  <PlacementCard
+                    key={entry.id}
+                    offer={entry}
+                    selected={offer.id === entry.id}
+                    onSelect={() => selectOffer(entry.id)}
+                    layout="stacked"
+                  />
+                ))}
+              </div>
+            </div>
+
+            <div className="flex min-w-0 flex-1 flex-col">
+              {steps}
+              <div className="min-h-0 flex-1 overflow-y-auto p-6">
+                {stepContent}
+              </div>
             </div>
           </div>
+          {footer}
         </div>
       </DialogContent>
     </Dialog>

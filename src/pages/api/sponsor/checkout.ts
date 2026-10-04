@@ -42,7 +42,7 @@ export const POST: APIRoute = async ({ request, url }) => {
       message: `Pick ${offer.issues} issue week${offer.issues === 1 ? "" : "s"}`,
     });
   }
-  const open = new Set(availableWeeks(offer.placement));
+  const open = new Set(availableWeeks(offer.placements));
   const taken = weeks.filter((week) => !open.has(week));
   if (taken.length > 0) {
     return reply(409, {
@@ -56,7 +56,8 @@ export const POST: APIRoute = async ({ request, url }) => {
       metadata: {
         kind: "sponsor_booking",
         offer: offer.id,
-        placement: offer.placement,
+        // Comma-separated; the webhook books each placement.
+        placement: offer.placements.join(","),
         website: booking.website,
         weeks: weeks.join(","),
         ...(booking.name ? { name: booking.name } : {}),

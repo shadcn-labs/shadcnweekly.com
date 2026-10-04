@@ -1,14 +1,17 @@
 ---
 import { mdxComponents } from "@/components/mdx";
+import ArchiveSponsorSection from "@/components/archive-sponsor-section.astro";
 import ArchiveTogetherWith from "@/components/archive-together-with.astro";
 import { IssueReader } from "@/components/issue-reader";
 import Layout from "@/layouts/site.astro";
 import { ArrowLeftIcon } from "lucide-react";
 import { getCollection, render } from "astro:content";
-import { SITE } from "@/constants/site";
 import { ROUTES } from "@/constants/routes";
 import { LINKS } from "@/constants/links";
 import { OG_IMAGE_HEIGHT, OG_IMAGE_TYPE, OG_IMAGE_WIDTH } from "@/lib/og";
+import { SAMPLE_SPONSOR } from "@/lib/sponsor-preview";
+import { breadcrumbJsonLd, issueJsonLd } from "@/seo/json-ld";
+import JsonLd from "@/seo/json-ld.astro";
 
 export const prerender = true;
 
@@ -49,24 +52,23 @@ const formattedDate = issue.data.date.toLocaleDateString("en-US", {
   imageType={OG_IMAGE_TYPE}
   ogType="article"
 >
-  <script
-    is:inline
+  <JsonLd
     slot="head"
-    type="application/ld+json"
-    set:html={JSON.stringify({
-      "@context": "https://schema.org",
-      "@type": "NewsArticle",
-      headline: issue.data.title,
+    data={issueJsonLd({
+      date: issue.data.date,
       description: issue.data.description,
-      datePublished: issue.data.date.toISOString(),
-      image: `${SITE.URL}${ROUTES.OG}${ROUTES.ISSUES}/${imageSlug}.png`,
-      mainEntityOfPage: `${SITE.URL}${ROUTES.ISSUES}/${issue.id}`,
-      publisher: {
-        "@type": "Organization",
-        name: SITE.NAME,
-        url: SITE.URL,
-      },
+      image: `/og/issues/${imageSlug}.png`,
+      number: issue.data.issue,
+      path: `${ROUTES.ISSUES}/${issue.id}`,
+      title: issue.data.title,
     })}
+  />
+  <JsonLd
+    slot="head"
+    data={breadcrumbJsonLd([
+      { name: "Issues", path: ROUTES.ISSUES },
+      { name: issue.data.title, path: `${ROUTES.ISSUES}/${issue.id}` },
+    ])}
   />
 
   <div class="flex flex-1 flex-col items-center py-16">
@@ -118,6 +120,119 @@ const formattedDate = issue.data.date.toLocaleDateString("en-US", {
       </article>
     </div>
   </div>
+
+  <template id="sponsor-sample">
+    <ArchiveSponsorSection {...SAMPLE_SPONSOR} />
+  </template>
+
+  <script>
+    import { SPONSOR_PREVIEW_PARAM } from "@/lib/sponsor-preview";
+
+    // `?sponsor=primary,secondary`: highlight those slots (see /sponsor).
+    const placements =
+      new URLSearchParams(location.search)
+        .get(SPONSOR_PREVIEW_PARAM)
+        ?.split(",") ?? [];
+    const article = document.querySelector("#issue-article");
+
+    /** Sample block after the projects section, where drafts put the 2nd sponsor. */
+    const insertSample = (root: Element) => {
+      const template = document.querySelector<HTMLTemplateElement>(
+        "#sponsor-sample"
+      );
+      const sample = template?.content.firstElementChild?.cloneNode(true);
+      if (!(sample instanceof HTMLElement)) {
+        return;
+      }
+      const headings = [...root.querySelectorAll(":scope > h2")];
+      const projects = headings.findIndex((heading) =>
+        heading.textContent?.includes("Projects, Packages & Tools")
+      );
+      const next =
+        (projects === -1 ? undefined : headings[projects + 1]) ??
+        root.querySelector(":scope > [data-reader-ignore]");
+      next?.before(sample, document.createElement("hr"));
+      return sample;
+    };
+
+    const PADDING = 12;
+
+    /** Union of the element's content boxes: tight even for full-width rows. */
+    const contentRect = (element: Element) => {
+      const range = document.createRange();
+      range.selectNodeContents(element);
+      return range.getBoundingClientRect();
+    };
+
+    /** Outlines `target` with an overlay; layout of the issue is untouched. */
+    const highlight = (target: HTMLElement, label: string) => {
+      const frame = document.createElement("div");
+      frame.setAttribute("aria-hidden", "true");
+      frame.className =
+        "pointer-events-none absolute z-30 rounded-xl ring-2 ring-foreground ring-offset-0";
+      const tag = document.createElement("span");
+      tag.className =
+        "absolute -top-3 left-3 rounded-full bg-foreground px-2 py-0.5 text-xs font-medium text-background";
+      tag.textContent = label;
+      frame.append(tag);
+      document.body.append(frame);
+      return () => {
+        const rect = contentRect(target);
+        Object.assign(frame.style, {
+          height: `${rect.height + PADDING * 2}px`,
+          left: `${rect.left + window.scrollX - PADDING}px`,
+          top: `${rect.top + window.scrollY - PADDING}px`,
+          width: `${rect.width + PADDING * 2}px`,
+        });
+      };
+    };
+
+    if (article && placements.length > 0) {
+      const [primary, secondary] = article.querySelectorAll<HTMLElement>(
+        "[data-sponsor-section]"
+      );
+      const together = document.querySelector<HTMLElement>(
+        "[data-sponsor-together]"
+      );
+      const targets = [
+        ...(placements.includes("primary")
+          ? [
+              { label: "1st Sponsor", target: together },
+              { label: "1st Sponsor", target: primary },
+            ]
+          : []),
+        ...(placements.includes("secondary")
+          ? [
+              {
+                label: "2nd Sponsor",
+                target: secondary ?? insertSample(article),
+              },
+            ]
+          : []),
+      ];
+      const highlighted = targets.flatMap(({ label, target }) =>
+        target instanceof HTMLElement ? [{ label, target }] : []
+      );
+      const updates = highlighted.map(({ label, target }) =>
+        highlight(target, label)
+      );
+      const position = () => {
+        for (const update of updates) {
+          update();
+        }
+      };
+      position();
+      // Viewport resizes, image and font loads all resize the body or a slot.
+      const observer = new ResizeObserver(position);
+      observer.observe(document.body);
+      for (const { target } of highlighted) {
+        observer.observe(target);
+      }
+      highlighted
+        .find(({ target }) => target.matches("[data-sponsor-section]"))
+        ?.target.scrollIntoView({ block: "center" });
+    }
+  </script>
 
   {
     sections.length > 0 ? (

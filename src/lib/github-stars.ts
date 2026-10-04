@@ -32,11 +32,16 @@ export const getGithubStars = async (): Promise<number | null> => {
   return stars;
 };
 
-/** 950 → "950", 2400 → "2.4k", 12000 → "12k". */
-export const formatStars = (stars: number) => {
-  if (stars < 1000) {
-    return String(stars);
-  }
-  const digits = stars < 10_000 ? 1 : 0;
-  return `${(stars / 1000).toFixed(digits).replace(/\.0$/u, "")}k`;
-};
+const compact = new Intl.NumberFormat("en-US", {
+  maximumFractionDigits: 1,
+  notation: "compact",
+});
+const full = new Intl.NumberFormat("en-US");
+
+/** Navbar count, at most one decimal: 950 → "950", 2449 → "2.4k", 12345 → "12.3k". */
+export const formatStars = (stars: number) =>
+  compact.format(stars).toLowerCase();
+
+/** Tooltip count: 1 → "1 star", 12345 → "12,345 stars". */
+export const formatStarsFull = (stars: number) =>
+  `${full.format(stars)} ${stars === 1 ? "star" : "stars"}`;

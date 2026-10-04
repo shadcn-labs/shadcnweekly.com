@@ -85,14 +85,17 @@ export const bookedWeeks = (
 const MIN_LEAD_DAYS = 3;
 
 /**
- * Upcoming issue Mondays still open for `placement`: the next `count` Mondays
- * at least MIN_LEAD_DAYS after `today`, minus booked weeks.
+ * Upcoming issue Mondays open for every one of `placements`: the next `count`
+ * Mondays at least MIN_LEAD_DAYS after `today`, minus weeks booked in any of
+ * them.
  */
 export const availableWeeks = (
-  placement: SponsorPlacement,
+  placements: readonly SponsorPlacement[],
   { count = 12, today = new Date(), bookings = SPONSOR_BOOKINGS } = {}
 ) => {
-  const taken = bookedWeeks(placement, bookings);
+  const taken = new Set(
+    placements.flatMap((placement) => [...bookedWeeks(placement, bookings)])
+  );
   const earliest = today.getTime() + MIN_LEAD_DAYS * DAY_MS;
   const thisMonday = weekStart(today.toISOString().slice(0, 10));
   let monday = Date.parse(`${thisMonday}T00:00:00Z`) + 7 * DAY_MS;

@@ -1,5 +1,6 @@
 ---
 import GithubLink from "@/components/github-link.astro";
+import XLink from "@/components/x-link.astro";
 import { Logo } from "@/components/logo";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { buttonVariants } from "@/components/ui/button";
@@ -53,6 +54,7 @@ const bar =
       </nav>
       <span class="ml-2 h-4 w-px bg-border" aria-hidden="true"></span>
       <GithubLink />
+      <XLink />
       <span class="h-4 w-px bg-border" aria-hidden="true"></span>
       <ThemeToggle client:load hotkey />
       <span class="h-4 w-px bg-border" aria-hidden="true"></span>
@@ -111,7 +113,10 @@ const bar =
     </nav>
     <span class="-mx-1.5 my-1.5 block h-px bg-border" aria-hidden="true"></span>
     <div class="flex items-center justify-between">
-      <GithubLink large />
+      <div class="flex items-center">
+        <GithubLink large />
+        <XLink large />
+      </div>
       <ThemeToggle client:load large />
     </div>
   </div>

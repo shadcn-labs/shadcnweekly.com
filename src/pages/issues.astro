@@ -2,8 +2,9 @@
 import Layout from "@/layouts/site.astro";
 import { ArrowLeftIcon } from "lucide-react";
 import { getCollection } from "astro:content";
-import { SITE } from "@/constants/site";
 import { ROUTES } from "@/constants/routes";
+import { breadcrumbJsonLd } from "@/seo/json-ld";
+import JsonLd from "@/seo/json-ld.astro";
 
 const issues = await getCollection("archive");
 const sortedIssues = issues.toSorted((a, b) => b.data.issue - a.data.issue);
@@ -20,28 +21,9 @@ const formatDate = (date: Date) =>
   title="Issues Archive"
   description="Browse every issue of Shadcn Weekly—curated shadcn news, tutorials, projects, and tools."
 >
-  <script
-    is:inline
+  <JsonLd
     slot="head"
-    type="application/ld+json"
-    set:html={JSON.stringify({
-      "@context": "https://schema.org",
-      "@type": "BreadcrumbList",
-      itemListElement: [
-        {
-          "@type": "ListItem",
-          position: 1,
-          name: "Home",
-          item: SITE.URL,
-        },
-        {
-          "@type": "ListItem",
-          position: 2,
-          name: "Issues",
-          item: `${SITE.URL}${ROUTES.ISSUES}`,
-        },
-      ],
-    })}
+    data={breadcrumbJsonLd([{ name: "Issues", path: ROUTES.ISSUES }])}
   />
 
   <div class="flex flex-1 flex-col items-center py-16">

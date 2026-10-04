@@ -1,11 +1,16 @@
 export const ROUTES = {
   ABOUT: "/about",
+  APPLE_TOUCH_ICON: "/apple-touch-icon.png",
   CONTACT: "/contact",
   FAVICON: "/favicon.svg",
+  FAVICON_ICO: "/favicon.ico",
+  FAVICON_PNG: "/favicon-96x96.png",
   HOME: "/",
   ISSUES: "/issues",
+  LLMS: "/llms.txt",
   /** PNG render of `components/logo.tsx`, for places that can't use the SVG (emails, schema). */
   LOGO: "/logo.png",
+  MANIFEST: "/site.webmanifest",
   OG: "/og",
   PRIVACY: "/privacy",
   REFUNDS: "/refunds",

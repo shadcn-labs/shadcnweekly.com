@@ -6,34 +6,17 @@ import { LINKS } from "@/constants/links";
 import { ROUTES } from "@/constants/routes";
 import { SITE } from "@/constants/site";
 import Layout from "@/layouts/site.astro";
+import { breadcrumbJsonLd } from "@/seo/json-ld";
+import JsonLd from "@/seo/json-ld.astro";
 ---
 
 <Layout
   title="Contact"
   description={`Get in touch with ${SITE.NAME} — send a message or reach us by email and Discord.`}
 >
-  <script
-    is:inline
+  <JsonLd
     slot="head"
-    type="application/ld+json"
-    set:html={JSON.stringify({
-      "@context": "https://schema.org",
-      "@type": "BreadcrumbList",
-      itemListElement: [
-        {
-          "@type": "ListItem",
-          item: SITE.URL,
-          name: "Home",
-          position: 1,
-        },
-        {
-          "@type": "ListItem",
-          item: `${SITE.URL}${ROUTES.CONTACT}`,
-          name: "Contact",
-          position: 2,
-        },
-      ],
-    })}
+    data={breadcrumbJsonLd([{ name: "Contact", path: ROUTES.CONTACT }])}
   />
   <div class="flex flex-1 flex-col items-center py-16">
     <div class="flex w-full max-w-2xl flex-col gap-6">

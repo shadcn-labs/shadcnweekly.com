@@ -1,0 +1,230 @@
+---
+import { getCollection } from "astro:content";
+import { ArrowLeftIcon, ArrowRightIcon } from "lucide-react";
+
+import { Logo } from "@/components/logo";
+import { buttonVariants } from "@/components/ui/button";
+import {
+  Empty,
+  EmptyContent,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyTitle,
+} from "@/components/ui/empty";
+import { ROUTES } from "@/constants/routes";
+import { SITE } from "@/constants/site";
+import Layout from "@/layouts/site.astro";
+import { cn } from "@/lib/utils";
+
+export const prerender = true;
+
+const archive = await getCollection("archive");
+const [latest] = archive.toSorted((a, b) => b.data.issue - a.data.issue);
+const host = new URL(SITE.URL).host.replace(/^www\./u, "");
+---
+
+<Layout
+  title="Page not found"
+  description="The page you're looking for doesn't exist."
+  noindex
+>
+  <Empty className="flex-1 gap-10 py-16">
+    {/* A newsletter that came back: addressed to the missing URL, stamped "return to sender". */}
+    <div aria-hidden="true" class="w-full max-w-sm px-2">
+      <div class="envelope relative">
+        <div
+          class="airmail relative flex aspect-[16/10] flex-col justify-between rounded-xl p-1.5 shadow-lg"
+        >
+          <div
+            class="flex h-full flex-col justify-between rounded-lg bg-background p-4 sm:p-5"
+          >
+            <div class="flex items-start justify-between gap-4">
+              <div class="flex items-center gap-2">
+                <Logo className="size-5" />
+                <div class="flex flex-col text-left leading-tight">
+                  <span class="text-xs font-semibold">{SITE.NAME}</span>
+                  <span class="text-[10px] text-muted-foreground">
+                    Every Monday
+                  </span>
+                </div>
+              </div>
+
+              <div class="postage flex shrink-0 flex-col items-center justify-center">
+                <div
+                  class="flex size-full flex-col items-center justify-center rounded-[2px] bg-foreground outline outline-1 -outline-offset-4 outline-background/40"
+                >
+                  <span class="text-xl font-bold tracking-tight tabular-nums">
+                    404
+                  </span>
+                  <span class="text-[7px] font-medium tracking-widest uppercase">
+                    Postage
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <div class="flex w-3/4 flex-col gap-1.5 self-center text-left">
+              <span class="text-[10px] tracking-wider text-muted-foreground uppercase">
+                Deliver to
+              </span>
+              <span
+                class="truncate font-mono text-sm font-medium"
+                data-missing-path
+              >
+                {host}/…
+              </span>
+              <span class="h-1.5 w-28 rounded-full bg-muted"></span>
+              <span class="h-1.5 w-20 rounded-full bg-muted"></span>
+            </div>
+          </div>
+        </div>
+
+        <div
+          class="return-stamp absolute top-[42%] left-[46%] flex flex-col items-center gap-0.5 rounded-md border-[3px] border-double border-foreground/80 bg-background/85 px-3 py-1.5 font-mono whitespace-nowrap text-foreground/80 backdrop-blur-[1px] max-sm:left-[42%] max-sm:scale-[0.78]"
+        >
+          <span class="text-xs font-bold tracking-[0.18em] uppercase sm:text-sm">
+            Return to sender
+          </span>
+          <span class="text-[9px] tracking-[0.22em] uppercase sm:text-[10px]">
+            Address not found
+          </span>
+        </div>
+      </div>
+    </div>
+
+    <EmptyHeader className="max-w-md">
+      <EmptyTitle className="text-2xl font-semibold md:text-3xl">
+        <h1>Return to sender.</h1>
+      </EmptyTitle>
+      <EmptyDescription className="text-base text-balance">
+        We couldn't deliver this one: the page isn't in the archive. It may have
+        moved, or the link is wrong.
+      </EmptyDescription>
+    </EmptyHeader>
+    <EmptyContent>
+      <div
+        class="flex w-full flex-col gap-2 *:w-full sm:flex-row sm:justify-center sm:*:w-auto"
+      >
+        <a
+          href={ROUTES.HOME}
+          class={cn(buttonVariants({ variant: "outline" }))}
+        >
+          <ArrowLeftIcon className="size-4" />
+          Back to home
+        </a>
+        <a
+          href={latest ? `${ROUTES.ISSUES}/${latest.id}` : ROUTES.ISSUES}
+          class={buttonVariants({ variant: "default" })}
+        >
+          Browse latest issue
+          <ArrowRightIcon className="size-4" />
+        </a>
+      </div>
+    </EmptyContent>
+  </Empty>
+</Layout>
+
+<script>
+  // Address the envelope to the URL that wasn't found.
+  const address = document.querySelector("[data-missing-path]");
+  if (address) {
+    address.textContent = `${location.host.replace(/^www\./u, "")}${location.pathname}`;
+  }
+</script>
+
+<style>
+  /* Air-mail border: diagonal stripes in the site's two tones. */
+  .airmail {
+    background: repeating-linear-gradient(
+      -45deg,
+      var(--foreground) 0 10px,
+      var(--background) 10px 20px
+    );
+  }
+
+  /*
+   * Perforated edge: the 4px ring is a grid of holes; the solid inner face
+   * covers the holes everywhere else.
+   */
+  .postage {
+    width: 4rem;
+    height: 4.75rem;
+    padding: 4px;
+    background: radial-gradient(
+        circle,
+        transparent 2px,
+        var(--foreground) 2.4px
+      ) -4px -4px / 8px 8px;
+    color: var(--background);
+    animation: stamp-drop 500ms cubic-bezier(0.22, 1, 0.36, 1) 450ms both;
+  }
+
+  /* 1. Envelope arrives; 2. jolts when the return stamp lands; 3. floats. */
+  .envelope {
+    animation:
+      envelope-in 700ms cubic-bezier(0.22, 1, 0.36, 1) both,
+      envelope-jolt 300ms ease-out 1.25s both,
+      envelope-float 5s ease-in-out 1.8s infinite;
+  }
+
+  .return-stamp {
+    transform: translate(-50%, -50%) rotate(-12deg);
+    animation: stamp-slam 450ms cubic-bezier(0.34, 1.56, 0.64, 1) 1.1s both;
+  }
+
+  @keyframes envelope-in {
+    from {
+      opacity: 0;
+      transform: translateY(40px) rotate(6deg) scale(0.94);
+    }
+  }
+
+  @keyframes envelope-jolt {
+    40% {
+      transform: translateY(4px) rotate(-1deg) scale(0.985);
+    }
+  }
+
+  @keyframes envelope-float {
+    0%,
+    100% {
+      transform: translateY(0) rotate(0deg);
+    }
+    50% {
+      transform: translateY(-6px) rotate(-0.6deg);
+    }
+  }
+
+  @keyframes stamp-drop {
+    from {
+      opacity: 0;
+      transform: translateY(-16px) rotate(14deg) scale(1.2);
+    }
+    to {
+      transform: rotate(4deg);
+    }
+  }
+
+  @keyframes stamp-slam {
+    from {
+      opacity: 0;
+      transform: translate(-50%, -50%) rotate(-24deg) scale(1.9);
+    }
+    to {
+      opacity: 1;
+      transform: translate(-50%, -50%) rotate(-12deg) scale(1);
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .envelope,
+    .postage,
+    .return-stamp {
+      animation: none;
+    }
+
+    .postage {
+      transform: rotate(4deg);
+    }
+  }
+</style>

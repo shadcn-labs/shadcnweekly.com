@@ -71,10 +71,17 @@ export const conflictingWeeks = (
   return booking.weeks.filter((week) => taken.has(weekStart(week)));
 };
 
+/** Adds every booking bought by one payment (one per placement) in one PR. */
 export const openBookingPullRequest = async (
-  booking: SponsorBooking & { paymentId: string }
+  paymentId: string,
+  bookings: SponsorBooking[]
 ): Promise<{ url: string; created: boolean }> => {
-  const branch = `sponsor/${booking.paymentId}`;
+  const [booking] = bookings;
+  if (!booking) {
+    throw new Error("No bookings to add");
+  }
+  const placements = bookings.map((entry) => entry.placement).join(" + ");
+  const branch = `sponsor/${paymentId}`;
 
   const existingRef = await github(
     `/git/ref/heads/${branch}`,
@@ -96,16 +103,16 @@ export const openBookingPullRequest = async (
     });
   }
 
-  const { bookings, sha } = await readBookings(branch);
-  if (!bookings.some((entry) => entry.paymentId === booking.paymentId)) {
-    const next = [...bookings, booking];
+  const { bookings: onBranch, sha } = await readBookings(branch);
+  if (!onBranch.some((entry) => entry.paymentId === paymentId)) {
+    const next = [...onBranch, ...bookings];
     await github(`/contents/${BOOKINGS_PATH}`, {
       body: JSON.stringify({
         branch,
         content: Buffer.from(`${JSON.stringify(next, null, 2)}\n`).toString(
           "base64"
         ),
-        message: `feat: book ${booking.placement} sponsor ${booking.name ?? booking.website}`,
+        message: `feat: book ${placements} sponsor ${booking.name ?? booking.website}`,
         sha,
       }),
       method: "PUT",
@@ -122,11 +129,13 @@ export const openBookingPullRequest = async (
   }
 
   const { bookings: onMain } = await readBookings(BASE);
-  const conflicts = conflictingWeeks(booking, onMain);
+  const conflicts = [
+    ...new Set(bookings.flatMap((entry) => conflictingWeeks(entry, onMain))),
+  ];
   const body = [
-    `Paid sponsor booking from Dodo payment \`${booking.paymentId}\` (look up the buyer in the Dodo dashboard).`,
+    `Paid sponsor booking from Dodo payment \`${paymentId}\` (look up the buyer in the Dodo dashboard).`,
     "",
-    `- **Placement:** ${booking.placement}`,
+    `- **Placement:** ${placements}`,
     `- **Weeks:** ${booking.weeks.join(", ")}`,
     `- **Website:** ${booking.website}`,
     `- **Name:** ${booking.name ?? FROM_WEBSITE}`,
@@ -145,7 +154,7 @@ export const openBookingPullRequest = async (
       base: BASE,
       body,
       head: branch,
-      title: `Sponsor booking: ${booking.name ?? new URL(booking.website).hostname} (${booking.placement}, ${booking.weeks.join(", ")})`,
+      title: `Sponsor booking: ${booking.name ?? new URL(booking.website).hostname} (${placements}, ${booking.weeks.join(", ")})`,
     }),
     method: "POST",
   });

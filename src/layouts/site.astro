@@ -21,6 +21,7 @@ const seoProps = Astro.props;
 ---
 
 <MainLayout {...seoProps}>
+  <slot name="head" slot="head" />
   <SiteHeader />
   <main class="relative mx-auto flex flex-1 w-full max-w-4xl flex-col px-6">
     <slot />

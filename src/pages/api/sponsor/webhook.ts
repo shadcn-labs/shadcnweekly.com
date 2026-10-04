@@ -50,28 +50,35 @@ export const POST: APIRoute = async ({ request }) => {
     return Response.json({ ignored: event.type });
   }
 
-  const booking = sponsorBookingSchema.safeParse({
-    description: text(metadata.description),
-    image: text(metadata.image),
-    name: text(metadata.name),
-    paymentId: event.data?.payment_id,
-    placement: metadata.placement,
-    title: text(metadata.title),
-    website: metadata.website,
-    weeks: String(metadata.weeks ?? "")
-      .split(",")
-      .filter(Boolean),
-  });
-  if (!booking.success || !booking.data.paymentId) {
-    console.error("Invalid sponsor booking metadata", booking.error?.issues);
+  const paymentId = event.data?.payment_id;
+  // `placement` is comma-separated: the combo offer books both slots.
+  const bookings = String(metadata.placement ?? "")
+    .split(",")
+    .map((placement) =>
+      sponsorBookingSchema.safeParse({
+        description: text(metadata.description),
+        image: text(metadata.image),
+        name: text(metadata.name),
+        paymentId,
+        placement,
+        title: text(metadata.title),
+        website: metadata.website,
+        weeks: String(metadata.weeks ?? "")
+          .split(",")
+          .filter(Boolean),
+      })
+    );
+  const invalid = bookings.find((booking) => !booking.success);
+  if (!paymentId || invalid) {
+    console.error("Invalid sponsor booking metadata", invalid?.error?.issues);
     return new Response("Invalid booking metadata", { status: 422 });
   }
 
   try {
-    const pr = await openBookingPullRequest({
-      ...booking.data,
-      paymentId: booking.data.paymentId,
-    });
+    const pr = await openBookingPullRequest(
+      paymentId,
+      bookings.flatMap((booking) => (booking.success ? [booking.data] : []))
+    );
     return Response.json(pr);
   } catch (error) {
     console.error("Failed to open sponsor booking PR", error);

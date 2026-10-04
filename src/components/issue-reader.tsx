@@ -19,6 +19,12 @@ import * as React from "react";
 
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 
 interface IssueSection {
@@ -630,6 +636,33 @@ const getAudioLabel = (status: SpeechStatus, readMinutes: number) => {
   return `Listen to article, about ${readMinutes} minutes`;
 };
 
+/** Short hover text; the aria-labels stay the fuller descriptions. */
+const getAudioTooltip = (status: SpeechStatus, readMinutes: number) => {
+  if (status === "playing") {
+    return "Pause";
+  }
+  if (status === "paused") {
+    return "Resume";
+  }
+  return `Listen · ${readMinutes} min`;
+};
+
+/** Bar button with a tooltip above it; `children` is the button element. */
+const BarTooltip = ({
+  children,
+  label,
+}: {
+  children: React.ReactElement;
+  label: string;
+}) => (
+  <Tooltip>
+    <TooltipTrigger render={children} />
+    <TooltipContent side="top" sideOffset={8}>
+      {label}
+    </TooltipContent>
+  </Tooltip>
+);
+
 const getSpeechAnnouncement = (status: SpeechStatus) => {
   if (status === "playing") {
     return "Reading article";
@@ -678,135 +711,149 @@ const ReaderControls = ({
   }
 
   return (
-    <div
-      className={cn(
-        // 50px inner height: 7px around the 36px buttons, so their 10px radius
-        // sits concentric in the bar's 18px corners (minus the 1px border).
-        // Inset shadow so the divider adds no height.
-        "flex h-[50px] shrink-0 items-center px-[7px]",
-        panel ? "shadow-[inset_0_1px_0_var(--color-border)]" : undefined
-      )}
-    >
-      <Button
-        aria-expanded={panel === "toc"}
-        aria-label="Show table of contents"
-        className="h-9 min-w-0 flex-1 justify-start gap-2.5 pr-3 pl-1 text-left"
-        onClick={onTocToggle}
-        type="button"
-        variant="ghost"
+    <TooltipProvider>
+      <div
+        className={cn(
+          // 50px inner height: 7px around the 36px buttons, so their 10px radius
+          // sits concentric in the bar's 18px corners (minus the 1px border).
+          // Inset shadow so the divider adds no height.
+          "flex h-[50px] shrink-0 items-center px-[7px]",
+          panel ? "shadow-[inset_0_1px_0_var(--color-border)]" : undefined
+        )}
       >
-        <svg
-          aria-hidden="true"
-          className="size-7 shrink-0 -rotate-90"
-          viewBox="0 0 28 28"
+        <BarTooltip
+          label={panel === "toc" ? "Hide contents" : "Table of contents"}
         >
-          <circle
-            className="stroke-border"
-            cx="14"
-            cy="14"
-            fill="none"
-            r="11"
-            strokeWidth="2.5"
-          />
-          <m.circle
-            animate={{ pathLength: progress }}
-            className="stroke-foreground"
-            cx="14"
-            cy="14"
-            fill="none"
-            initial={false}
-            r="11"
-            strokeLinecap="round"
-            strokeWidth="2.5"
-            transition={
-              reduceMotion
-                ? { duration: 0 }
-                : {
-                    damping: 30,
-                    mass: 0.25,
-                    stiffness: 140,
-                    type: "spring",
+          <Button
+            aria-expanded={panel === "toc"}
+            aria-label="Show table of contents"
+            className="h-9 min-w-0 flex-1 justify-start gap-2.5 pr-3 pl-1 text-left"
+            onClick={onTocToggle}
+            type="button"
+            variant="ghost"
+          >
+            <svg
+              aria-hidden="true"
+              className="size-7 shrink-0 -rotate-90"
+              viewBox="0 0 28 28"
+            >
+              <circle
+                className="stroke-border"
+                cx="14"
+                cy="14"
+                fill="none"
+                r="11"
+                strokeWidth="2.5"
+              />
+              <m.circle
+                animate={{ pathLength: progress }}
+                className="stroke-foreground"
+                cx="14"
+                cy="14"
+                fill="none"
+                initial={false}
+                r="11"
+                strokeLinecap="round"
+                strokeWidth="2.5"
+                transition={
+                  reduceMotion
+                    ? { duration: 0 }
+                    : {
+                        damping: 30,
+                        mass: 0.25,
+                        stiffness: 140,
+                        type: "spring",
+                      }
+                }
+              />
+            </svg>
+            <span className="relative min-w-0 flex-1 overflow-hidden">
+              <AnimatePresence initial={false} mode="popLayout">
+                <m.span
+                  key={activeId ?? "issue"}
+                  animate={{ filter: "blur(0px)", opacity: 1 }}
+                  className="block truncate text-sm font-medium"
+                  exit={{ filter: "blur(2px)", opacity: 0 }}
+                  initial={
+                    reduceMotion
+                      ? { opacity: 0 }
+                      : { filter: "blur(2px)", opacity: 0 }
                   }
-            }
-          />
-        </svg>
-        <span className="relative min-w-0 flex-1 overflow-hidden">
-          <AnimatePresence initial={false} mode="popLayout">
-            <m.span
-              key={activeId ?? "issue"}
-              animate={{ filter: "blur(0px)", opacity: 1 }}
-              className="block truncate text-sm font-medium"
-              exit={{ filter: "blur(2px)", opacity: 0 }}
+                  transition={reduceMotion ? { duration: 0 } : FADE_TRANSITION}
+                >
+                  {activeLabel}
+                </m.span>
+              </AnimatePresence>
+            </span>
+          </Button>
+        </BarTooltip>
+
+        <span aria-hidden="true" className="mx-1 h-4 w-px bg-border" />
+
+        <BarTooltip label={getAudioTooltip(speechStatus, readMinutes)}>
+          <Button
+            aria-label={audioLabel}
+            className="text-muted-foreground hover:text-foreground disabled:cursor-not-allowed"
+            disabled={!speechSupported}
+            onClick={onToggleSpeech}
+            size="icon-lg"
+            type="button"
+            variant="ghost"
+          >
+            <AudioIcon className="size-4" />
+          </Button>
+        </BarTooltip>
+
+        <AnimatePresence initial={false}>
+          {speechStatus === "idle" ? null : (
+            <m.div
+              animate={{ opacity: 1, scale: 1 }}
+              className="shrink-0"
+              exit={{ opacity: 0, scale: 0.9 }}
               initial={
-                reduceMotion
-                  ? { opacity: 0 }
-                  : { filter: "blur(2px)", opacity: 0 }
+                reduceMotion ? { opacity: 0 } : { opacity: 0, scale: 0.9 }
               }
               transition={reduceMotion ? { duration: 0 } : FADE_TRANSITION}
             >
-              {activeLabel}
-            </m.span>
-          </AnimatePresence>
-        </span>
-      </Button>
+              <BarTooltip label="Stop">
+                <Button
+                  aria-label="Stop reading article"
+                  className="text-muted-foreground hover:text-foreground"
+                  onClick={onStop}
+                  size="icon-lg"
+                  type="button"
+                  variant="ghost"
+                >
+                  <SquareIcon className="size-3.5" fill="currentColor" />
+                </Button>
+              </BarTooltip>
+            </m.div>
+          )}
+        </AnimatePresence>
 
-      <span aria-hidden="true" className="mx-1 h-4 w-px bg-border" />
-
-      <Button
-        aria-label={audioLabel}
-        className="text-muted-foreground hover:text-foreground disabled:cursor-not-allowed"
-        disabled={!speechSupported}
-        onClick={onToggleSpeech}
-        size="icon-lg"
-        type="button"
-        variant="ghost"
-      >
-        <AudioIcon className="size-4" />
-      </Button>
-
-      <AnimatePresence initial={false}>
-        {speechStatus === "idle" ? null : (
-          <m.div
-            animate={{ opacity: 1, scale: 1 }}
-            className="shrink-0"
-            exit={{ opacity: 0, scale: 0.9 }}
-            initial={reduceMotion ? { opacity: 0 } : { opacity: 0, scale: 0.9 }}
-            transition={reduceMotion ? { duration: 0 } : FADE_TRANSITION}
+        <BarTooltip label={panel === "summary" ? "Hide summary" : "AI summary"}>
+          <Button
+            aria-expanded={panel === "summary"}
+            aria-label="Show AI summary"
+            className={
+              panel === "summary"
+                ? "bg-muted text-foreground"
+                : "text-muted-foreground hover:text-foreground"
+            }
+            onClick={onSummaryToggle}
+            size="icon-lg"
+            type="button"
+            variant="ghost"
           >
-            <Button
-              aria-label="Stop reading article"
-              className="text-muted-foreground hover:text-foreground"
-              onClick={onStop}
-              size="icon-lg"
-              type="button"
-              variant="ghost"
-            >
-              <SquareIcon className="size-3.5" fill="currentColor" />
-            </Button>
-          </m.div>
-        )}
-      </AnimatePresence>
+            <SparklesIcon className="size-4" />
+          </Button>
+        </BarTooltip>
 
-      <Button
-        aria-expanded={panel === "summary"}
-        aria-label="Show AI summary"
-        className={
-          panel === "summary"
-            ? "bg-muted text-foreground"
-            : "text-muted-foreground hover:text-foreground"
-        }
-        onClick={onSummaryToggle}
-        size="icon-lg"
-        type="button"
-        variant="ghost"
-      >
-        <SparklesIcon className="size-4" />
-      </Button>
-
-      <span aria-live="polite" className="sr-only">
-        {getSpeechAnnouncement(speechStatus)}
-      </span>
-    </div>
+        <span aria-live="polite" className="sr-only">
+          {getSpeechAnnouncement(speechStatus)}
+        </span>
+      </div>
+    </TooltipProvider>
   );
 };
 

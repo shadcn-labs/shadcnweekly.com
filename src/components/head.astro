@@ -2,7 +2,7 @@
 import { Font } from "astro:assets";
 import { SEO } from "astro-seo";
 import Analytics from "@vercel/analytics/astro";
-import { SITE } from "@/constants/site";
+import { META_THEME_COLORS, SITE } from "@/constants/site";
 import { ROUTES } from "@/constants/routes";
 import {
   buildOgImagePath,
@@ -10,6 +10,8 @@ import {
   OG_IMAGE_TYPE,
   OG_IMAGE_WIDTH,
 } from "@/lib/og";
+import { organizationJsonLd, websiteJsonLd } from "@/seo/json-ld";
+import JsonLd from "@/seo/json-ld.astro";
 
 const DEFAULT_HEADLINE = "Stay up-to-date on shadcn";
 
@@ -59,10 +61,21 @@ const ogImageURL = new URL(ogImagePath, SITE.URL).href;
 ---
 
 <meta charset="utf-8" />
-<link rel="icon" type="image/svg+xml" href={ROUTES.FAVICON} />
-<meta name="viewport" content="width=device-width" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
 <meta name="generator" content={Astro.generator} />
-<meta name="theme-color" content="#000000" />
+{/* Light by default; layouts/main.astro and the theme toggle swap it for dark. */}
+<meta name="theme-color" content={META_THEME_COLORS.light} />
+<meta name="application-name" content={SITE.NAME} />
+<meta name="apple-mobile-web-app-title" content={SITE.NAME} />
+<meta name="author" content={SITE.AUTHOR.NAME} />
+<meta name="keywords" content={SITE.KEYWORDS.join(", ")} />
+
+<link rel="icon" type="image/svg+xml" href={ROUTES.FAVICON} />
+<link rel="icon" type="image/png" sizes="96x96" href={ROUTES.FAVICON_PNG} />
+<link rel="icon" sizes="32x32" href={ROUTES.FAVICON_ICO} />
+<link rel="apple-touch-icon" sizes="180x180" href={ROUTES.APPLE_TOUCH_ICON} />
+<link rel="manifest" href={ROUTES.MANIFEST} />
+<link rel="author" href={SITE.AUTHOR.URL} />
 
 <SEO
   title={pageTitle}
@@ -92,14 +105,23 @@ const ogImageURL = new URL(ogImagePath, SITE.URL).href;
   }}
   twitter={{
     card: "summary_large_image",
-    site: SITE.AUTHOR.TWITTER,
+    site: SITE.TWITTER,
+    creator: SITE.AUTHOR.TWITTER,
     title: pageTitle,
     description,
     image: ogImageURL,
     imageAlt,
   }}
   extend={{
-    link: [{ rel: "sitemap", href: ROUTES.SITEMAP }],
+    link: [
+      { rel: "sitemap", href: ROUTES.SITEMAP },
+      {
+        rel: "alternate",
+        type: "text/plain",
+        href: ROUTES.LLMS,
+        title: `${SITE.NAME} for LLMs`,
+      },
+    ],
   }}
 />
 
@@ -108,16 +130,5 @@ const ogImageURL = new URL(ogImagePath, SITE.URL).href;
 <Font cssVariable="--font-sans" preload />
 <Analytics />
 
-<script
-  is:inline
-  type="application/ld+json"
-  set:html={JSON.stringify({
-    "@context": "https://schema.org",
-    "@type": "Organization",
-    name: SITE.NAME,
-    url: SITE.URL,
-    logo: `${SITE.URL}${ROUTES.LOGO}`,
-    description: SITE.DESCRIPTION.LONG,
-    sameAs: [`https://x.com/${SITE.AUTHOR.TWITTER.replace("@", "")}`],
-  })}
-/>
+<JsonLd data={websiteJsonLd()} />
+<JsonLd data={organizationJsonLd()} />

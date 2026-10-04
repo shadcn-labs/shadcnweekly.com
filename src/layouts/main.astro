@@ -1,5 +1,6 @@
 ---
 import Head from "@/components/head.astro";
+import { META_THEME_COLORS } from "@/constants/site";
 import "@/styles/global.css";
 
 interface Props {
@@ -21,8 +22,13 @@ const seoProps = Astro.props;
 
 <html lang="en">
   <head>
-    <Head {...seoProps} />
-    <script is:inline>
+    <Head {...seoProps}>
+      <slot name="head" />
+    </Head>
+    <script
+      is:inline
+      define:vars={{ themeColors: META_THEME_COLORS }}
+    >
       // Saved choice from the header toggle wins; otherwise follow the system.
       // Inline so the class is set before first paint (no flash).
       const saved = localStorage.getItem("theme");
@@ -31,6 +37,9 @@ const seoProps = Astro.props;
         (saved !== "light" &&
           window.matchMedia("(prefers-color-scheme: dark)").matches);
       document.documentElement.classList.toggle("dark", dark);
+      document
+        .querySelector('meta[name="theme-color"]')
+        ?.setAttribute("content", dark ? themeColors.dark : themeColors.light);
     </script>
   </head>
   <body class="antialiased flex flex-col min-h-svh">

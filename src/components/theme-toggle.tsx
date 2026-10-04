@@ -6,6 +6,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { META_THEME_COLORS } from "@/constants/site";
 import { useHotkey } from "@/hooks/use-hotkey";
 import { cn } from "@/lib/utils";
 
@@ -15,6 +16,12 @@ const HOTKEY = "d";
 const toggleTheme = () => {
   const dark = !document.documentElement.classList.contains("dark");
   document.documentElement.classList.toggle("dark", dark);
+  document
+    .querySelector('meta[name="theme-color"]')
+    ?.setAttribute(
+      "content",
+      dark ? META_THEME_COLORS.dark : META_THEME_COLORS.light
+    );
   localStorage.setItem("theme", dark ? "dark" : "light");
 };
 

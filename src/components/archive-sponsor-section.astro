@@ -20,16 +20,20 @@ const {
   class: className,
 } = Astro.props;
 
-const meta = await fetchPageMeta(website);
-const title = titleOverride ?? meta.title;
-const description = descriptionOverride ?? meta.description;
-const image = imageOverride ?? meta.image;
+// The sample block in issue previews passes every field; skip the fetch.
+const meta =
+  titleOverride && descriptionOverride && imageOverride
+    ? undefined
+    : await fetchPageMeta(website);
+const title = titleOverride ?? meta?.title;
+const description = descriptionOverride ?? meta?.description;
+const image = imageOverride ?? meta?.image;
 const name = nameOverride ?? title;
 
 const linkClass = "not-typeset no-underline text-foreground hover:underline";
 ---
 
-<section class={cn("flex flex-col gap-3", className)}>
+<section data-sponsor-section class={cn("flex flex-col gap-3", className)}>
   <h2>⚡️ Sponsor: {name}</h2>
 
   {

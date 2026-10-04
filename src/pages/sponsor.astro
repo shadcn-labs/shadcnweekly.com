@@ -1,5 +1,5 @@
 ---
-import { ArrowLeftIcon } from "lucide-react";
+import { ArrowLeftIcon, ArrowUpRightIcon, ChevronDownIcon } from "lucide-react";
 
 import { SponsorModal } from "@/components/sponsor-modal";
 import type { SponsorOffer } from "@/components/sponsor-modal";
@@ -15,20 +15,97 @@ import {
 import { ROUTES } from "@/constants/routes";
 import { SITE } from "@/constants/site";
 import { SPONSOR_PLACEMENTS } from "@/constants/sponsor";
+import type { SponsorPlacement } from "@/constants/sponsor-bookings";
 import { availableWeeks } from "@/constants/sponsor-bookings";
 import Layout from "@/layouts/site.astro";
+import { sponsorPreviewUrl } from "@/lib/sponsor-preview";
+import { breadcrumbJsonLd } from "@/seo/json-ld";
+import JsonLd from "@/seo/json-ld.astro";
 
 // Bookings change only with a deploy, so build-time availability is fresh.
 export const prerender = true;
 
-const offers: SponsorOffer[] = SPONSOR_PLACEMENTS.map((placement) => ({
-  description: placement.description,
-  id: placement.id,
-  issues: placement.issues,
-  price: placement.price,
-  tag: placement.tag,
-  title: placement.title,
-  weeks: availableWeeks(placement.placement),
+interface Preview {
+  caption: string;
+  /** Blob pathname stem: `<stem>-light.webp` and `<stem>-dark.webp`. */
+  stem: string;
+  /** Intrinsic size of the uploaded images, to reserve layout space. */
+  width: number;
+  height: number;
+}
+
+/**
+ * Screenshots of /issues/1 with the sample sponsor in each slot, stored in
+ * Vercel Blob. Recapture from `/issues/1?sponsor=primary,secondary` when the
+ * issue layout changes.
+ */
+const PREVIEW_BASE =
+  "https://yffrvzi8zwbljfuj.public.blob.vercel-storage.com/shadcnweekly/sponsor";
+
+const SLOT_PREVIEWS: Record<SponsorPlacement, Preview[]> = {
+  primary: [
+    {
+      caption: '"Together with" in the issue header',
+      height: 302,
+      stem: "header",
+      width: 1280,
+    },
+    {
+      caption: "Sponsor block in the first half",
+      height: 1207,
+      stem: "primary",
+      width: 1280,
+    },
+  ],
+  secondary: [
+    {
+      caption: 'Sponsor block after "Projects, Packages & Tools"',
+      height: 1208,
+      stem: "secondary",
+      width: 1280,
+    },
+  ],
+};
+
+const previewSrc = (preview: Preview) => ({
+  dark: `${PREVIEW_BASE}/${preview.stem}-dark.webp`,
+  light: `${PREVIEW_BASE}/${preview.stem}-light.webp`,
+});
+
+const TAG_VARIANT = {
+  "Best Value": "success",
+  "Most Performing": "warning",
+  "Save 20%": "success",
+} as const;
+
+const offers: SponsorOffer[] = SPONSOR_PLACEMENTS.map((placement) => {
+  // The sponsor block, not the header strip, reads best at thumbnail size.
+  const preview = SLOT_PREVIEWS[placement.placements[0] ?? "primary"].at(-1);
+  if (!preview) {
+    throw new Error(`No preview for ${placement.id}`);
+  }
+  return {
+    description: placement.description,
+    id: placement.id,
+    issues: placement.issues,
+    placements: placement.placements,
+    price: placement.price,
+    tag: placement.tag,
+    thumbnail: previewSrc(preview),
+    title: placement.title,
+    weeks: availableWeeks(placement.placements),
+  };
+});
+
+const cards = SPONSOR_PLACEMENTS.map((placement) => ({
+  ...placement,
+  livePreview: sponsorPreviewUrl(placement.placements),
+  previews: placement.placements.flatMap((slot) =>
+    SLOT_PREVIEWS[slot].map((preview) => ({
+      ...preview,
+      src: previewSrc(preview),
+    })),
+  ),
 }));
 ---
 
@@ -36,23 +113,9 @@ const offers: SponsorOffer[] = SPONSOR_PLACEMENTS.map((placement) => ({
   title="Sponsor"
   description={`Sponsor ${SITE.NAME} and reach shadcn developers, designers, and builders every week.`}
 >
-  <script
-    is:inline
+  <JsonLd
     slot="head"
-    type="application/ld+json"
-    set:html={JSON.stringify({
-      "@context": "https://schema.org",
-      "@type": "BreadcrumbList",
-      itemListElement: [
-        { "@type": "ListItem", item: SITE.URL, name: "Home", position: 1 },
-        {
-          "@type": "ListItem",
-          item: `${SITE.URL}${ROUTES.SPONSOR}`,
-          name: "Sponsor",
-          position: 2,
-        },
-      ],
-    })}
+    data={breadcrumbJsonLd([{ name: "Sponsor", path: ROUTES.SPONSOR }])}
   />
   <div class="flex flex-1 flex-col items-center py-16">
     <div class="flex max-w-2xl flex-col gap-8">
@@ -77,11 +140,13 @@ const offers: SponsorOffer[] = SPONSOR_PLACEMENTS.map((placement) => ({
       <div class="flex flex-col gap-8">
         <div class="flex flex-col gap-3">
           <h2 class="text-xl font-semibold">Why sponsor {SITE.NAME}?</h2>
-          <div class="flex flex-col gap-3 leading-relaxed text-muted-foreground">
+          <div
+            class="flex flex-col gap-3 leading-relaxed text-muted-foreground"
+          >
             <p>
-              {SITE.NAME} goes out every Monday. It's a curated newsletter for
-              the shadcn ecosystem — new releases, community projects,
-              tutorials, and tools.
+              {SITE.NAME} goes out every Monday. It's a curated newsletter for the
+              shadcn ecosystem — new releases, community projects, tutorials, and
+              tools.
             </p>
             <p>
               This isn't a generic dev blast with 100k subscribers who never
@@ -101,43 +166,105 @@ const offers: SponsorOffer[] = SPONSOR_PLACEMENTS.map((placement) => ({
         <div class="flex flex-col gap-4">
           <h2 class="text-xl font-semibold">Placements</h2>
 
-          <div class="grid gap-4 sm:grid-cols-2">
+          <div class="flex flex-col gap-4">
             {
-              offers.map((offer) => (
-                <Card className="rounded-lg border border-border ring-0">
+              cards.map((card) => (
+                <Card className="border border-border ring-0">
                   <CardHeader>
                     <div class="flex flex-wrap items-center gap-x-3 gap-y-1.5">
-                      <CardTitle>{offer.title}</CardTitle>
-                      {offer.tag === "Most Performing" && (
-                        <Badge variant="warning">{offer.tag}</Badge>
-                      )}
-                      {offer.tag === "Best Value" && (
-                        <Badge variant="success">{offer.tag}</Badge>
-                      )}
+                      <CardTitle>{card.title}</CardTitle>
+                      {card.tag ? (
+                        <Badge variant={TAG_VARIANT[card.tag]}>
+                          {card.tag}
+                        </Badge>
+                      ) : null}
                     </div>
                   </CardHeader>
                   <CardContent>
                     <p class="text-sm leading-relaxed text-muted-foreground">
-                      {offer.description}
+                      {card.description}
                     </p>
                   </CardContent>
-                  <CardFooter className="mt-auto">
-                    <SponsorModal
-                      client:load
-                      offers={offers}
-                      defaultOffer={offer.id}
+                  <CardFooter className="flex-col items-stretch gap-0 p-0">
+                    {/* Mobile: Preview, Live preview, then a full-width Book row. */}
+                    <div class="flex flex-wrap items-center gap-x-2 gap-y-3 p-4">
+                      <button
+                        type="button"
+                        class:list={[
+                          buttonVariants({ size: "sm", variant: "ghost" }),
+                          "group",
+                        ]}
+                        aria-expanded="false"
+                        aria-controls={`preview-${card.id}`}
+                        data-preview-toggle
+                      >
+                        Preview
+                        <ChevronDownIcon className="size-4 transition-transform group-aria-expanded:rotate-180" />
+                      </button>
+                      <a
+                        href={card.livePreview}
+                        target="_blank"
+                        rel="noopener"
+                        class={buttonVariants({ size: "sm", variant: "ghost" })}
+                      >
+                        Live preview
+                        <ArrowUpRightIcon className="size-4" />
+                      </a>
+                      <div class="w-full sm:ml-auto sm:w-auto">
+                        <SponsorModal
+                          client:load
+                          offers={offers}
+                          defaultOffer={card.id}
+                        >
+                          <span
+                            class:list={[
+                              buttonVariants({ variant: "default" }),
+                              "w-full sm:w-auto",
+                            ]}
+                          >
+                            Book for ${card.price}
+                          </span>
+                        </SponsorModal>
+                      </div>
+                    </div>
+                    <div
+                      id={`preview-${card.id}`}
+                      class="flex flex-col gap-4 border-t bg-background p-4"
+                      hidden
                     >
-                      <span class={buttonVariants({ variant: "default" })}>
-                        Book for ${offer.price}
-                      </span>
-                    </SponsorModal>
+                      {card.previews.map((preview) => (
+                        <figure class="flex flex-col gap-2">
+                          <img
+                            src={preview.src.light}
+                            alt={`${card.title}: ${preview.caption}`}
+                            width={preview.width}
+                            height={preview.height}
+                            loading="lazy"
+                            decoding="async"
+                            class="h-auto w-full rounded-md border dark:hidden"
+                          />
+                          <img
+                            src={preview.src.dark}
+                            alt={`${card.title}: ${preview.caption}`}
+                            width={preview.width}
+                            height={preview.height}
+                            loading="lazy"
+                            decoding="async"
+                            class="hidden h-auto w-full rounded-md border dark:block"
+                          />
+                          <figcaption class="text-xs text-muted-foreground">
+                            {preview.caption}
+                          </figcaption>
+                        </figure>
+                      ))}
+                    </div>
                   </CardFooter>
                 </Card>
               ))
             }
           </div>
           <p class="text-xs text-muted-foreground/60">
-            All rates in USD. Payments processed securely by{" "}
+            Payments processed securely by{" "}
             <a
               href="https://dodopayments.com"
               class="link"
@@ -148,10 +275,27 @@ const offers: SponsorOffer[] = SPONSOR_PLACEMENTS.map((placement) => ({
             </a>
             . Booking means you agree to the{" "}
             <a href={ROUTES.TERMS} class="link">terms</a> and{" "}
-            <a href={ROUTES.REFUNDS} class="link">refund policy</a>.
+            <a href={ROUTES.REFUNDS} class="link">refunds</a>.
           </p>
         </div>
       </div>
     </div>
   </div>
 </Layout>
+
+<script>
+  for (const toggle of document.querySelectorAll<HTMLButtonElement>(
+    "[data-preview-toggle]",
+  )) {
+    const panel = document.querySelector<HTMLElement>(
+      `#${toggle.getAttribute("aria-controls")}`,
+    );
+    toggle.addEventListener("click", () => {
+      const open = toggle.getAttribute("aria-expanded") !== "true";
+      toggle.setAttribute("aria-expanded", String(open));
+      if (panel) {
+        panel.hidden = !open;
+      }
+    });
+  }
+</script>

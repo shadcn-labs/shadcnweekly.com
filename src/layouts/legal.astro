@@ -2,8 +2,9 @@
 import { ArrowLeftIcon } from "lucide-react";
 
 import { ROUTES } from "@/constants/routes";
-import { SITE } from "@/constants/site";
 import Layout from "@/layouts/site.astro";
+import { breadcrumbJsonLd } from "@/seo/json-ld";
+import JsonLd from "@/seo/json-ld.astro";
 
 interface Props {
   title: string;
@@ -17,24 +18,7 @@ const { title, description, path, updated } = Astro.props;
 ---
 
 <Layout title={title} description={description}>
-  <script
-    is:inline
-    slot="head"
-    type="application/ld+json"
-    set:html={JSON.stringify({
-      "@context": "https://schema.org",
-      "@type": "BreadcrumbList",
-      itemListElement: [
-        { "@type": "ListItem", item: SITE.URL, name: "Home", position: 1 },
-        {
-          "@type": "ListItem",
-          item: `${SITE.URL}${path}`,
-          name: title,
-          position: 2,
-        },
-      ],
-    })}
-  />
+  <JsonLd slot="head" data={breadcrumbJsonLd([{ name: title, path }])} />
   <div class="flex flex-1 flex-col items-center py-16">
     <div class="flex w-full max-w-2xl flex-col gap-6">
       <div>

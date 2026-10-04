@@ -6,7 +6,7 @@
 src/
 ├── components/
 │   ├── ui/              # shadcn/ui components
-│   ├── head.astro       # HTML head with SEO
+│   ├── head.astro       # HTML head: meta, OG/Twitter, icons, site-wide JSON-LD
 │   ├── site-header.astro # Navigation bar
 │   ├── site-footer.astro # Footer
 │   ├── subscribe-form.astro # Subscribe form
@@ -19,14 +19,21 @@ src/
 ├── lib/
 │   ├── constants.ts     # Site-wide constants
 │   └── utils.ts         # Utility functions
+├── seo/
+│   ├── json-ld.ts       # Structured data builders (WebSite, Organization, breadcrumbs, issues)
+│   └── json-ld.astro    # Renders one JSON-LD object; pass page-level ones with slot="head"
 └── pages/
     ├── index.astro      # Home page
-    ├── archive.astro    # Archive listing
-    ├── archive/[...slug].astro # Individual issue
+    ├── issues.astro     # Issue archive
+    ├── issues/[...slug].astro # Individual issue
     ├── tools.astro      # Tools page
     ├── sponsor.astro    # Sponsor page
     ├── contact.astro    # Contact page
     ├── privacy.astro    # Privacy policy
+    ├── 404.astro        # Not found page
+    ├── robots.txt.ts    # robots.txt (sitemap URL from SITE.URL)
+    ├── llms.txt.ts      # llms.txt index of pages and issues
+    ├── site.webmanifest.ts # Web app manifest
     └── api/
         └── subscribe.json.ts # Subscribe API
 ```
@@ -86,14 +93,16 @@ The double opt-in confirmation email is edited in Kit (form → Settings → Con
 
 ## Sponsorships
 
-`/sponsor` sells the four placements in `src/constants/sponsor.ts` through [Dodo Payments](https://dodopayments.com):
+`/sponsor` sells the five offers in `src/constants/sponsor.ts` through [Dodo Payments](https://dodopayments.com). Each offer books one or more placements (`placements`); the `combo` offer books the 1st and 2nd sponsor slots in the same issue, and the booking modal upsells it from the single-issue 1st/2nd offers.
 
-1. The booking modal collects details, placement and issue week(s); only open weeks at least 3 days out are offered (`availableWeeks` in `src/constants/sponsor-bookings.ts`).
-2. `POST /api/sponsor/checkout` re-validates, re-checks availability and creates a Dodo checkout session carrying the booking as metadata.
-3. Dodo calls `POST /api/sponsor/webhook` (Standard Webhooks signature verified). A `payment.succeeded` sponsor payment opens a PR on branch `sponsor/<payment_id>` adding the booking to `src/data/sponsor-bookings.json`, flagging any week conflicts. Retries are idempotent.
+1. The booking modal collects details, placement and issue week(s); only weeks at least 3 days out and open in every placement of the offer are offered (`availableWeeks` in `src/constants/sponsor-bookings.ts`).
+2. `POST /api/sponsor/checkout` re-validates, re-checks availability and creates a Dodo checkout session carrying the booking as metadata (`placement` is comma-separated for multi-placement offers).
+3. Dodo calls `POST /api/sponsor/webhook` (Standard Webhooks signature verified). A `payment.succeeded` sponsor payment opens a PR on branch `sponsor/<payment_id>` adding one booking per placement to `src/data/sponsor-bookings.json`, flagging any week conflicts. Retries are idempotent.
 4. Review and merge the PR; issues drafted for those weeks include the sponsor. Buyer emails are never committed: look up the payment ID in Dodo.
 
 Bookings made outside Dodo can be added to `src/data/sponsor-bookings.json` by hand; the build validates the file.
+
+Placement previews: `/issues/<n>?sponsor=primary,secondary` scrolls to and highlights those slots, inserting a sample block where an issue has no 2nd sponsor (`src/lib/sponsor-preview.ts`). The /sponsor page links there ("Live preview") and shows screenshots of it (light and dark, 1280px WebP) from the team's Vercel Blob store `aniket508-projects` under `shadcnweekly/sponsor/` (`SLOT_PREVIEWS` in `src/pages/sponsor.astro`). To refresh them, recapture from `/issues/1?sponsor=primary,secondary` and upload with `BLOB_READ_WRITE_TOKEN=… vercel blob put <file> --pathname shadcnweekly/sponsor/<name>.webp`. The files are served with a one-year `Cache-Control`, so upload changed screenshots under new names and update the stems rather than overwriting.
 
 Vercel environment variables (redeploy after changing them):
 
@@ -102,6 +111,6 @@ Vercel environment variables (redeploy after changing them):
 | `DODO_PAYMENTS_API_KEY` | Dodo API key |
 | `DODO_PAYMENTS_ENVIRONMENT` | `test_mode` (default) or `live_mode` |
 | `DODO_PAYMENTS_WEBHOOK_KEY` | Signing secret of the webhook endpoint `https://www.shadcnweekly.com/api/sponsor/webhook` (event `payment.succeeded`) |
-| `DODO_PRODUCT_PRIMARY`, `DODO_PRODUCT_PRIMARY_BUNDLE`, `DODO_PRODUCT_SECONDARY`, `DODO_PRODUCT_SECONDARY_BUNDLE` | Dodo product IDs (one-time price matching the page) |
+| `DODO_PRODUCT_PRIMARY`, `DODO_PRODUCT_PRIMARY_BUNDLE`, `DODO_PRODUCT_SECONDARY`, `DODO_PRODUCT_SECONDARY_BUNDLE`, `DODO_PRODUCT_COMBO` | Dodo product IDs (one-time price matching the page) |
 | `GITHUB_BOOKINGS_TOKEN` | Fine-grained token for this repo with Contents and Pull requests read/write |
 | `BOOKINGS_BASE_BRANCH` | Optional target branch for booking PRs (default `main`) |

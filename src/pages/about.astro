@@ -5,6 +5,8 @@ import { LINKS } from "@/constants/links";
 import { ROUTES } from "@/constants/routes";
 import { SITE } from "@/constants/site";
 import Layout from "@/layouts/site.astro";
+import { breadcrumbJsonLd } from "@/seo/json-ld";
+import JsonLd from "@/seo/json-ld.astro";
 
 const SECTIONS = [
   "Top stories: the biggest launches and releases of the week",
@@ -18,28 +20,9 @@ const SECTIONS = [
   title="About"
   description={`${SITE.NAME} is a weekly newsletter about the shadcn/ui ecosystem, published by ${SITE.ORG.NAME}.`}
 >
-  <script
-    is:inline
+  <JsonLd
     slot="head"
-    type="application/ld+json"
-    set:html={JSON.stringify({
-      "@context": "https://schema.org",
-      "@type": "BreadcrumbList",
-      itemListElement: [
-        {
-          "@type": "ListItem",
-          item: SITE.URL,
-          name: "Home",
-          position: 1,
-        },
-        {
-          "@type": "ListItem",
-          item: `${SITE.URL}${ROUTES.ABOUT}`,
-          name: "About",
-          position: 2,
-        },
-      ],
-    })}
+    data={breadcrumbJsonLd([{ name: "About", path: ROUTES.ABOUT }])}
   />
   <div class="flex flex-1 flex-col items-center py-16">
     <div class="flex w-full max-w-2xl flex-col gap-8">
