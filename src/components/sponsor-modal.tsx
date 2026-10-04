@@ -115,7 +115,7 @@ const TextField = ({
       return (
         <Field data-invalid={fieldState.invalid}>
           <div className="flex items-center justify-between">
-            <FieldLabel htmlFor={id}>
+            <FieldLabel className="gap-1" htmlFor={id}>
               {label}{" "}
               {required ? (
                 <span className="text-destructive">*</span>
