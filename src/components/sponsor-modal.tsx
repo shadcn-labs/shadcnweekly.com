@@ -1,5 +1,5 @@
 import { zodResolver } from "@hookform/resolvers/zod";
-import { ArrowRightIcon, CheckIcon } from "lucide-react";
+import { ArrowRightIcon, CheckIcon, ChevronRightIcon } from "lucide-react";
 import { useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 import type { Control } from "react-hook-form";
@@ -27,6 +27,13 @@ import { ROUTES } from "@/constants/routes";
 import type { SponsorPlacementOffer } from "@/constants/sponsor";
 import { sponsorCheckoutSchema } from "@/lib/sponsor-checkout";
 import { cn } from "@/lib/utils";
+
+/** Selectable tiles (placements, weeks), with the site's neutral selected state. */
+const TILE_CLASS =
+  "flex items-center justify-between rounded-lg border text-left text-sm transition-colors disabled:pointer-events-none disabled:opacity-50";
+const TILE_SELECTED_CLASS = "border-foreground bg-muted";
+const STEP_CLASS = "text-sm font-medium transition-colors";
+const STEP_IDLE_CLASS = "text-muted-foreground hover:text-foreground";
 
 /** An offer as rendered on /sponsor, with build-time availability. */
 export interface SponsorOffer {
@@ -213,14 +220,13 @@ const WeekPicker = ({
               disabled={full}
               onClick={() => onToggle(week)}
               className={cn(
-                "flex items-center justify-between rounded-lg border px-3 py-2 text-left text-sm transition-all disabled:opacity-40",
-                active
-                  ? "border-green-500 bg-green-50 ring-1 ring-green-500/20 dark:bg-green-950/30"
-                  : "border-border hover:bg-muted/50"
+                TILE_CLASS,
+                "px-3 py-2",
+                active ? TILE_SELECTED_CLASS : "hover:bg-muted"
               )}
             >
               {formatWeek(week)}
-              {active ? <CheckIcon className="size-4 text-green-600" /> : null}
+              {active ? <CheckIcon className="size-4" /> : null}
             </button>
           );
         })}
@@ -345,10 +351,8 @@ export const SponsorModal = ({
         </DialogHeader>
 
         <div className="flex min-h-[520px]">
-          <div className="hidden w-64 shrink-0 flex-col gap-3 border-r bg-muted/30 p-4 sm:flex">
-            <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-              Ad Placements
-            </p>
+          <div className="hidden w-64 shrink-0 flex-col gap-3 border-r bg-muted/50 p-4 sm:flex">
+            <p className="text-sm font-medium">Placement</p>
             <div className="flex flex-col gap-2">
               {offers.map((entry) => (
                 <button
@@ -356,10 +360,11 @@ export const SponsorModal = ({
                   type="button"
                   onClick={() => selectOffer(entry.id)}
                   className={cn(
-                    "flex items-center justify-between rounded-lg border p-3 text-left text-sm transition-all",
+                    TILE_CLASS,
+                    "p-3",
                     offer.id === entry.id
-                      ? "border-green-500 bg-green-50 ring-1 ring-green-500/20 dark:bg-green-950/30"
-                      : "border-border hover:bg-muted/50"
+                      ? TILE_SELECTED_CLASS
+                      : "bg-background hover:bg-muted"
                   )}
                 >
                   <span className="font-medium">{entry.title}</span>
@@ -375,27 +380,26 @@ export const SponsorModal = ({
                 type="button"
                 onClick={() => setStep("details")}
                 className={cn(
-                  "text-xs font-semibold uppercase tracking-wider transition-colors",
-                  step === "details"
-                    ? "text-foreground"
-                    : "text-muted-foreground hover:text-foreground"
+                  STEP_CLASS,
+                  step === "details" ? "text-foreground" : STEP_IDLE_CLASS
                 )}
               >
-                Enter Details
+                Enter details
               </button>
-              <span className="text-muted-foreground/40">{">"}</span>
+              <ChevronRightIcon
+                aria-hidden="true"
+                className="size-3.5 text-muted-foreground"
+              />
               <button
                 type="button"
                 onClick={() => detailsValid && setStep("slot")}
                 className={cn(
-                  "text-xs font-semibold uppercase tracking-wider transition-colors",
-                  step === "slot"
-                    ? "text-foreground"
-                    : "text-muted-foreground hover:text-foreground",
-                  !detailsValid && "pointer-events-none opacity-40"
+                  STEP_CLASS,
+                  step === "slot" ? "text-foreground" : STEP_IDLE_CLASS,
+                  !detailsValid && "pointer-events-none opacity-50"
                 )}
               >
-                Pick Weeks
+                Pick weeks
               </button>
             </div>
 
@@ -417,8 +421,8 @@ export const SponsorModal = ({
             </div>
 
             <div className="flex items-center justify-between gap-4 border-t px-6 py-4">
-              <p className="text-xs text-muted-foreground/60">
-                {offer.title} — ${offer.price}
+              <p className="text-sm text-muted-foreground">
+                {offer.title} · ${offer.price}
                 {progress}
               </p>
               {action}

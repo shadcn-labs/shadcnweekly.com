@@ -4,6 +4,8 @@ export const ROUTES = {
   FAVICON: "/favicon.svg",
   HOME: "/",
   ISSUES: "/issues",
+  /** PNG render of `components/logo.tsx`, for places that can't use the SVG (emails, schema). */
+  LOGO: "/logo.png",
   OG: "/og",
   PRIVACY: "/privacy",
   SITEMAP: "/sitemap-index.xml",

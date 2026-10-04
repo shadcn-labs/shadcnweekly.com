@@ -82,6 +82,8 @@ Required repository secrets: `GEMINI_API_KEY`, `TINYFISH_API_KEY`, `KIT_API_KEY`
 
 Emails mirror the issue page design. `scripts/newsletter/email.ts` renders the issue content with inline styles; `scripts/newsletter/kit-template.html` is the outer frame (with Kit's required `{{ message_content }}`, `{{ unsubscribe_url }}` and `{{ address }}`). One-time setup in Kit: Email Templates → New Email Template → Create HTML Template, paste `kit-template.html`, name it exactly `Shadcn Weekly`, save. `newsletter:send` picks that template by name (falls back to the account default with a warning). Re-paste the file into Kit whenever it changes.
 
+The double opt-in confirmation email is edited in Kit (form → Settings → Confirmation email → Edit Email Contents) and uses the account default template. `scripts/newsletter/confirmation-email.html` holds its body as two HTML blocks placed around Kit's own confirmation button (which must stay, since it confirms the subscriber); setup steps are in the file. Set the editor's From address to "Aniket from Shadcn Weekly".
+
 ## Sponsorships
 
 `/sponsor` sells the four placements in `src/constants/sponsor.ts` through [Dodo Payments](https://dodopayments.com):

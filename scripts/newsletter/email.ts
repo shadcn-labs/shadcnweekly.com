@@ -3,6 +3,7 @@ import { readFile } from "node:fs/promises";
 import { Marked } from "marked";
 
 import { LINKS } from "../../src/constants/links.ts";
+import { ROUTES } from "../../src/constants/routes.ts";
 import { fetchPageMeta } from "../../src/lib/page-meta.ts";
 import { isSvgUrl, sponsorLogoHost } from "../../src/lib/sponsor-logo.ts";
 import type { Issue } from "./lib.ts";
@@ -187,7 +188,9 @@ export const renderEmailHtml = async (issue: Issue, webUrl: string) => {
   const sponsorUrl = issue.frontmatter.sponsor;
 
   return [
-    `<p style="${TEXT};margin:0;text-align:center"><a href="${SITE_URL}" style="color:${FG};text-decoration:none;font-size:18px;line-height:28px;font-weight:600;letter-spacing:-0.45px"><img src="${SITE_URL}/email-logo.png" alt="" width="24" height="24" style="vertical-align:middle;border-radius:6px;margin-right:8px" />Shadcn Weekly</a></p>`,
+    // Table, not an inline <img>: Kit forces images to display:block, which
+    // splits an inline logo onto its own line.
+    `<table role="presentation" align="center" cellpadding="0" cellspacing="0" border="0" style="margin:0 auto"><tr><td style="vertical-align:middle;padding-right:8px"><a href="${SITE_URL}" style="text-decoration:none"><img src="${SITE_URL}${ROUTES.LOGO}" alt="" width="24" height="24" style="display:block;width:24px;height:24px;border:0" /></a></td><td style="vertical-align:middle"><a href="${SITE_URL}" style="${TEXT};text-decoration:none;font-size:18px;line-height:28px;font-weight:600;letter-spacing:-0.45px">Shadcn Weekly</a></td></tr></table>`,
     `<p style="${MUTED_P};margin-top:32px;font-size:14px;line-height:20px;text-align:center">Issue #${issue.issue}&nbsp;&nbsp;·&nbsp;&nbsp;${date}&nbsp;&nbsp;·&nbsp;&nbsp;<a href="${webUrl}" style="color:${MUTED};text-decoration:underline;text-underline-offset:3px">Read online</a></p>`,
     `<h1 class="sw-title" style="${TEXT};margin:16px 0 0;font-size:32px;line-height:38px;font-weight:600;letter-spacing:-0.8px;text-align:center">${escapeHtml(title)}</h1>`,
     `<hr style="${HR};margin-top:24px" />`,

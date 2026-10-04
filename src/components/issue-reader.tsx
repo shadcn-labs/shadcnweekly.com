@@ -72,7 +72,7 @@ type SummaryMode = "bullets" | "explainer" | "overview";
 const ACTIVE_HIGHLIGHT = "issue-spoken-word";
 const ACTIVE_BLOCK_CLASS = "issue-reader-block-active";
 const READER_OFFSET = 144;
-/** Collapsed bar: 50px controls + 1px border top and bottom. Radius 26 = pill. */
+/** Collapsed bar: 50px controls + 1px border top and bottom. */
 const BAR_HEIGHT = 52;
 const BAR_WIDTH = 368;
 const PANEL_WIDTH = 448;
@@ -445,11 +445,9 @@ const PANEL_MOTION_REDUCED = {
 
 /** Panels are capped so the open bar never outgrows the viewport. */
 const PANEL_CLASS = "flex max-h-[min(22rem,calc(100dvh-9rem))] flex-col";
-/** 8px inset from the panel corner, so 36px round buttons sit concentric. */
+/** 8px inset from the panel corner. */
 const PANEL_HEADER_CLASS =
   "flex shrink-0 items-center justify-between pt-2 pr-2 pb-1 pl-5";
-const CLOSE_BUTTON_CLASS =
-  "rounded-full text-foreground/55 hover:bg-foreground/10 hover:text-foreground";
 
 interface TocPanelProps {
   activeId: string | undefined;
@@ -473,11 +471,11 @@ const TocPanel = ({
     <div className={PANEL_HEADER_CLASS}>
       <div>
         <p className="text-sm font-semibold">In this issue</p>
-        <p className="text-xs text-foreground/45">Jump to a section</p>
+        <p className="text-xs text-muted-foreground">Jump to a section</p>
       </div>
       <Button
         aria-label="Close table of contents"
-        className={CLOSE_BUTTON_CLASS}
+        className="text-muted-foreground hover:text-foreground"
         onClick={onClose}
         size="icon-lg"
         type="button"
@@ -494,11 +492,11 @@ const TocPanel = ({
             <Button
               aria-current={isActive ? "location" : undefined}
               className={cn(
-                "relative min-h-10 w-full justify-start gap-3 rounded-[18px] pr-3 text-left text-sm whitespace-normal",
+                "relative min-h-9 w-full justify-start gap-3 pr-3 text-left text-sm font-normal whitespace-normal",
                 section.depth > 2 ? "pl-7" : "pl-3",
                 isActive
-                  ? "bg-foreground/10 text-foreground"
-                  : "text-foreground/55 hover:bg-foreground/5 hover:text-foreground/85"
+                  ? "bg-muted text-foreground"
+                  : "text-muted-foreground hover:bg-muted hover:text-foreground"
               )}
               onClick={() => onSelect(section.id)}
               type="button"
@@ -507,7 +505,7 @@ const TocPanel = ({
               <span
                 className={cn(
                   "size-1.5 shrink-0 rounded-full",
-                  isActive ? "bg-sky-500 dark:bg-sky-300" : "bg-foreground/25"
+                  isActive ? "bg-foreground" : "bg-muted-foreground/40"
                 )}
               />
               <span className="line-clamp-1">{section.label}</span>
@@ -537,7 +535,7 @@ const SummaryBody = ({ mode, summary }: SummaryBodyProps) => {
         <li className="flex gap-2" key={bullet}>
           <span
             aria-hidden="true"
-            className="mt-2 size-1 shrink-0 rounded-full bg-sky-500 dark:bg-sky-300"
+            className="mt-2 size-1 shrink-0 rounded-full bg-foreground"
           />
           <span>{bullet}</span>
         </li>
@@ -567,15 +565,17 @@ const SummaryPanel = ({
   >
     <div className={PANEL_HEADER_CLASS}>
       <div className="flex items-center gap-2">
-        <SparklesIcon className="size-4 text-sky-600 dark:text-sky-300" />
+        <SparklesIcon className="size-4" />
         <div>
           <p className="text-sm font-semibold">AI summary</p>
-          <p className="text-xs text-foreground/45">Choose a reading style</p>
+          <p className="text-xs text-muted-foreground">
+            Choose a reading style
+          </p>
         </div>
       </div>
       <Button
         aria-label="Close summary"
-        className={CLOSE_BUTTON_CLASS}
+        className="text-muted-foreground hover:text-foreground"
         onClick={onClose}
         size="icon-lg"
         type="button"
@@ -590,13 +590,9 @@ const SummaryPanel = ({
       onValueChange={(value) => onModeChange(value as SummaryMode)}
       value={mode}
     >
-      <TabsList className="mx-2 grid h-auto w-auto shrink-0 grid-cols-3 gap-1 rounded-[18px] bg-muted p-1">
+      <TabsList className="mx-2 grid w-auto shrink-0 grid-cols-3">
         {SUMMARY_MODES.map(([value, label]) => (
-          <TabsTrigger
-            className="min-h-9 rounded-[14px] px-2 text-xs data-active:bg-background data-active:text-foreground"
-            key={value}
-            value={value}
-          >
+          <TabsTrigger key={value} value={value}>
             {label}
           </TabsTrigger>
         ))}
@@ -604,7 +600,7 @@ const SummaryPanel = ({
 
       {SUMMARY_MODES.map(([value]) => (
         <TabsContent
-          className="min-h-0 overflow-y-auto overscroll-contain px-5 py-3 text-sm leading-relaxed text-pretty text-foreground/75"
+          className="min-h-0 overflow-y-auto overscroll-contain px-5 py-3 text-sm leading-relaxed text-pretty text-muted-foreground"
           key={value}
           value={value}
         >
@@ -618,7 +614,7 @@ const SummaryPanel = ({
         </TabsContent>
       ))}
     </Tabs>
-    <p className="shrink-0 px-5 pb-3 text-[11px] text-foreground/35">
+    <p className="shrink-0 px-5 pb-3 text-xs text-muted-foreground/60">
       AI-generated from this issue. Check the linked sources for full context.
     </p>
   </m.div>
@@ -684,8 +680,9 @@ const ReaderControls = ({
   return (
     <div
       className={cn(
-        // 50px inner height: 7px around the 36px buttons, concentric with the
-        // pill's 25px inner radius. Inset shadow so the divider adds no height.
+        // 50px inner height: 7px around the 36px buttons, so their 10px radius
+        // sits concentric in the bar's 18px corners (minus the 1px border).
+        // Inset shadow so the divider adds no height.
         "flex h-[50px] shrink-0 items-center px-[7px]",
         panel ? "shadow-[inset_0_1px_0_var(--color-border)]" : undefined
       )}
@@ -693,7 +690,7 @@ const ReaderControls = ({
       <Button
         aria-expanded={panel === "toc"}
         aria-label="Show table of contents"
-        className="h-9 min-w-0 flex-1 justify-start gap-2.5 rounded-full pr-3 pl-1 text-left"
+        className="h-9 min-w-0 flex-1 justify-start gap-2.5 pr-3 pl-1 text-left"
         onClick={onTocToggle}
         type="button"
         variant="ghost"
@@ -704,7 +701,7 @@ const ReaderControls = ({
           viewBox="0 0 28 28"
         >
           <circle
-            className="stroke-foreground/20"
+            className="stroke-border"
             cx="14"
             cy="14"
             fill="none"
@@ -713,7 +710,7 @@ const ReaderControls = ({
           />
           <m.circle
             animate={{ pathLength: progress }}
-            className="stroke-sky-500 dark:stroke-sky-300"
+            className="stroke-foreground"
             cx="14"
             cy="14"
             fill="none"
@@ -738,7 +735,7 @@ const ReaderControls = ({
             <m.span
               key={activeId ?? "issue"}
               animate={{ filter: "blur(0px)", opacity: 1 }}
-              className="block truncate text-[13px] font-medium"
+              className="block truncate text-sm font-medium"
               exit={{ filter: "blur(2px)", opacity: 0 }}
               initial={
                 reduceMotion
@@ -753,11 +750,11 @@ const ReaderControls = ({
         </span>
       </Button>
 
-      <span aria-hidden="true" className="mx-1 h-5 w-px bg-foreground/10" />
+      <span aria-hidden="true" className="mx-1 h-4 w-px bg-border" />
 
       <Button
         aria-label={audioLabel}
-        className="rounded-full text-foreground/65 hover:bg-foreground/10 hover:text-foreground disabled:cursor-not-allowed disabled:opacity-30"
+        className="text-muted-foreground hover:text-foreground disabled:cursor-not-allowed"
         disabled={!speechSupported}
         onClick={onToggleSpeech}
         size="icon-lg"
@@ -778,7 +775,7 @@ const ReaderControls = ({
           >
             <Button
               aria-label="Stop reading article"
-              className="rounded-full text-foreground/65 hover:bg-foreground/10 hover:text-foreground"
+              className="text-muted-foreground hover:text-foreground"
               onClick={onStop}
               size="icon-lg"
               type="button"
@@ -793,12 +790,11 @@ const ReaderControls = ({
       <Button
         aria-expanded={panel === "summary"}
         aria-label="Show AI summary"
-        className={cn(
-          "rounded-full",
+        className={
           panel === "summary"
-            ? "bg-foreground/12 text-sky-600 dark:text-sky-300"
-            : "text-foreground/65 hover:bg-foreground/10 hover:text-foreground"
-        )}
+            ? "bg-muted text-foreground"
+            : "text-muted-foreground hover:text-foreground"
+        }
         onClick={onSummaryToggle}
         size="icon-lg"
         type="button"
@@ -866,13 +862,13 @@ const IssueReaderSurface = ({
       data-floating-bar
       className="pointer-events-none fixed bottom-[max(1rem,env(safe-area-inset-bottom))] left-1/2 z-50 -translate-x-1/2"
     >
-      <style>{`::highlight(${ACTIVE_HIGHLIGHT}) { background-color: oklch(0.82 0.1 232 / 0.62); color: inherit; }`}</style>
+      <style>{`::highlight(${ACTIVE_HIGHLIGHT}) { background-color: color-mix(in oklch, var(--foreground) 16%, transparent); color: inherit; }`}</style>
       <m.div
         animate={{
           height: panel ? panelHeight + BAR_HEIGHT : BAR_HEIGHT,
           width: panel ? PANEL_WIDTH : BAR_WIDTH,
         }}
-        className="pointer-events-auto flex max-w-[calc(100vw-2rem)] flex-col overflow-hidden rounded-[26px] border border-border bg-background/95 text-foreground shadow-2xl shadow-black/15 backdrop-blur-xl dark:shadow-black/35"
+        className="pointer-events-auto flex max-w-[calc(100vw-2rem)] flex-col overflow-hidden rounded-2xl border bg-background/95 text-foreground shadow-lg backdrop-blur-md"
         initial={false}
         transition={reduceMotion ? { duration: 0 } : PANEL_TRANSITION}
       >

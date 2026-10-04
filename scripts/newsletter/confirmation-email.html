@@ -1,0 +1,21 @@
+<!--
+  Kit confirmation (double opt-in) email body, styled like the issue emails
+  (scripts/newsletter/email.ts). Kit form → Settings → Confirmation email →
+  Edit Email Contents:
+    1. Delete everything except Kit's "Confirm your subscription" button.
+    2. Above the button: type "/" → HTML Block → Edit → paste BLOCK 1.
+    3. Below the button: type "/" → HTML Block → Edit → paste BLOCK 2.
+  Keep Kit's own button: it confirms the subscriber before redirecting.
+  The footer comes from kit-template.html (the account default template).
+-->
+
+<!-- BLOCK 1 (above the button) -->
+<table role="presentation" align="center" cellpadding="0" cellspacing="0" border="0" style="margin:0 auto"><tr><td style="vertical-align:middle;padding-right:8px"><a href="https://www.shadcnweekly.com" style="text-decoration:none"><img src="https://www.shadcnweekly.com/logo.png" alt="" width="24" height="24" style="display:block;width:24px;height:24px;border:0" /></a></td><td style="vertical-align:middle"><a href="https://www.shadcnweekly.com" style="font-family:Inter,-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:#0a0a0a;text-decoration:none;font-size:18px;line-height:28px;font-weight:600;letter-spacing:-0.45px">Shadcn Weekly</a></td></tr></table>
+<hr style="border:0;border-top:1px solid #e5e5e5;margin:24px 0 0;height:0" />
+<p style="font-family:Inter,-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:#0a0a0a;margin:32px 0 0;font-size:16px;line-height:28px">Hey there,</p>
+<p style="font-family:Inter,-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:#0a0a0a;margin:16px 0 0;font-size:16px;line-height:28px">Thanks for signing up for Shadcn Weekly. Confirm your email and you'll get the best shadcn/ui news, tutorials, projects and tools every Monday.</p>
+
+<!-- BLOCK 2 (below the button) -->
+<p style="font-family:Inter,-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:#737373;margin:16px 0 0;font-size:16px;line-height:28px">Didn't sign up? Ignore this email and you won't be subscribed.</p>
+<p style="font-family:Inter,-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:#0a0a0a;margin:24px 0 0;font-size:16px;line-height:28px">👋 See you on Monday,<br />Aniket</p>
+<p style="font-family:Inter,-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:#737373;margin:24px 0 0;font-size:12px;line-height:20px">Shadcn Weekly is not endorsed by or affiliated with shadcn.</p>

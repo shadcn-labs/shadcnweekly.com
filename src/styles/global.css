@@ -142,6 +142,6 @@
 }
 
 .issue-reader-block-active {
-  background-color: oklch(0.82 0.1 232 / 0.32);
-  border-radius: 0.25rem;
+  background-color: var(--muted);
+  border-radius: var(--radius-sm);
 }
