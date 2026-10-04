@@ -71,12 +71,7 @@ export const SubscribeForm = () => {
 
   return (
     <div className="flex w-full flex-col items-center gap-2">
-      <BorderBeam
-        className="w-full"
-        size="md"
-        duration={4}
-        colorVariant="colorful"
-      >
+      <BorderBeam className="w-full" duration={4} colorVariant="mono">
         <form
           onSubmit={form.handleSubmit(onSubmit)}
           className="flex items-center rounded-full border border-border bg-background p-1"

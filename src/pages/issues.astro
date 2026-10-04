@@ -50,25 +50,25 @@ const formatDate = (date: Date) =>
       <div class="flex flex-col gap-3">
         {
           sortedIssues.map((issue) => (
-            <a
-              href={`/issues/${issue.id}`}
-              class="group flex items-start gap-4 rounded-lg border border-border bg-card p-4 transition-colors hover:bg-accent/50"
-            >
-              <span class="inline-flex size-10 shrink-0 items-center justify-center rounded-full bg-muted text-sm font-semibold text-muted-foreground">
-                #{issue.data.issue}
-              </span>
-              <div class="flex flex-1 flex-col gap-1">
-                <h2 class="text-base font-semibold leading-tight group-hover:underline">
-                  {issue.data.title}
-                </h2>
-                <p class="text-sm text-muted-foreground">
-                  {issue.data.description}
-                </p>
-                <time class="text-xs text-muted-foreground/60">
-                  {formatDate(issue.data.date)}
-                </time>
-              </div>
-            </a>
+              <a
+                href={`/issues/${issue.id}`}
+                class="group flex items-start gap-4 rounded-lg border border-border bg-card p-4 transition-colors hover:bg-accent/50"
+              >
+                <span class="inline-flex size-10 shrink-0 items-center justify-center rounded-full bg-muted text-sm font-semibold text-muted-foreground">
+                  #{issue.data.issue}
+                </span>
+                <div class="flex flex-1 flex-col gap-1">
+                  <h2 class="text-base font-semibold leading-tight group-hover:underline">
+                    {issue.data.title}
+                  </h2>
+                  <p class="text-sm text-muted-foreground">
+                    {issue.data.description}
+                  </p>
+                  <time class="text-xs text-muted-foreground/60">
+                    {formatDate(issue.data.date)}
+                  </time>
+                </div>
+              </a>
           ))
         }
       </div>
