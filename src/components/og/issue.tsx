@@ -3,117 +3,114 @@ import type { CollectionEntry } from "astro:content";
 import {
   clampOgText,
   OG_BORDER,
-  OgBrandMark,
+  OG_PRIMARY,
+  OG_PRIMARY_GRADIENT,
   OgFrame,
   renderOgPng,
 } from "@/lib/og";
-
-const ArrowRightIcon = () => (
-  <svg
-    width="36"
-    height="36"
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="#fafafa"
-    strokeWidth="2"
-    strokeLinecap="round"
-    strokeLinejoin="round"
-    aria-label="Arrow Right"
-  >
-    <path d="M5 12h14" />
-    <path d="m12 5 7 7-7 7" />
-  </svg>
-);
 
 export interface OgIssueProps {
   issue: CollectionEntry<"archive">;
 }
 
-export const OgIssue = ({ issue }: OgIssueProps) => {
-  const highlights =
-    issue.data.highlights.length > 0
-      ? issue.data.highlights.slice(0, 6)
-      : [issue.data.title];
-
-  return (
-    <OgFrame>
+export const OgIssue = ({ issue }: OgIssueProps) => (
+  <OgFrame
+    badge={
       <div
         style={{
+          alignItems: "center",
+          backgroundImage: OG_PRIMARY_GRADIENT,
+          borderRadius: "999px",
+          color: "#ffffff",
           display: "flex",
-          flexDirection: "column",
-          height: "100%",
-          width: "100%",
+          fontSize: "26px",
+          fontWeight: 700,
+          height: "52px",
+          letterSpacing: "-0.01em",
+          paddingLeft: "24px",
+          paddingRight: "24px",
         }}
       >
+        Issue #{issue.data.issue}
+      </div>
+    }
+  >
+    <div style={{ display: "flex", flexDirection: "column", gap: "28px" }}>
+      <div style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
         <div
           style={{
-            alignItems: "center",
-            borderBottom: `1px solid ${OG_BORDER}`,
+            color: OG_PRIMARY,
+            display: "flex",
+            fontSize: "26px",
+            fontWeight: 700,
+          }}
+        >
+          {issue.data.date.toLocaleDateString("en-US", {
+            day: "numeric",
+            month: "long",
+            timeZone: "UTC",
+            year: "numeric",
+          })}
+        </div>
+        <div
+          style={{
+            display: "flex",
+            fontSize: "72px",
+            fontWeight: 700,
+            letterSpacing: "-0.045em",
+            lineHeight: 1.04,
+          }}
+        >
+          {clampOgText(issue.data.title, 60)}
+        </div>
+      </div>
+
+      {issue.data.highlights.length > 0 ? (
+        <div
+          style={{
             display: "flex",
             flexDirection: "row",
-            gap: "20px",
-            paddingBottom: "28px",
-            paddingLeft: "72px",
-            paddingRight: "72px",
-            paddingTop: "72px",
+            flexWrap: "wrap",
+            gap: "12px",
+            maxWidth: "960px",
           }}
         >
-          <OgBrandMark />
-          <div
-            style={{
-              alignItems: "center",
-              background: "#fafafa",
-              borderRadius: "999px",
-              color: "#09090b",
-              display: "flex",
-              fontSize: "22px",
-              fontWeight: 700,
-              height: "40px",
-              justifyContent: "center",
-              paddingLeft: "16px",
-              paddingRight: "16px",
-            }}
-          >
-            #{issue.data.issue}
-          </div>
-        </div>
-
-        <div
-          style={{
-            display: "flex",
-            flex: 1,
-            flexDirection: "column",
-            gap: "28px",
-            justifyContent: "center",
-            paddingBottom: "72px",
-            paddingLeft: "72px",
-            paddingRight: "72px",
-            paddingTop: "48px",
-          }}
-        >
-          {highlights.map((item) => (
+          {issue.data.highlights.slice(0, 3).map((highlight) => (
             <div
-              key={item}
+              key={highlight}
               style={{
                 alignItems: "center",
+                background: "#ffffff",
+                border: `1px solid ${OG_BORDER}`,
+                borderRadius: "999px",
+                color: "#404040",
                 display: "flex",
-                flexDirection: "row",
-                fontSize: "40px",
-                fontWeight: 700,
-                gap: "20px",
-                letterSpacing: "-0.02em",
-                lineHeight: 1.15,
+                fontSize: "24px",
+                gap: "12px",
+                height: "52px",
+                paddingLeft: "20px",
+                paddingRight: "22px",
               }}
             >
-              <ArrowRightIcon />
-              <span>{clampOgText(item, 72)}</span>
+              <div
+                style={{
+                  background: OG_PRIMARY,
+                  borderRadius: "999px",
+                  display: "flex",
+                  height: "10px",
+                  width: "10px",
+                }}
+              />
+              {clampOgText(highlight, 40)}
             </div>
           ))}
         </div>
-      </div>
-    </OgFrame>
-  );
-};
+      ) : null}
+    </div>
+  </OgFrame>
+);
 
-export const generateIssueOg = (issue: CollectionEntry<"archive">) =>
-  renderOgPng(<OgIssue issue={issue} />);
+export const generateIssueOg = (
+  issue: CollectionEntry<"archive">,
+  requestUrl: URL
+) => renderOgPng(<OgIssue issue={issue} />, requestUrl);

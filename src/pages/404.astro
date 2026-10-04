@@ -1,6 +1,6 @@
 ---
 import { getCollection } from "astro:content";
-import { ArrowLeftIcon, ArrowRightIcon } from "lucide-react";
+import { ArrowLeftIcon, NewspaperIcon } from "lucide-react";
 
 import { Logo } from "@/components/logo";
 import { buttonVariants } from "@/components/ui/button";
@@ -14,7 +14,6 @@ import {
 import { ROUTES } from "@/constants/routes";
 import { SITE } from "@/constants/site";
 import Layout from "@/layouts/site.astro";
-import { cn } from "@/lib/utils";
 
 export const prerender = true;
 
@@ -106,7 +105,7 @@ const host = new URL(SITE.URL).host.replace(/^www\./u, "");
       >
         <a
           href={ROUTES.HOME}
-          class={cn(buttonVariants({ variant: "outline" }))}
+          class={buttonVariants({ variant: "ghost" })}
         >
           <ArrowLeftIcon className="size-4" />
           Back to home
@@ -115,8 +114,8 @@ const host = new URL(SITE.URL).host.replace(/^www\./u, "");
           href={latest ? `${ROUTES.ISSUES}/${latest.id}` : ROUTES.ISSUES}
           class={buttonVariants({ variant: "default" })}
         >
+          <NewspaperIcon className="size-4" />
           Browse latest issue
-          <ArrowRightIcon className="size-4" />
         </a>
       </div>
     </EmptyContent>
@@ -141,7 +140,8 @@ const host = new URL(SITE.URL).host.replace(/^www\./u, "");
 
   .postage {
     width: 4rem;
-    height: 4.75rem;
+    /* Both sides must be multiples of the 8px perforation tile so holes land centered on every edge. */
+    height: 5rem;
     padding: 4px;
     background: radial-gradient(
         circle,

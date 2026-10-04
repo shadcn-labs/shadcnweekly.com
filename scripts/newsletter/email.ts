@@ -17,9 +17,9 @@ const BORDER = "#e5e5e5";
 const MUTED_BG = "#f5f5f5";
 const UNDERLINE = "#b5b5b5";
 const FONT =
-  "Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif";
+  "Geist, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif";
 const MONO =
-  "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', monospace";
+  "'Geist Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', monospace";
 
 const TEXT = `font-family:${FONT};color:${FG}`;
 const P = `${TEXT};margin:16px 0 0;font-size:16px;line-height:28px`;

@@ -3,7 +3,7 @@ import { getEntry } from "astro:content";
 
 import { generateIssueOg } from "@/components/og/issue";
 
-export const GET: APIRoute = async ({ params }) => {
+export const GET: APIRoute = async ({ params, url }) => {
   const { slug } = params;
 
   if (!slug) {
@@ -16,7 +16,7 @@ export const GET: APIRoute = async ({ params }) => {
     return new Response("Issue not found", { status: 404 });
   }
 
-  const image = await generateIssueOg(issue);
+  const image = await generateIssueOg(issue, url);
   const body = Uint8Array.from(image).buffer;
 
   return new Response(body, {

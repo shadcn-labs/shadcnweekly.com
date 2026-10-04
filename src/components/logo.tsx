@@ -35,7 +35,7 @@ export const getLogoMarkSVG = (color: string) =>
   `<svg xmlns="http://www.w3.org/2000/svg" viewBox="-16 24 368 200" fill="none" stroke="${color}" ${STROKE} aria-label="${SITE.NAME}">${pathsMarkup}</svg>`;
 
 export const getLogoTypeSVG = (color: string) =>
-  `<svg xmlns="http://www.w3.org/2000/svg" viewBox="-16 24 1520 200" fill="none" aria-label="${SITE.NAME}"><g stroke="${color}" ${STROKE}>${pathsMarkup}</g><text x="408" y="178" fill="${color}" font-family="Inter, ui-sans-serif, system-ui, sans-serif" font-size="150" font-weight="600" letter-spacing="-3">${SITE.NAME}</text></svg>`;
+  `<svg xmlns="http://www.w3.org/2000/svg" viewBox="-16 24 1520 200" fill="none" aria-label="${SITE.NAME}"><g stroke="${color}" ${STROKE}>${pathsMarkup}</g><text x="408" y="178" fill="${color}" font-family="Geist, ui-sans-serif, system-ui, sans-serif" font-size="150" font-weight="600" letter-spacing="-3">${SITE.NAME}</text></svg>`;
 
 export const getAppIconSVG = () =>
   `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" fill="none" aria-label="${SITE.NAME}"><defs><linearGradient id="sw-bg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#41a4ff" /><stop offset="1" stop-color="#0082fb" /></linearGradient></defs><rect width="512" height="512" fill="url(#sw-bg)" rx="128" /><g transform="translate(256 256) scale(0.95) translate(-168 -124)" stroke="#fff" ${STROKE}>${pathsMarkup}</g></svg>`;
