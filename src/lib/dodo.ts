@@ -17,11 +17,15 @@ const apiBase = () =>
     ? "https://live.dodopayments.com"
     : "https://test.dodopayments.com";
 
-/** Product ID for an offer, or undefined when checkout isn't configured. */
-export const dodoProductId = (offer: SponsorPlacementOffer["id"]) =>
-  process.env.DODO_PAYMENTS_API_KEY
-    ? process.env[dodoProductEnv(offer)] || undefined
-    : undefined;
+/** Product ID for an offer; throws when its `DODO_PRODUCT_<OFFER>` is unset. */
+export const dodoProductId = (offer: SponsorPlacementOffer["id"]) => {
+  const name = dodoProductEnv(offer);
+  const id = process.env[name];
+  if (!id) {
+    throw new Error(`${name} is not set`);
+  }
+  return id;
+};
 
 export const createCheckoutSession = async (request: {
   productId: string;

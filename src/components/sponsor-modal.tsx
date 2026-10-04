@@ -4,7 +4,7 @@ import { useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 import type { Control } from "react-hook-form";
 
-import { Button, buttonVariants } from "@/components/ui/button";
+import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
@@ -38,8 +38,6 @@ export interface SponsorOffer {
   tag: SponsorPlacementOffer["tag"];
   /** Open issue Mondays (YYYY-MM-DD) for this offer's slot. */
   weeks: string[];
-  /** False until the Dodo product for this offer is configured. */
-  bookable: boolean;
 }
 
 const detailsSchema = sponsorCheckoutSchema.omit({ offer: true, weeks: true });
@@ -317,25 +315,13 @@ export const SponsorModal = ({
   const progress =
     step === "slot" ? ` · ${weeks.length}/${offer.issues} ${weekUnit}` : "";
 
-  let action: React.ReactNode;
-  if (!offer.bookable) {
-    action = (
-      <a
-        className={buttonVariants({ variant: "default" })}
-        href={mailtoHref(offer)}
-      >
-        Email to book
-      </a>
-    );
-  } else if (step === "details") {
-    action = (
+  const action =
+    step === "details" ? (
       <Button onClick={() => setStep("slot")} disabled={!detailsValid}>
         Pick weeks
         <ArrowRightIcon className="size-4" />
       </Button>
-    );
-  } else {
-    action = (
+    ) : (
       <Button
         onClick={() => void checkout()}
         disabled={!weeksComplete || submitting}
@@ -343,7 +329,6 @@ export const SponsorModal = ({
         {submitting ? "Opening checkout…" : `Pay $${offer.price}`}
       </Button>
     );
-  }
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>

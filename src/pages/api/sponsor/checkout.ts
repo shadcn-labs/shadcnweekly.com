@@ -50,13 +50,6 @@ export const POST: APIRoute = async ({ request, url }) => {
     });
   }
 
-  const productId = dodoProductId(offer.id);
-  if (!productId) {
-    return reply(503, {
-      message: `Online booking isn't available yet. Email ${LINKS.EMAIL} to book.`,
-    });
-  }
-
   try {
     const { checkoutUrl } = await createCheckoutSession({
       email: booking.email,
@@ -71,7 +64,7 @@ export const POST: APIRoute = async ({ request, url }) => {
         ...(booking.description ? { description: booking.description } : {}),
         ...(booking.image ? { image: booking.image } : {}),
       },
-      productId,
+      productId: dodoProductId(offer.id),
       returnUrl: `${url.origin}${ROUTES.SPONSOR_THANKS}`,
     });
     return reply(200, { checkoutUrl });

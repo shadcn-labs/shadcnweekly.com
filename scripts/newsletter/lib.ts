@@ -167,6 +167,31 @@ export const readIssues = async (): Promise<Issue[]> => {
   return issues.toSorted((a, b) => a.issue - b.issue);
 };
 
+export interface Tool {
+  /** File name without extension, e.g. `retroui`. */
+  slug: string;
+  title: string;
+  url: string;
+}
+
+/** Every tool listed on /tools. */
+export const readTools = async (): Promise<Tool[]> => {
+  const entries = await readdir(TOOLS_DIR);
+  const files = entries.filter((file) => /\.mdx?$/u.test(file));
+  return Promise.all(
+    files.map(async (file) => {
+      const { frontmatter } = splitFrontmatter(
+        await readFile(`${TOOLS_DIR}/${file}`, "utf-8")
+      );
+      return {
+        slug: file.replace(/\.mdx?$/u, ""),
+        title: String(frontmatter.title),
+        url: String(frontmatter.url),
+      };
+    })
+  );
+};
+
 const URL_PATTERN = /https?:\/\/[^\s)"'<>\]]+/gu;
 
 /** Every URL already published in an issue or listed as a tool. */

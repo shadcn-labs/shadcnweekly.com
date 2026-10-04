@@ -12,19 +12,16 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { LINKS } from "@/constants/links";
 import { ROUTES } from "@/constants/routes";
 import { SITE } from "@/constants/site";
 import { SPONSOR_PLACEMENTS } from "@/constants/sponsor";
 import { availableWeeks } from "@/constants/sponsor-bookings";
 import Layout from "@/layouts/site.astro";
-import { dodoProductId } from "@/lib/dodo";
 
-// Bookings and Dodo config change only with a deploy, so build-time is fresh.
+// Bookings change only with a deploy, so build-time availability is fresh.
 export const prerender = true;
 
 const offers: SponsorOffer[] = SPONSOR_PLACEMENTS.map((placement) => ({
-  bookable: Boolean(dodoProductId(placement.id)),
   description: placement.description,
   id: placement.id,
   issues: placement.issues,
@@ -33,7 +30,6 @@ const offers: SponsorOffer[] = SPONSOR_PLACEMENTS.map((placement) => ({
   title: placement.title,
   weeks: availableWeeks(placement.placement),
 }));
-const checkoutEnabled = offers.some((offer) => offer.bookable);
 ---
 
 <Layout
@@ -105,12 +101,12 @@ const checkoutEnabled = offers.some((offer) => offer.bookable);
         <div class="flex flex-col gap-4">
           <h2 class="text-xl font-semibold">Placements</h2>
 
-          <div class="flex flex-col gap-4">
+          <div class="grid gap-4 sm:grid-cols-2">
             {
               offers.map((offer) => (
                 <Card className="rounded-lg border border-border ring-0">
                   <CardHeader>
-                    <div class="flex items-center gap-3">
+                    <div class="flex flex-wrap items-center gap-x-3 gap-y-1.5">
                       <CardTitle>{offer.title}</CardTitle>
                       {offer.tag === "Most Performing" && (
                         <Badge variant="warning">{offer.tag}</Badge>
@@ -125,14 +121,14 @@ const checkoutEnabled = offers.some((offer) => offer.bookable);
                       {offer.description}
                     </p>
                   </CardContent>
-                  <CardFooter>
+                  <CardFooter className="mt-auto">
                     <SponsorModal
                       client:load
                       offers={offers}
                       defaultOffer={offer.id}
                     >
                       <span class={buttonVariants({ variant: "default" })}>
-                        Book — ${offer.price}
+                        Book for ${offer.price}
                       </span>
                     </SponsorModal>
                   </CardFooter>
@@ -141,31 +137,16 @@ const checkoutEnabled = offers.some((offer) => offer.bookable);
             }
           </div>
           <p class="text-xs text-muted-foreground/60">
-            All rates in USD.{" "}
-            {
-              checkoutEnabled ? (
-                <>
-                  Payments processed securely by{" "}
-                  <a
-                    href="https://dodopayments.com"
-                    class="link"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                  >
-                    Dodo Payments
-                  </a>
-                  .
-                </>
-              ) : (
-                <>
-                  Online booking opens soon — email{" "}
-                  <a href={`mailto:${LINKS.EMAIL}`} class="link">
-                    {LINKS.EMAIL}
-                  </a>{" "}
-                  to book now.
-                </>
-              )
-            }
+            All rates in USD. Payments processed securely by{" "}
+            <a
+              href="https://dodopayments.com"
+              class="link"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              Dodo Payments
+            </a>
+            .
           </p>
         </div>
       </div>

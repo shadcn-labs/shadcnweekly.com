@@ -1,4 +1,3 @@
-import { existsSync } from "node:fs";
 import { writeFile } from "node:fs/promises";
 
 import { stringify as stringifyYaml } from "yaml";
@@ -15,12 +14,14 @@ import {
 } from "../../src/constants/sponsor-bookings.ts";
 import { fetchPageMeta } from "../../src/lib/page-meta.ts";
 import { collectCandidates } from "./collect.ts";
-import type { Candidate, Issue } from "./lib.ts";
+import type { Candidate, Issue, Tool } from "./lib.ts";
 import {
   addDays,
   ARCHIVE_DIR,
   log,
+  normalizeUrl,
   readIssues,
+  readTools,
   requestJson,
   requireEnv,
   setOutput,
@@ -63,6 +64,8 @@ const draftSchema = z.object({
   projects: z
     .array(
       entrySchema.extend({
+        /** Slug of the listed tool this project updates; null when new. */
+        existingTool: z.string().nullish(),
         name: z.string().min(1),
         toolDescription: z.string().min(20).max(300),
       })
@@ -109,7 +112,7 @@ You receive this week's collected items as JSON, each with a numeric "id". Write
   "top": [{ "id": 1, "heading": "Name: Short Tagline", "body": "1-3 short markdown paragraphs" }],
   "roundup": { "heading": "Theme of the Week", "intro": "one sentence", "items": [{ "id": 2, "label": "Name", "summary": "one sentence" }] } or null,
   "articles": [{ "id": 3, "heading": "...", "body": "1-2 sentences" }],
-  "projects": [{ "id": 4, "heading": "...", "body": "1-2 sentences", "name": "Project name", "toolDescription": "one-sentence description for a tools directory" }],
+  "projects": [{ "id": 4, "heading": "...", "body": "1-2 sentences", "name": "Project name", "toolDescription": "one-sentence description for a tools directory", "existingTool": "slug from the listed tools when this is an update to one of them, otherwise null" }],
   "related": [{ "id": 5, "heading": "...", "body": "1-2 sentences" }]
 }
 
@@ -120,6 +123,7 @@ Rules:
 - "top": 2-4 biggest stories of the week (launches, official shadcn releases, high-engagement posts).
 - "roundup": optional group of 3+ related smaller updates around one theme; null if there is no theme.
 - "articles": tutorials, blog posts, news coverage. "projects": libraries, registries, blocks, templates, tools (new registry directory entries belong here). "related": adjacent ecosystem items.
+- "projects" may cover new releases or updates of tools already listed on the site. When a project is one of the listed tools (same product, even if renamed or linked differently), set "existingTool" to that tool's "slug"; otherwise set it to null.
 - Skip anything not about shadcn/ui or its ecosystem (e.g. unrelated "shading"/"shader" results), spam, giveaways, and engagement bait.
 - Prefer quality over quantity: leave weak items out.
 - Plain markdown only inside strings: no HTML, no JSX, no curly braces.
@@ -188,6 +192,7 @@ const sanitizeDraft = (draft: Draft, candidates: Candidate[]): Draft => {
 
 const writeDraft = async (
   candidates: Candidate[],
+  tools: Tool[],
   styleExample: string
 ): Promise<Draft> => {
   const models = process.env.LLM_MODEL
@@ -200,7 +205,7 @@ const writeDraft = async (
     const messages = [
       { content: SYSTEM_PROMPT, role: "system" },
       {
-        content: `Example of a previous issue (style reference only, do not reuse its items):\n\n${styleExample.slice(0, STYLE_EXAMPLE_CHARS)}\n\nThis week's items:\n\n${JSON.stringify(items)}`,
+        content: `Example of a previous issue (style reference only, do not reuse its items):\n\n${styleExample.slice(0, STYLE_EXAMPLE_CHARS)}\n\nTools already listed on the site:\n\n${JSON.stringify(tools)}\n\nThis week's items:\n\n${JSON.stringify(items)}`,
         role: "user",
       },
     ];
@@ -377,17 +382,36 @@ const slugify = (value: string) =>
     .replaceAll(/[^a-z0-9]+/gu, "-")
     .replaceAll(/^-|-$/gu, "");
 
+/**
+ * Adds a tools page entry for each new project. Updates to listed tools add
+ * nothing: a project counts as listed when the model matched it to a tool, or
+ * its name or URL matches one (in case the model missed it).
+ */
 const writeTools = async (
   draft: Draft,
   candidates: Candidate[],
+  tools: Tool[],
   issue: number
 ) => {
+  const listedSlugs = new Set(
+    tools.flatMap((tool) => [tool.slug, slugify(tool.title)])
+  );
+  const listedUrls = new Set(tools.map((tool) => normalizeUrl(tool.url)));
+
   const bySlug = new Map(
     draft.projects.map((project) => [slugify(project.name), project])
   );
-  const fresh = [...bySlug].filter(
-    ([slug]) => slug && !existsSync(`${TOOLS_DIR}/${slug}.md`)
-  );
+  const fresh = [...bySlug].filter(([slug, project]) => {
+    const url = project.link ?? candidates[project.id].url;
+    const listed =
+      (project.existingTool && listedSlugs.has(project.existingTool)) ||
+      listedSlugs.has(slug) ||
+      listedUrls.has(normalizeUrl(url));
+    if (listed) {
+      log(`Tool ${project.existingTool ?? slug} already listed, skipping`);
+    }
+    return slug && !listed;
+  });
   await Promise.all(
     fresh.map(async ([slug, project]) => {
       const url = project.link ?? candidates[project.id].url;
@@ -435,7 +459,8 @@ const main = async () => {
     return;
   }
 
-  const draft = await writeDraft(candidates, previous?.body ?? "");
+  const tools = await readTools();
+  const draft = await writeDraft(candidates, tools, previous?.body ?? "");
   const sponsors = pickSponsors(today);
   await writeFile(
     `${ARCHIVE_DIR}/${issue}.mdx`,
@@ -446,7 +471,7 @@ const main = async () => {
       sponsors,
     })
   );
-  await writeTools(draft, candidates, issue);
+  await writeTools(draft, candidates, tools, issue);
   await setOutput("issue", String(issue));
   await setOutput("title", draft.title.replaceAll("\n", " "));
   await setOutput(

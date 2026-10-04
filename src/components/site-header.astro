@@ -1,21 +1,28 @@
 ---
 import GithubLink from "@/components/github-link.astro";
 import { Logo } from "@/components/logo";
-import ThemeToggle from "@/components/theme-toggle.astro";
+import { ThemeToggle } from "@/components/theme-toggle";
+import { buttonVariants } from "@/components/ui/button";
 import { ROUTES } from "@/constants/routes";
 import { SITE } from "@/constants/site";
+import { cn } from "@/lib/utils";
 
 const NAV_LINKS = [
   { href: ROUTES.TOOLS, label: "Tools" },
   { href: ROUTES.ISSUES, label: "Archive" },
-  { href: ROUTES.SPONSOR, label: "Sponsor" },
 ];
 
 const pathname = Astro.url.pathname.replace(/\/$/u, "") || "/";
 const isCurrent = (href: string) =>
   pathname === href || pathname.startsWith(`${href}/`);
 
-// Hamburger bars: 1.5px tall, 4.5px apart, so ±6px meets in the middle.
+const sponsorClass = cn(
+  buttonVariants({ variant: "default" }),
+  "rounded-full px-3.5",
+);
+
+// Hamburger: bars are 18px wide (size-4.5), 1.5px tall, 4.5px apart (6px
+// centre to centre), so ±6px meets in the middle.
 const bar =
   "h-[1.5px] w-full rounded-full bg-current transition duration-300 ease-[cubic-bezier(0.32,0.72,0,1)]";
 ---
@@ -26,7 +33,7 @@ const bar =
       href={ROUTES.HOME}
       class="flex items-center gap-2 transition-opacity hover:opacity-80"
     >
-      <Logo className="size-5" />
+      <Logo className="size-6" />
       <span class="text-lg font-semibold tracking-tight">{SITE.NAME}</span>
     </a>
 
@@ -47,38 +54,45 @@ const bar =
       <span class="ml-2 h-4 w-px bg-border" aria-hidden="true"></span>
       <GithubLink />
       <span class="h-4 w-px bg-border" aria-hidden="true"></span>
-      <ThemeToggle />
+      <ThemeToggle client:load hotkey />
+      <span class="h-4 w-px bg-border" aria-hidden="true"></span>
+      {
+        /* ml-2: a filled button has no inner padding, so this matches the ~16px
+          visible gap the ghost buttons get from their own padding. */
+      }
+      <a href={ROUTES.SPONSOR} class={cn(sponsorClass, "ml-2")}>Sponsor</a>
     </div>
 
-    <button
-      type="button"
-      class="-mr-2 inline-flex size-9 items-center justify-center rounded-md transition-colors hover:bg-muted sm:hidden"
-      aria-controls="mobile-menu"
-      aria-expanded="false"
-      aria-label="Open menu"
-      data-menu-toggle
-    >
-      <span class="flex w-4.5 flex-col gap-[4.5px]" aria-hidden="true">
-        <span
-          class:list={[
-            bar,
-            "group-data-open/header:translate-y-[6px] group-data-open/header:rotate-45",
-          ]}
-        ></span>
-        <span class:list={[bar, "group-data-open/header:opacity-0"]}></span>
-        <span
-          class:list={[
-            bar,
-            "group-data-open/header:-translate-y-[6px] group-data-open/header:-rotate-45",
-          ]}
-        ></span>
-      </span>
-    </button>
+    <div class="flex items-center gap-2 sm:hidden">
+      <a href={ROUTES.SPONSOR} class={cn(sponsorClass, "h-9 px-4")}>Sponsor</a>
+      <button
+        type="button"
+        class="-mr-2 inline-flex size-9 items-center justify-center rounded-md transition-colors hover:bg-muted"
+        aria-controls="mobile-menu"
+        aria-expanded="false"
+        aria-label="Open menu"
+        data-menu-toggle
+      >
+        <span class="flex w-4.5 flex-col gap-[4.5px]" aria-hidden="true">
+          <span
+            class:list={[
+              bar,
+              "group-data-open/header:translate-y-[6px] group-data-open/header:rotate-45",
+            ]}></span>
+          <span class:list={[bar, "group-data-open/header:opacity-0"]}></span>
+          <span
+            class:list={[
+              bar,
+              "group-data-open/header:-translate-y-[6px] group-data-open/header:-rotate-45",
+            ]}></span>
+        </span>
+      </button>
+    </div>
   </div>
 
   <div
     id="mobile-menu"
-    class="pointer-events-none invisible absolute inset-x-3 top-full -translate-y-2 scale-[0.98] rounded-2xl border bg-background/95 p-3 opacity-0 shadow-lg backdrop-blur-md transition-[opacity,translate,scale,visibility] duration-200 ease-out group-data-open/header:pointer-events-auto group-data-open/header:visible group-data-open/header:translate-y-0 group-data-open/header:scale-100 group-data-open/header:opacity-100 sm:hidden"
+    class="pointer-events-none invisible absolute inset-x-3 top-full -translate-y-2 scale-[0.98] rounded-xl border bg-background/95 p-1.5 opacity-0 shadow-lg backdrop-blur-md transition-[opacity,translate,scale,visibility] duration-200 ease-out group-data-open/header:pointer-events-auto group-data-open/header:visible group-data-open/header:translate-y-0 group-data-open/header:scale-100 group-data-open/header:opacity-100 sm:hidden"
     inert
     data-menu-panel
   >
@@ -88,16 +102,17 @@ const bar =
           <a
             href={link.href}
             aria-current={isCurrent(link.href) ? "page" : undefined}
-            class="rounded-lg px-3 py-2.5 text-lg text-foreground/80 transition-colors hover:bg-muted hover:text-foreground aria-[current=page]:font-medium aria-[current=page]:text-foreground"
+            class="rounded-md px-2.5 py-1.5 text-base text-muted-foreground transition-colors hover:bg-muted hover:text-foreground aria-[current=page]:text-foreground"
           >
             {link.label}
           </a>
         ))
       }
     </nav>
-    <div class="mt-2 flex items-center justify-between border-t px-1 pt-3">
+    <span class="-mx-1.5 my-1.5 block h-px bg-border" aria-hidden="true"></span>
+    <div class="flex items-center justify-between">
       <GithubLink large />
-      <ThemeToggle large />
+      <ThemeToggle client:load large />
     </div>
   </div>
 </header>
@@ -141,28 +156,4 @@ const bar =
         }
       });
   }
-
-  // Theme: persist the choice; the inline script in layouts/main.astro
-  // applies it before first paint on later visits.
-  const themeToggles = document.querySelectorAll<HTMLButtonElement>(
-    "[data-theme-toggle]"
-  );
-  const syncLabel = () => {
-    const dark = document.documentElement.classList.contains("dark");
-    for (const button of themeToggles) {
-      button.setAttribute(
-        "aria-label",
-        dark ? "Switch to light theme" : "Switch to dark theme"
-      );
-    }
-  };
-  for (const button of themeToggles) {
-    button.addEventListener("click", () => {
-      const dark = !document.documentElement.classList.contains("dark");
-      localStorage.setItem("theme", dark ? "dark" : "light");
-      document.documentElement.classList.toggle("dark", dark);
-      syncLabel();
-    });
-  }
-  syncLabel();
 </script>

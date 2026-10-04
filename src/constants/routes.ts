@@ -1,4 +1,5 @@
 export const ROUTES = {
+  ABOUT: "/about",
   CONTACT: "/contact",
   FAVICON: "/favicon.svg",
   HOME: "/",

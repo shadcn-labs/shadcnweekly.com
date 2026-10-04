@@ -5,12 +5,11 @@ import { formatStars, getGithubStars } from "@/lib/github-stars";
 import { cn } from "@/lib/utils";
 
 interface Props {
-  /** Bigger tap target (mobile menu). */
+  /** 36px button with a size-5 icon (mobile menu). */
   large?: boolean;
 }
 
 const { large = false } = Astro.props;
-const iconClass = large ? "size-5" : "size-4";
 const stars = await getGithubStars();
 const showStars = stars !== null && stars > 0;
 // Text + icon when there's a count, square icon button otherwise.
@@ -32,13 +31,13 @@ const size = SIZES[showStars ? "text" : "icon"][large ? "large" : "normal"];
     buttonVariants({ size, variant: "ghost" }),
     // 8px side padding keeps the visible gap to the dividers at ~16px.
     showStars && "px-2",
-    "font-normal text-muted-foreground"
+    "font-normal"
   )}
 >
   {/* lucide-react 1.x ships no brand icons. */}
   <svg
     viewBox="0 0 24 24"
-    class={iconClass}
+    class={large ? "size-5" : "size-4"}
     fill="currentColor"
     aria-hidden="true"
   >

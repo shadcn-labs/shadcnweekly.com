@@ -1,44 +1,34 @@
 ---
-import { SITE } from "@/constants/site";
 import { ROUTES } from "@/constants/routes";
+import { SITE } from "@/constants/site";
+
+const FOOTER_LINKS = [
+  { href: ROUTES.ABOUT, label: "About" },
+  { href: ROUTES.CONTACT, label: "Contact" },
+  { href: ROUTES.PRIVACY, label: "Privacy" },
+];
 ---
 
-<footer class="flex flex-col items-center gap-4 px-6 pb-8 pt-4">
+<footer class="flex flex-col items-center gap-4 px-6 pt-4 pb-8">
   <div class="flex items-center gap-2 text-sm text-muted-foreground">
-    <a href={ROUTES.PRIVACY} class="transition-colors hover:text-foreground">
-      Privacy
-    </a>
-    <span>&middot;</span>
-    <a href={ROUTES.CONTACT} class="transition-colors hover:text-foreground">
-      Contact
-    </a>
+    {
+      FOOTER_LINKS.map((link, index) => (
+        <>
+          {index > 0 && <span aria-hidden="true">&middot;</span>}
+          <a href={link.href} class="transition-colors hover:text-foreground">
+            {link.label}
+          </a>
+        </>
+      ))
+    }
   </div>
 
-  <div
-    class="flex flex-col items-center gap-1 text-[10px] leading-tight text-muted-foreground/60"
-  >
-    <p>
-      &copy; 2026 <a
-        href={SITE.ORG.URL}
-        target="_blank"
-        rel="noopener noreferrer"
-        class="link">{SITE.ORG.NAME}</a
-      > | Curated by <a
-        href={SITE.AUTHOR.URL}
-        target="_blank"
-        rel="noopener noreferrer"
-        class="link"
-      >
-        {SITE.AUTHOR.NAME}
-      </a>
-    </p>
-    <p>
-      This newsletter is not endorsed by or affiliated with <a
-        href="https://shadcn.com"
-        target="_blank"
-        rel="noopener noreferrer"
-        class="link">shadcn</a
-      >.
-    </p>
-  </div>
+  <p class="text-[10px] leading-tight text-muted-foreground/60">
+    &copy; <a
+      href={SITE.ORG.URL}
+      target="_blank"
+      rel="noopener noreferrer"
+      class="transition-colors hover:text-foreground">{SITE.ORG.NAME}</a
+    > 2026
+  </p>
 </footer>

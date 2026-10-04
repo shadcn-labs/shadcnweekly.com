@@ -72,15 +72,23 @@ type SummaryMode = "bullets" | "explainer" | "overview";
 const ACTIVE_HIGHLIGHT = "issue-spoken-word";
 const ACTIVE_BLOCK_CLASS = "issue-reader-block-active";
 const READER_OFFSET = 144;
+/** Collapsed bar: 50px controls + 1px border top and bottom. Radius 26 = pill. */
+const BAR_HEIGHT = 52;
+const BAR_WIDTH = 368;
+const PANEL_WIDTH = 448;
 const PANEL_TRANSITION = {
-  bounce: 0.12,
-  duration: 0.44,
+  bounce: 0.08,
+  duration: 0.32,
   type: "spring",
 } as const;
 const FADE_TRANSITION = {
   duration: 0.18,
-  ease: [0.22, 1, 0.36, 1],
+  ease: [0.23, 1, 0.32, 1],
 } as const;
+/** Panel content enters just after the container starts opening. */
+const ENTER_TRANSITION = { ...FADE_TRANSITION, delay: 0.04, duration: 0.2 };
+/** Exits are quicker than entries. */
+const EXIT_TRANSITION = { ...FADE_TRANSITION, duration: 0.12 };
 const SUMMARY_MODES = [
   ["overview", "Overview"],
   ["bullets", "Key points"],
@@ -403,6 +411,46 @@ const useSpeechReader = (articleId: string) => {
   return { status, stop, supported, toggle };
 };
 
+/** Height of the node passed to the returned ref, kept in sync on resize. */
+const useElementHeight = () => {
+  const [node, setNode] = React.useState<HTMLElement | null>(null);
+  const [height, setHeight] = React.useState(0);
+
+  React.useEffect(() => {
+    if (!node) {
+      return;
+    }
+    const observer = new ResizeObserver(([entry]) => {
+      setHeight(entry?.borderBoxSize[0]?.blockSize ?? node.offsetHeight);
+    });
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, [node]);
+
+  return [setNode, height] as const;
+};
+
+const PANEL_MOTION = {
+  animate: { filter: "blur(0px)", opacity: 1, y: 0 },
+  exit: { filter: "blur(2px)", opacity: 0, transition: EXIT_TRANSITION, y: 4 },
+  initial: { filter: "blur(2px)", opacity: 0, y: 4 },
+  transition: ENTER_TRANSITION,
+};
+const PANEL_MOTION_REDUCED = {
+  animate: { opacity: 1 },
+  exit: { opacity: 0 },
+  initial: { opacity: 0 },
+  transition: { duration: 0 },
+};
+
+/** Panels are capped so the open bar never outgrows the viewport. */
+const PANEL_CLASS = "flex max-h-[min(22rem,calc(100dvh-9rem))] flex-col";
+/** 8px inset from the panel corner, so 36px round buttons sit concentric. */
+const PANEL_HEADER_CLASS =
+  "flex shrink-0 items-center justify-between pt-2 pr-2 pb-1 pl-5";
+const CLOSE_BUTTON_CLASS =
+  "rounded-full text-foreground/55 hover:bg-foreground/10 hover:text-foreground";
+
 interface TocPanelProps {
   activeId: string | undefined;
   onClose: () => void;
@@ -419,22 +467,17 @@ const TocPanel = ({
   sections,
 }: TocPanelProps) => (
   <m.div
-    animate={{ filter: "blur(0px)", opacity: 1, y: 0 }}
-    className="absolute inset-x-0 top-0 bottom-[52px] flex flex-col"
-    exit={{ filter: "blur(3px)", opacity: 0, y: 4 }}
-    initial={
-      reduceMotion ? { opacity: 0 } : { filter: "blur(3px)", opacity: 0, y: 4 }
-    }
-    transition={reduceMotion ? { duration: 0 } : FADE_TRANSITION}
+    className={PANEL_CLASS}
+    {...(reduceMotion ? PANEL_MOTION_REDUCED : PANEL_MOTION)}
   >
-    <div className="flex items-center justify-between px-4 pt-4 pb-2">
+    <div className={PANEL_HEADER_CLASS}>
       <div>
         <p className="text-sm font-semibold">In this issue</p>
         <p className="text-xs text-foreground/45">Jump to a section</p>
       </div>
       <Button
         aria-label="Close table of contents"
-        className="rounded-full text-foreground/55 hover:bg-foreground/10 hover:text-foreground"
+        className={CLOSE_BUTTON_CLASS}
         onClick={onClose}
         size="icon-lg"
         type="button"
@@ -443,7 +486,7 @@ const TocPanel = ({
         <XIcon className="size-4" />
       </Button>
     </div>
-    <ul className="min-h-0 flex-1 overflow-y-auto px-2 pb-3">
+    <ul className="min-h-0 flex-auto overflow-y-auto overscroll-contain px-2 pb-2">
       {sections.map((section) => {
         const isActive = activeId === section.id;
         return (
@@ -451,7 +494,7 @@ const TocPanel = ({
             <Button
               aria-current={isActive ? "location" : undefined}
               className={cn(
-                "relative min-h-10 w-full justify-start gap-3 rounded-2xl pr-3 text-left text-sm whitespace-normal",
+                "relative min-h-10 w-full justify-start gap-3 rounded-[18px] pr-3 text-left text-sm whitespace-normal",
                 section.depth > 2 ? "pl-7" : "pl-3",
                 isActive
                   ? "bg-foreground/10 text-foreground"
@@ -519,15 +562,10 @@ const SummaryPanel = ({
   summary,
 }: SummaryPanelProps) => (
   <m.div
-    animate={{ filter: "blur(0px)", opacity: 1, y: 0 }}
-    className="absolute inset-x-0 top-0 bottom-[52px] flex flex-col"
-    exit={{ filter: "blur(3px)", opacity: 0, y: 4 }}
-    initial={
-      reduceMotion ? { opacity: 0 } : { filter: "blur(3px)", opacity: 0, y: 4 }
-    }
-    transition={reduceMotion ? { duration: 0 } : FADE_TRANSITION}
+    className={PANEL_CLASS}
+    {...(reduceMotion ? PANEL_MOTION_REDUCED : PANEL_MOTION)}
   >
-    <div className="flex items-center justify-between px-4 pt-4 pb-2">
+    <div className={PANEL_HEADER_CLASS}>
       <div className="flex items-center gap-2">
         <SparklesIcon className="size-4 text-sky-600 dark:text-sky-300" />
         <div>
@@ -537,7 +575,7 @@ const SummaryPanel = ({
       </div>
       <Button
         aria-label="Close summary"
-        className="rounded-full text-foreground/55 hover:bg-foreground/10 hover:text-foreground"
+        className={CLOSE_BUTTON_CLASS}
         onClick={onClose}
         size="icon-lg"
         type="button"
@@ -548,14 +586,14 @@ const SummaryPanel = ({
     </div>
 
     <Tabs
-      className="min-h-0 flex-1 gap-0"
+      className="min-h-0 flex-auto gap-0"
       onValueChange={(value) => onModeChange(value as SummaryMode)}
       value={mode}
     >
-      <TabsList className="mx-3 grid h-auto w-auto grid-cols-3 gap-1 rounded-2xl bg-muted p-1">
+      <TabsList className="mx-2 grid h-auto w-auto shrink-0 grid-cols-3 gap-1 rounded-[18px] bg-muted p-1">
         {SUMMARY_MODES.map(([value, label]) => (
           <TabsTrigger
-            className="min-h-9 rounded-xl px-2 text-xs data-active:bg-background data-active:text-foreground"
+            className="min-h-9 rounded-[14px] px-2 text-xs data-active:bg-background data-active:text-foreground"
             key={value}
             value={value}
           >
@@ -566,7 +604,7 @@ const SummaryPanel = ({
 
       {SUMMARY_MODES.map(([value]) => (
         <TabsContent
-          className="min-h-0 overflow-y-auto px-4 py-4 text-sm leading-relaxed text-foreground/75"
+          className="min-h-0 overflow-y-auto overscroll-contain px-5 py-3 text-sm leading-relaxed text-pretty text-foreground/75"
           key={value}
           value={value}
         >
@@ -580,7 +618,7 @@ const SummaryPanel = ({
         </TabsContent>
       ))}
     </Tabs>
-    <p className="px-4 pb-3 text-[11px] text-foreground/35">
+    <p className="shrink-0 px-5 pb-3 text-[11px] text-foreground/35">
       AI-generated from this issue. Check the linked sources for full context.
     </p>
   </m.div>
@@ -646,14 +684,16 @@ const ReaderControls = ({
   return (
     <div
       className={cn(
-        "absolute inset-x-0 bottom-0 flex h-[52px] items-center px-2",
-        panel ? "border-t border-border" : undefined
+        // 50px inner height: 7px around the 36px buttons, concentric with the
+        // pill's 25px inner radius. Inset shadow so the divider adds no height.
+        "flex h-[50px] shrink-0 items-center px-[7px]",
+        panel ? "shadow-[inset_0_1px_0_var(--color-border)]" : undefined
       )}
     >
       <Button
         aria-expanded={panel === "toc"}
         aria-label="Show table of contents"
-        className="h-auto min-w-0 flex-1 justify-start gap-2.5 rounded-full px-1.5 py-1 text-left"
+        className="h-9 min-w-0 flex-1 justify-start gap-2.5 rounded-full pr-3 pl-1 text-left"
         onClick={onTocToggle}
         type="button"
         variant="ghost"
@@ -774,16 +814,6 @@ const ReaderControls = ({
   );
 };
 
-const getPanelHeight = (panel: Panel) => {
-  if (panel === "summary") {
-    return 356;
-  }
-  if (panel === "toc") {
-    return 376;
-  }
-  return 52;
-};
-
 const IssueReaderSurface = ({
   articleId,
   sections,
@@ -796,6 +826,7 @@ const IssueReaderSurface = ({
   const [summaryMode, setSummaryMode] = React.useState<SummaryMode>("overview");
   const metrics = useReaderMetrics(articleId, sections);
   const speech = useSpeechReader(articleId);
+  const [setPanelNode, panelHeight] = useElementHeight();
   const activeLabel =
     sections.find(({ id }) => id === metrics.activeId)?.label ??
     sections[0]?.label ??
@@ -832,41 +863,50 @@ const IssueReaderSurface = ({
     <nav
       ref={rootRef}
       aria-label="Issue reader"
+      data-floating-bar
       className="pointer-events-none fixed bottom-[max(1rem,env(safe-area-inset-bottom))] left-1/2 z-50 -translate-x-1/2"
     >
       <style>{`::highlight(${ACTIVE_HIGHLIGHT}) { background-color: oklch(0.82 0.1 232 / 0.62); color: inherit; }`}</style>
       <m.div
         animate={{
-          borderRadius: panel ? 26 : 999,
-          height: getPanelHeight(panel),
-          width: panel ? 448 : 368,
+          height: panel ? panelHeight + BAR_HEIGHT : BAR_HEIGHT,
+          width: panel ? PANEL_WIDTH : BAR_WIDTH,
         }}
-        className="pointer-events-auto relative max-w-[calc(100vw-2rem)] overflow-hidden border border-border bg-background/95 text-foreground shadow-2xl shadow-black/15 backdrop-blur-xl dark:shadow-black/35"
+        className="pointer-events-auto flex max-w-[calc(100vw-2rem)] flex-col overflow-hidden rounded-[26px] border border-border bg-background/95 text-foreground shadow-2xl shadow-black/15 backdrop-blur-xl dark:shadow-black/35"
         initial={false}
         transition={reduceMotion ? { duration: 0 } : PANEL_TRANSITION}
       >
-        <AnimatePresence initial={false} mode="wait">
-          {panel === "toc" ? (
-            <TocPanel
-              activeId={metrics.activeId}
-              key="toc"
-              onClose={() => setPanel(null)}
-              onSelect={selectSection}
-              reduceMotion={reduceMotion}
-              sections={sections}
-            />
-          ) : null}
-          {panel === "summary" ? (
-            <SummaryPanel
-              key="summary"
-              mode={summaryMode}
-              onClose={() => setPanel(null)}
-              onModeChange={setSummaryMode}
-              reduceMotion={reduceMotion}
-              summary={summary}
-            />
-          ) : null}
-        </AnimatePresence>
+        {/* Panel content is laid out at the final width and centred, so it
+            doesn't reflow (and re-measure) while the container morphs. */}
+        <div className="flex min-h-0 flex-1 items-start justify-center overflow-hidden">
+          <div
+            className="w-[446px] max-w-[calc(100vw-2rem-2px)] shrink-0"
+            ref={setPanelNode}
+          >
+            <AnimatePresence initial={false} mode="wait">
+              {panel === "toc" ? (
+                <TocPanel
+                  activeId={metrics.activeId}
+                  key="toc"
+                  onClose={() => setPanel(null)}
+                  onSelect={selectSection}
+                  reduceMotion={reduceMotion}
+                  sections={sections}
+                />
+              ) : null}
+              {panel === "summary" ? (
+                <SummaryPanel
+                  key="summary"
+                  mode={summaryMode}
+                  onClose={() => setPanel(null)}
+                  onModeChange={setSummaryMode}
+                  reduceMotion={reduceMotion}
+                  summary={summary}
+                />
+              ) : null}
+            </AnimatePresence>
+          </div>
+        </div>
 
         <ReaderControls
           activeId={metrics.activeId}

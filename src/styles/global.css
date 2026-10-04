@@ -123,6 +123,11 @@
   body {
     @apply bg-background text-foreground;
   }
+  /* Room for a fixed bottom bar (issue reader): its 52px height, its bottom
+     offset, and a 1rem gap, so the footer is never covered. */
+  body:has([data-floating-bar]) {
+    padding-bottom: calc(52px + max(1rem, env(safe-area-inset-bottom)) + 1rem);
+  }
   html {
     @apply font-sans;
   }
