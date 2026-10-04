@@ -36,7 +36,6 @@ const STYLE_EXAMPLE_CHARS = 8000;
 const ATTEMPTS_PER_MODEL = 3;
 const GEMINI_URL =
   "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions";
-/** Free-tier Gemini models, tried in order. Override with LLM_MODEL. */
 const DEFAULT_MODELS = ["gemini-3.8-flash", "gemini-3.7-flash"];
 
 const DEFAULT_SUBSCRIBE_SECTION = `<SubscribeSection
@@ -44,16 +43,10 @@ const DEFAULT_SUBSCRIBE_SECTION = `<SubscribeSection
   formClass="mt-3"
 />`;
 
-// ---------------------------------------------------------------------------
-// Draft schema: the model references candidates by id, never by raw URL, so
-// every published link is guaranteed to come from a collected source.
-// ---------------------------------------------------------------------------
-
 const entrySchema = z.object({
   body: z.string().min(20),
   heading: z.string().min(3),
   id: z.number().int(),
-  /** Optional: one of the candidate's `links` to use instead of its url. */
   link: z.string().optional(),
 });
 
@@ -64,7 +57,6 @@ const draftSchema = z.object({
   projects: z
     .array(
       entrySchema.extend({
-        /** Slug of the listed tool this project updates; null when new. */
         existingTool: z.string().nullish(),
         name: z.string().min(1),
         toolDescription: z.string().min(20).max(300),
@@ -129,8 +121,6 @@ Rules:
 - Plain markdown only inside strings: no HTML, no JSX, no curly braces.
 - Match the tone of the example issue: factual, concise, developer-focused, no hype.`;
 
-// ---------------------------------------------------------------------------
-
 const callModel = async (
   model: string,
   messages: { role: string; content: string }[]
@@ -160,7 +150,6 @@ const callModel = async (
   return content.replaceAll(/^```(?:json)?\s*|\s*```$/gu, "");
 };
 
-/** Drops entries pointing at unknown or duplicate ids; fixes invalid links. */
 const sanitizeDraft = (draft: Draft, candidates: Candidate[]): Draft => {
   const used = new Set<number>();
   const keep = <T extends { id: number; link?: string }>(entry: T) => {
@@ -242,11 +231,6 @@ const writeDraft = async (
   throw new Error(`Could not produce a valid draft:\n${errors.join("\n")}`);
 };
 
-// ---------------------------------------------------------------------------
-// MDX rendering
-// ---------------------------------------------------------------------------
-
-/** Escapes characters MDX would parse as JSX/expressions, outside code spans. */
 const mdxText = (text: string) =>
   text
     .split(/(?<code>`[^`]*`)/u)
@@ -292,7 +276,6 @@ export interface IssueSponsors {
   secondary?: SponsorContent;
 }
 
-/** Sponsors booked for the issue's Monday–Sunday week. */
 export const pickSponsors = (
   date: string,
   bookings: SponsorBooking[] = SPONSOR_BOOKINGS
@@ -319,7 +302,6 @@ export const pickSponsors = (
   };
 };
 
-/** JSON expression attributes keep quotes and braces in sponsor copy safe. */
 const sponsorComponent = (sponsor: SponsorContent) => {
   const attributes = (
     ["website", "name", "title", "description", "image"] as const
@@ -382,11 +364,6 @@ const slugify = (value: string) =>
     .replaceAll(/[^a-z0-9]+/gu, "-")
     .replaceAll(/^-|-$/gu, "");
 
-/**
- * Adds a tools page entry for each new project. Updates to listed tools add
- * nothing: a project counts as listed when the model matched it to a tool, or
- * its name or URL matches one (in case the model missed it).
- */
 const writeTools = async (
   draft: Draft,
   candidates: Candidate[],

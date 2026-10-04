@@ -78,7 +78,6 @@ type SummaryMode = "bullets" | "explainer" | "overview";
 const ACTIVE_HIGHLIGHT = "issue-spoken-word";
 const ACTIVE_BLOCK_CLASS = "issue-reader-block-active";
 const READER_OFFSET = 144;
-/** Collapsed bar: 50px controls + 1px border top and bottom. */
 const BAR_HEIGHT = 52;
 const BAR_WIDTH = 368;
 const PANEL_WIDTH = 448;
@@ -91,9 +90,7 @@ const FADE_TRANSITION = {
   duration: 0.18,
   ease: [0.23, 1, 0.32, 1],
 } as const;
-/** Panel content enters just after the container starts opening. */
 const ENTER_TRANSITION = { ...FADE_TRANSITION, delay: 0.04, duration: 0.2 };
-/** Exits are quicker than entries. */
 const EXIT_TRANSITION = { ...FADE_TRANSITION, duration: 0.12 };
 const SUMMARY_MODES = [
   ["overview", "Overview"],
@@ -329,7 +326,6 @@ const useReaderMetrics = (articleId: string, sections: IssueSection[]) => {
     update();
     const resizeObserver = new ResizeObserver(update);
     resizeObserver.observe(article);
-    // Continuous progress cannot be represented by section intersections alone.
     // eslint-disable-next-line github/no-useless-passive, github/prefer-observers
     window.addEventListener("scroll", update, { passive: true });
     return () => {
@@ -417,7 +413,6 @@ const useSpeechReader = (articleId: string) => {
   return { status, stop, supported, toggle };
 };
 
-/** Height of the node passed to the returned ref, kept in sync on resize. */
 const useElementHeight = () => {
   const [node, setNode] = React.useState<HTMLElement | null>(null);
   const [height, setHeight] = React.useState(0);
@@ -449,9 +444,7 @@ const PANEL_MOTION_REDUCED = {
   transition: { duration: 0 },
 };
 
-/** Panels are capped so the open bar never outgrows the viewport. */
 const PANEL_CLASS = "flex max-h-[min(22rem,calc(100dvh-9rem))] flex-col";
-/** 8px inset from the panel corner. */
 const PANEL_HEADER_CLASS =
   "flex shrink-0 items-center justify-between pt-2 pr-2 pb-1 pl-5";
 
@@ -511,7 +504,7 @@ const TocPanel = ({
               <span
                 className={cn(
                   "size-1.5 shrink-0 rounded-full",
-                  isActive ? "bg-foreground" : "bg-muted-foreground/40"
+                  isActive ? "bg-primary" : "bg-muted-foreground/40"
                 )}
               />
               <span className="line-clamp-1">{section.label}</span>
@@ -636,7 +629,6 @@ const getAudioLabel = (status: SpeechStatus, readMinutes: number) => {
   return `Listen to article, about ${readMinutes} minutes`;
 };
 
-/** Short hover text; the aria-labels stay the fuller descriptions. */
 const getAudioTooltip = (status: SpeechStatus, readMinutes: number) => {
   if (status === "playing") {
     return "Pause";
@@ -647,7 +639,6 @@ const getAudioTooltip = (status: SpeechStatus, readMinutes: number) => {
   return `Listen · ${readMinutes} min`;
 };
 
-/** Bar button with a tooltip above it; `children` is the button element. */
 const BarTooltip = ({
   children,
   label,
@@ -714,9 +705,6 @@ const ReaderControls = ({
     <TooltipProvider>
       <div
         className={cn(
-          // 50px inner height: 7px around the 36px buttons, so their 10px radius
-          // sits concentric in the bar's 18px corners (minus the 1px border).
-          // Inset shadow so the divider adds no height.
           "flex h-[50px] shrink-0 items-center px-[7px]",
           panel ? "shadow-[inset_0_1px_0_var(--color-border)]" : undefined
         )}
@@ -747,7 +735,7 @@ const ReaderControls = ({
               />
               <m.circle
                 animate={{ pathLength: progress }}
-                className="stroke-foreground"
+                className="stroke-primary"
                 cx="14"
                 cy="14"
                 fill="none"
@@ -907,7 +895,7 @@ const IssueReaderSurface = ({
       ref={rootRef}
       aria-label="Issue reader"
       data-floating-bar
-      className="pointer-events-none fixed bottom-[max(1rem,env(safe-area-inset-bottom))] left-1/2 z-50 -translate-x-1/2"
+      className="pointer-events-none sticky bottom-[max(1rem,env(safe-area-inset-bottom))] z-50 h-[52px] w-full"
     >
       <style>{`::highlight(${ACTIVE_HIGHLIGHT}) { background-color: color-mix(in oklch, var(--foreground) 16%, transparent); color: inherit; }`}</style>
       <m.div
@@ -915,12 +903,10 @@ const IssueReaderSurface = ({
           height: panel ? panelHeight + BAR_HEIGHT : BAR_HEIGHT,
           width: panel ? PANEL_WIDTH : BAR_WIDTH,
         }}
-        className="pointer-events-auto flex max-w-[calc(100vw-2rem)] flex-col overflow-hidden rounded-2xl border bg-background/95 text-foreground shadow-lg backdrop-blur-md"
+        className="pointer-events-auto absolute bottom-0 left-1/2 flex max-w-[calc(100vw-2rem)] -translate-x-1/2 flex-col overflow-hidden rounded-2xl border bg-background/95 text-foreground shadow-lg backdrop-blur-md"
         initial={false}
         transition={reduceMotion ? { duration: 0 } : PANEL_TRANSITION}
       >
-        {/* Panel content is laid out at the final width and centred, so it
-            doesn't reflow (and re-measure) while the container morphs. */}
         <div className="flex min-h-0 flex-1 items-start justify-center overflow-hidden">
           <div
             className="w-[446px] max-w-[calc(100vw-2rem-2px)] shrink-0"

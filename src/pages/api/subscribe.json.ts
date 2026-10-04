@@ -35,9 +35,6 @@ export const POST: APIRoute = async ({ request }) => {
       return reply(400, "Please provide an email");
     }
 
-    // Kit's create-subscriber call is an upsert and never reports duplicates,
-    // and re-adding to the form can resend the confirmation email. Look the
-    // address up first (any state) and stop before touching anything.
     const { subscribers = [] } = (await kit(
       `/subscribers?email_address=${encodeURIComponent(email)}&status=all&slim=true`
     )) as { subscribers?: { state: KitState }[] };
@@ -52,10 +49,6 @@ export const POST: APIRoute = async ({ request }) => {
       );
     }
 
-    // New, or previously unsubscribed / bounced: (re)subscribe via the form.
-    // Created `inactive` because the form uses double opt-in ("Send
-    // confirmation email" on, "Auto-confirm" off): Kit sends the confirmation
-    // email and activates the subscriber once they click it.
     const body = JSON.stringify({ email_address: email });
     await kit("/subscribers", {
       body: JSON.stringify({ email_address: email, state: "inactive" }),

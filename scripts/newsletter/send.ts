@@ -11,7 +11,6 @@ import {
 } from "./lib.ts";
 
 const KIT_API = "https://api.kit.com/v4";
-/** Name of the Kit HTML template created from `kit-template.html`. */
 const KIT_TEMPLATE_NAME = "Shadcn Weekly";
 const LIVE_TIMEOUT_MS = 20 * 60_000;
 const LIVE_POLL_MS = 20_000;
@@ -41,11 +40,7 @@ const waitUntilLive = async (url: string) => {
 
 const main = async () => {
   const apiKey = requireEnv("KIT_API_KEY");
-  // The issue number is explicit (from the merged PR), so editing an older
-  // issue later can never resend it.
   const number = Number(process.argv[2]);
-  // --preview creates an unscheduled draft (nothing is sent) under a distinct
-  // subject, so it never blocks the real send's duplicate check.
   const preview = process.argv.includes("--preview");
   const issues = await readIssues();
   const issue = issues.find((entry) => entry.issue === number);
@@ -62,7 +57,6 @@ const main = async () => {
     "X-Kit-Api-Key": apiKey,
   };
 
-  // Duplicate protection guards real sends; previews may be re-created freely.
   const { broadcasts } = await requestJson<{
     broadcasts: { id: number; subject: string }[];
   }>(`${KIT_API}/broadcasts?slim=true&per_page=100`, { headers });
@@ -95,8 +89,6 @@ const main = async () => {
     );
   }
 
-  // No automatic retry: a 5xx after Kit stored the broadcast would double-send.
-  // Re-run the send workflow instead; the duplicate check makes that safe.
   const now = Date.now();
   const { broadcast } = await requestJson<{
     broadcast: { id: number; send_at: string };

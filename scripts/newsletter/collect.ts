@@ -8,15 +8,10 @@ import {
   warn,
 } from "./lib.ts";
 
-/** Per-source cap keeps busy sources (X) from crowding out quiet ones. */
 const MAX_PER_SOURCE = 60;
 
 const toUnix = (isoDate: string) =>
   Math.floor(Date.parse(`${isoDate}T00:00:00Z`) / 1000);
-
-// ---------------------------------------------------------------------------
-// X via FxTwitter (unofficial, keyless). Supports X search operators.
-// ---------------------------------------------------------------------------
 
 interface FxPost {
   url: string;
@@ -40,7 +35,6 @@ const X_QUERIES = [
   '"shadcn/ui" -filter:replies min_faves:10',
   "shadcn registry -filter:replies min_faves:5",
 ];
-/** Accounts whose posts and reposts are always considered. */
 const X_ACCOUNTS = ["shadcn"];
 const X_PAGES_PER_QUERY = 3;
 const FX_API = "https://api.fxtwitter.com/2";
@@ -94,10 +88,6 @@ const collectX = async (since: string): Promise<Candidate[]> => {
     .map(fxPostToCandidate);
 };
 
-// ---------------------------------------------------------------------------
-// Official shadcn/ui registry directory: entries added since `since`.
-// ---------------------------------------------------------------------------
-
 interface DirectoryEntry {
   name: string;
   homepage: string;
@@ -138,10 +128,6 @@ const collectDirectory = async (since: string): Promise<Candidate[]> => {
     }));
 };
 
-// ---------------------------------------------------------------------------
-// awesome-shadcn-ui README: table rows carry an added-on date.
-// ---------------------------------------------------------------------------
-
 const AWESOME_README =
   "https://raw.githubusercontent.com/birobirobiro/awesome-shadcn-ui/main/README.md";
 const AWESOME_ROW =
@@ -175,10 +161,6 @@ const collectAwesome = async (since: string): Promise<Candidate[]> => {
   }
   return candidates;
 };
-
-// ---------------------------------------------------------------------------
-// Open web: TinyFish search (free), Firecrawl fallback, HN and GitHub.
-// ---------------------------------------------------------------------------
 
 const WEB_QUERIES = [
   "shadcn",
@@ -320,8 +302,6 @@ const collectGithub = async (since: string): Promise<Candidate[]> => {
     }));
 };
 
-// ---------------------------------------------------------------------------
-
 const COLLECTORS = {
   awesome: collectAwesome,
   directory: collectDirectory,
@@ -331,10 +311,6 @@ const COLLECTORS = {
   x: collectX,
 } satisfies Record<string, (since: string) => Promise<Candidate[]>>;
 
-/**
- * Gathers fresh, unpublished items from every source. A failing source is
- * reported and skipped so one flaky API never blocks the issue.
- */
 export const collectCandidates = async (
   since: string
 ): Promise<Candidate[]> => {

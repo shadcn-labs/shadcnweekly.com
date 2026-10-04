@@ -41,6 +41,7 @@ export default defineConfig({
       fallbacks: ["sans-serif"],
       name: "Inter",
       provider: fontProviders.fontsource(),
+      weights: ["100 900"],
     },
   ],
   integrations: [
@@ -48,7 +49,6 @@ export default defineConfig({
     react(),
     sitemap({
       changefreq: "weekly",
-      // Post-checkout page: noindex, so keep it out of the sitemap too.
       filter: (page) => !page.includes("/sponsor/thanks"),
       lastmod: new Date(),
       priority: 0.7,

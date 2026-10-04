@@ -22,23 +22,15 @@ import { sponsorPreviewUrl } from "@/lib/sponsor-preview";
 import { breadcrumbJsonLd } from "@/seo/json-ld";
 import JsonLd from "@/seo/json-ld.astro";
 
-// Bookings change only with a deploy, so build-time availability is fresh.
 export const prerender = true;
 
 interface Preview {
   caption: string;
-  /** Blob pathname stem: `<stem>-light.webp` and `<stem>-dark.webp`. */
   stem: string;
-  /** Intrinsic size of the uploaded images, to reserve layout space. */
   width: number;
   height: number;
 }
 
-/**
- * Screenshots of /issues/1 with the sample sponsor in each slot, stored in
- * Vercel Blob. Recapture from `/issues/1?sponsor=primary,secondary` when the
- * issue layout changes.
- */
 const PREVIEW_BASE =
   "https://yffrvzi8zwbljfuj.public.blob.vercel-storage.com/shadcnweekly/sponsor";
 
@@ -79,7 +71,6 @@ const TAG_VARIANT = {
 } as const;
 
 const offers: SponsorOffer[] = SPONSOR_PLACEMENTS.map((placement) => {
-  // The sponsor block, not the header strip, reads best at thumbnail size.
   const preview = SLOT_PREVIEWS[placement.placements[0] ?? "primary"].at(-1);
   if (!preview) {
     throw new Error(`No preview for ${placement.id}`);
@@ -118,7 +109,7 @@ const cards = SPONSOR_PLACEMENTS.map((placement) => ({
     data={breadcrumbJsonLd([{ name: "Sponsor", path: ROUTES.SPONSOR }])}
   />
   <div class="flex flex-1 flex-col items-center py-16">
-    <div class="flex max-w-2xl flex-col gap-8">
+    <div class="reading-container flex flex-col gap-8">
       <div>
         <a
           href={ROUTES.HOME}
@@ -186,7 +177,6 @@ const cards = SPONSOR_PLACEMENTS.map((placement) => ({
                     </p>
                   </CardContent>
                   <CardFooter className="flex-col items-stretch gap-0 p-0">
-                    {/* Mobile: Preview, Live preview, then a full-width Book row. */}
                     <div class="flex flex-wrap items-center gap-x-2 gap-y-3 p-4">
                       <button
                         type="button"

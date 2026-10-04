@@ -10,14 +10,12 @@ import {
 import { cn } from "@/lib/utils";
 
 interface Props {
-  /** 36px button with a size-5 icon (mobile menu). */
   large?: boolean;
 }
 
 const { large = false } = Astro.props;
 const stars = await getGithubStars();
 const showStars = stars !== null && stars > 0;
-// Text + icon when there's a count, square icon button otherwise.
 const SIZES = {
   icon: { large: "icon-lg", normal: "icon" },
   text: { large: "lg", normal: "default" },
@@ -36,12 +34,10 @@ const label = showStars ? formatStarsFull(stars) : "Star on GitHub";
     : "GitHub repository"}
   class={cn(
     buttonVariants({ size, variant: "ghost" }),
-    // 8px side padding keeps the visible gap to the dividers at ~16px.
     showStars && "px-2",
     "font-normal"
   )}
 >
-  {/* lucide-react 1.x ships no brand icons. */}
   <svg
     viewBox="0 0 24 24"
     class={large ? "size-5" : "size-4"}

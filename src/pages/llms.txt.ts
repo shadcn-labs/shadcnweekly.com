@@ -9,7 +9,6 @@ export const prerender = true;
 
 const url = (path: string) => new URL(path, SITE.URL).href;
 
-/** https://llmstxt.org index of the site: pages, every issue, and the tools directory. */
 export const GET: APIRoute = async () => {
   const archive = await getCollection("archive");
   const issues = archive.toSorted((a, b) => b.data.issue - a.data.issue);
@@ -26,6 +25,7 @@ export const GET: APIRoute = async () => {
 - [Tools](${url(ROUTES.TOOLS)}): Directory of ${tools.length} shadcn/ui tools, libraries and resources featured in issues
 - [Sponsor](${url(ROUTES.SPONSOR)}): Sponsorship placements and pricing
 - [About](${url(ROUTES.ABOUT)}): Who publishes the newsletter and how links are picked
+- [Brand](${url(ROUTES.BRAND)}): Logomark downloads, colors and usage guidelines
 - [Contact](${url(ROUTES.CONTACT)}): Get in touch
 
 ## Issues

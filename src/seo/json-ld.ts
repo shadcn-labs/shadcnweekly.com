@@ -2,8 +2,6 @@ import { LINKS } from "@/constants/links";
 import { ROUTES } from "@/constants/routes";
 import { SITE } from "@/constants/site";
 
-/** Structured data for search engines; render with `src/seo/json-ld.astro`. */
-
 const absolute = (path: string) => new URL(path, SITE.URL).href;
 
 const author = {
@@ -21,7 +19,6 @@ const publisher = {
 
 const SCHEMA_CONTEXT = "https://schema.org";
 
-/** Site-wide: rendered on every page by `head.astro`. */
 export const websiteJsonLd = () => ({
   "@context": SCHEMA_CONTEXT,
   "@type": "WebSite",
@@ -32,7 +29,6 @@ export const websiteJsonLd = () => ({
   url: SITE.URL,
 });
 
-/** Site-wide: rendered on every page by `head.astro`. */
 export const organizationJsonLd = () => ({
   "@context": SCHEMA_CONTEXT,
   "@type": "Organization",
@@ -49,7 +45,6 @@ export const organizationJsonLd = () => ({
   url: SITE.URL,
 });
 
-/** `Home › …` trail; Home is prepended. */
 export const breadcrumbJsonLd = (items: { name: string; path: string }[]) => ({
   "@context": SCHEMA_CONTEXT,
   "@type": "BreadcrumbList",
@@ -63,7 +58,6 @@ export const breadcrumbJsonLd = (items: { name: string; path: string }[]) => ({
   ),
 });
 
-/** A newsletter issue page. */
 export const issueJsonLd = (issue: {
   date: Date;
   description: string;

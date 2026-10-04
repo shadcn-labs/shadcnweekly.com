@@ -72,7 +72,7 @@ const formattedDate = issue.data.date.toLocaleDateString("en-US", {
   />
 
   <div class="flex flex-1 flex-col items-center py-16">
-    <div class="flex w-full max-w-2xl flex-col gap-8">
+    <div class="reading-container flex flex-col gap-8">
       <div>
         <a
           href={ROUTES.ISSUES}
@@ -118,6 +118,17 @@ const formattedDate = issue.data.date.toLocaleDateString("en-US", {
           <p class="text-muted-foreground">👋 See you next week!</p>
         </div>
       </article>
+  {
+    sections.length > 0 ? (
+      <IssueReader
+        articleId="issue-article"
+        client:load
+        sections={sections}
+        summary={summary}
+        title={issue.data.title}
+      />
+    ) : null
+  }
     </div>
   </div>
 
@@ -128,14 +139,12 @@ const formattedDate = issue.data.date.toLocaleDateString("en-US", {
   <script>
     import { SPONSOR_PREVIEW_PARAM } from "@/lib/sponsor-preview";
 
-    // `?sponsor=primary,secondary`: highlight those slots (see /sponsor).
     const placements =
       new URLSearchParams(location.search)
         .get(SPONSOR_PREVIEW_PARAM)
         ?.split(",") ?? [];
     const article = document.querySelector("#issue-article");
 
-    /** Sample block after the projects section, where drafts put the 2nd sponsor. */
     const insertSample = (root: Element) => {
       const template = document.querySelector<HTMLTemplateElement>(
         "#sponsor-sample"
@@ -157,22 +166,20 @@ const formattedDate = issue.data.date.toLocaleDateString("en-US", {
 
     const PADDING = 12;
 
-    /** Union of the element's content boxes: tight even for full-width rows. */
     const contentRect = (element: Element) => {
       const range = document.createRange();
       range.selectNodeContents(element);
       return range.getBoundingClientRect();
     };
 
-    /** Outlines `target` with an overlay; layout of the issue is untouched. */
     const highlight = (target: HTMLElement, label: string) => {
       const frame = document.createElement("div");
       frame.setAttribute("aria-hidden", "true");
       frame.className =
-        "pointer-events-none absolute z-30 rounded-xl ring-2 ring-foreground ring-offset-0";
+        "pointer-events-none absolute z-30 rounded-xl ring-2 ring-primary ring-offset-0";
       const tag = document.createElement("span");
       tag.className =
-        "absolute -top-3 left-3 rounded-full bg-foreground px-2 py-0.5 text-xs font-medium text-background";
+        "absolute -top-3 left-3 rounded-full bg-primary px-2 py-0.5 text-xs font-medium text-primary-foreground";
       tag.textContent = label;
       frame.append(tag);
       document.body.append(frame);
@@ -222,7 +229,6 @@ const formattedDate = issue.data.date.toLocaleDateString("en-US", {
         }
       };
       position();
-      // Viewport resizes, image and font loads all resize the body or a slot.
       const observer = new ResizeObserver(position);
       observer.observe(document.body);
       for (const { target } of highlighted) {
@@ -234,15 +240,4 @@ const formattedDate = issue.data.date.toLocaleDateString("en-US", {
     }
   </script>
 
-  {
-    sections.length > 0 ? (
-      <IssueReader
-        articleId="issue-article"
-        client:load
-        sections={sections}
-        summary={summary}
-        title={issue.data.title}
-      />
-    ) : null
-  }
 </Layout>

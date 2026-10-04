@@ -33,10 +33,6 @@ const INQUIRY_TYPE_LABELS = Object.fromEntries(
 
 const field = "flex flex-col gap-2";
 
-/**
- * Posts to FormSubmit, which emails the message to LINKS.EMAIL. The first
- * submission triggers a one-time activation email to that address.
- */
 export const ContactForm = () => (
   <form
     action={`https://formsubmit.co/${LINKS.EMAIL}`}

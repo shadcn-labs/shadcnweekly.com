@@ -1,6 +1,5 @@
 import type { SponsorPlacement } from "./sponsor-bookings.ts";
 
-/** Offer keys; each maps to a Dodo product ID in `DODO_PRODUCT_<ID>`. */
 export const OFFER_IDS = [
   "primary",
   "primary-bundle",
@@ -18,11 +17,8 @@ export const OFFER_TAGS = [
 
 export interface SponsorPlacementOffer {
   id: (typeof OFFER_IDS)[number];
-  /** Slots booked in each picked issue; `combo` takes both. */
   placements: readonly SponsorPlacement[];
-  /** Number of issues (weeks) the buyer picks. */
   issues: 1 | 4;
-  /** Display price in USD; the charged amount is the Dodo product's price. */
   price: number;
   title: string;
   tag: (typeof OFFER_TAGS)[number];
@@ -82,6 +78,5 @@ export const SPONSOR_PLACEMENTS: readonly SponsorPlacementOffer[] = [
   },
 ];
 
-/** Env var holding the Dodo product ID for an offer, e.g. `DODO_PRODUCT_PRIMARY_BUNDLE`. */
 export const dodoProductEnv = (id: SponsorPlacementOffer["id"]) =>
   `DODO_PRODUCT_${id.toUpperCase().replaceAll("-", "_")}`;

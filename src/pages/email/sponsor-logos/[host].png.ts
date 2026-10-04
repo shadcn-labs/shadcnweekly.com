@@ -11,12 +11,6 @@ export const prerender = true;
 const LOGO_SIZE = 96;
 const FETCH_TIMEOUT_MS = 8000;
 
-/**
- * Gmail and Outlook do not render SVG images, so emails link SVG sponsor
- * logos to these build-time PNG conversions (`/email/sponsor-logos/<host>.png`).
- * Raster logos are linked directly and need no conversion. A sponsor whose
- * logo cannot be fetched is skipped rather than failing the build.
- */
 export const getStaticPaths = (async () => {
   const issues = await getCollection("archive");
   const websites = new Set([

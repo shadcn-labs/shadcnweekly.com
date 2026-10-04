@@ -3,13 +3,6 @@ import { createHmac, timingSafeEqual } from "node:crypto";
 import type { SponsorPlacementOffer } from "@/constants/sponsor";
 import { dodoProductEnv } from "@/constants/sponsor";
 
-/**
- * Dodo Payments (merchant of record) for sponsor checkouts. Server-only.
- * Env: DODO_PAYMENTS_API_KEY, DODO_PAYMENTS_WEBHOOK_KEY,
- * DODO_PAYMENTS_ENVIRONMENT (`test_mode` default | `live_mode`) and one
- * `DODO_PRODUCT_<OFFER>` product ID per offer.
- */
-
 const WEBHOOK_TOLERANCE_SECONDS = 5 * 60;
 
 const apiBase = () =>
@@ -17,7 +10,6 @@ const apiBase = () =>
     ? "https://live.dodopayments.com"
     : "https://test.dodopayments.com";
 
-/** Product ID for an offer; throws when its `DODO_PRODUCT_<OFFER>` is unset. */
 export const dodoProductId = (offer: SponsorPlacementOffer["id"]) => {
   const name = dodoProductEnv(offer);
   const id = process.env[name];
@@ -63,12 +55,6 @@ export const createCheckoutSession = async (request: {
   return { checkoutUrl: session.checkout_url, sessionId: session.session_id };
 };
 
-/**
- * Standard Webhooks verification as specified by Dodo: HMAC-SHA256 over
- * `{webhook-id}.{webhook-timestamp}.{raw body}` with the base64-decoded
- * secret (minus `whsec_`), matched against any `v1,<sig>` in the header,
- * rejecting timestamps outside a 5 minute window.
- */
 export const verifyDodoWebhook = (input: {
   body: string;
   id: string | null;

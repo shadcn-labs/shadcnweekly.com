@@ -5,16 +5,7 @@ import {
   weekStart,
 } from "@/constants/sponsor-bookings";
 
-/**
- * Opens a pull request adding a paid booking to
- * `src/data/sponsor-bookings.json`. Every step is idempotent (keyed by the
- * Dodo payment ID), so webhook retries complete a partial run instead of
- * duplicating it. Env: GITHUB_BOOKINGS_TOKEN (fine-grained token with
- * Contents + Pull requests read/write on this repository).
- */
-
 const REPO = "shadcn-labs/shadcnweekly.com";
-/** Target branch for booking PRs; override to test against a staging branch. */
 const BASE = process.env.BOOKINGS_BASE_BRANCH || "main";
 const BOOKINGS_PATH = "src/data/sponsor-bookings.json";
 const FROM_WEBSITE = "(from website)";
@@ -59,7 +50,6 @@ const readBookings = async (ref: string) => {
   return { bookings, sha: file.sha };
 };
 
-/** Weeks of `booking` already taken by another booking for the same slot. */
 export const conflictingWeeks = (
   booking: SponsorBooking,
   existing: SponsorBooking[]
@@ -71,7 +61,6 @@ export const conflictingWeeks = (
   return booking.weeks.filter((week) => taken.has(weekStart(week)));
 };
 
-/** Adds every booking bought by one payment (one per placement) in one PR. */
 export const openBookingPullRequest = async (
   paymentId: string,
   bookings: SponsorBooking[]

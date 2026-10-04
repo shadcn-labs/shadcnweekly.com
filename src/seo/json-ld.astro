@@ -3,7 +3,6 @@ interface Props {
   data: Record<string, unknown>;
 }
 
-// `<` escaped so content can't close the script tag early.
 const json = JSON.stringify(Astro.props.data).replaceAll("<", "\\u003c");
 ---
 

@@ -12,11 +12,6 @@ export const prerender = false;
 const reply = (status: number, body: Record<string, string>) =>
   Response.json(body, { status });
 
-/**
- * Validates a sponsor booking and starts a Dodo checkout. The booking travels
- * as checkout metadata; the webhook (`/api/sponsor/webhook`) turns the paid
- * payment into a booking pull request.
- */
 export const POST: APIRoute = async ({ request, url }) => {
   let input: unknown = null;
   try {
@@ -56,7 +51,6 @@ export const POST: APIRoute = async ({ request, url }) => {
       metadata: {
         kind: "sponsor_booking",
         offer: offer.id,
-        // Comma-separated; the webhook books each placement.
         placement: offer.placements.join(","),
         website: booking.website,
         weeks: weeks.join(","),

@@ -9,16 +9,8 @@ import { isSvgUrl, sponsorLogoHost } from "../../src/lib/sponsor-logo.ts";
 import type { Issue } from "./lib.ts";
 import { request, SITE_URL } from "./lib.ts";
 
-/**
- * Email rendering mirrors the issue page (`src/pages/issues/[...slug].astro`
- * + typeset styles). Every style is inline because email clients strip
- * `<style>` blocks. The outer frame and the legally required unsubscribe link
- * and address live in `kit-template.html`, a Kit HTML template that wraps this
- * content via `{{ message_content }}`.
- */
 export const KIT_TEMPLATE_PATH = new URL("kit-template.html", import.meta.url);
 
-// shadcn neutral tokens from src/styles/global.css, as hex for email clients.
 const FG = "#0a0a0a";
 const MUTED = "#737373";
 const BORDER = "#e5e5e5";
@@ -29,7 +21,6 @@ const FONT =
 const MONO =
   "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', monospace";
 
-// Outlook does not inherit fonts through tables, so every block sets its own.
 const TEXT = `font-family:${FONT};color:${FG}`;
 const P = `${TEXT};margin:16px 0 0;font-size:16px;line-height:28px`;
 const MUTED_P = `${P};color:${MUTED}`;
@@ -79,7 +70,6 @@ const markdown = new Marked({
   },
 });
 
-/** Reads `name="value"` or `name={"json string"}` from JSX attributes. */
 const prop = (attributes: string, name: string) => {
   const groups = new RegExp(
     `\\b${name}=(?:"(?<plain>[^"]*)"|\\{(?<json>"(?:[^"\\\\]|\\\\.)*")\\})`,
@@ -91,15 +81,9 @@ const prop = (attributes: string, name: string) => {
   return groups?.plain;
 };
 
-/** SVG images are dropped because Gmail and Outlook do not render them. */
 const emailImage = (src: string | undefined) =>
   src && !isSvgUrl(src) ? src : undefined;
 
-/**
- * Raster logos are used as-is. SVG logos use the site's build-time PNG
- * conversion (`src/pages/email/sponsor-logos/[host].png.ts`) once deployed;
- * without it the logo is omitted.
- */
 const sponsorLogo = async (
   website: string,
   logo: string | undefined
@@ -114,7 +98,7 @@ const sponsorLogo = async (
       return converted;
     }
   } catch {
-    // Unreachable or not deployed yet: the logo is omitted.
+    void 0;
   }
 };
 
@@ -150,10 +134,7 @@ const togetherWith = async (website: string) => {
   return `<p style="${MUTED_P};margin-top:24px;font-size:14px;line-height:20px;text-align:center">Together with&nbsp;&nbsp;<a href="${escapeHtml(website)}" style="color:${FG};text-decoration:none;font-weight:600">${logoHtml}${escapeHtml(meta.title)}</a></p>`;
 };
 
-/** Issue content in the issue page's design; Kit inserts it into the template. */
 export const renderEmailHtml = async (issue: Issue, webUrl: string) => {
-  // MDX block components start a line; anchoring avoids matching JSX-like
-  // text inside code spans (e.g. `<Message>`).
   const sponsorBlocks = [
     ...issue.body.matchAll(/^<ArchiveSponsorSection\b(?<attrs>[\s\S]*?)\/>/gmu),
   ];
@@ -167,7 +148,6 @@ export const renderEmailHtml = async (issue: Issue, webUrl: string) => {
       sponsorIndex += 1;
       return placeholder;
     })
-    // Remaining JSX components (e.g. SubscribeSection) are site-only.
     .replaceAll(/^<[A-Z][A-Za-z]*\b[\s\S]*?\/>/gmu, "");
   const rendered = await markdown.parse(source);
   const body = rendered.replaceAll(
@@ -188,8 +168,6 @@ export const renderEmailHtml = async (issue: Issue, webUrl: string) => {
   const sponsorUrl = issue.frontmatter.sponsor;
 
   return [
-    // Table, not an inline <img>: Kit forces images to display:block, which
-    // splits an inline logo onto its own line.
     `<table role="presentation" align="center" cellpadding="0" cellspacing="0" border="0" style="margin:0 auto"><tr><td style="vertical-align:middle;padding-right:8px"><a href="${SITE_URL}" style="text-decoration:none"><img src="${SITE_URL}${ROUTES.LOGO}" alt="" width="24" height="24" style="display:block;width:24px;height:24px;border:0" /></a></td><td style="vertical-align:middle"><a href="${SITE_URL}" style="${TEXT};text-decoration:none;font-size:18px;line-height:28px;font-weight:600;letter-spacing:-0.45px">Shadcn Weekly</a></td></tr></table>`,
     `<p style="${MUTED_P};margin-top:32px;font-size:14px;line-height:20px;text-align:center">Issue #${issue.issue}&nbsp;&nbsp;·&nbsp;&nbsp;${date}&nbsp;&nbsp;·&nbsp;&nbsp;<a href="${webUrl}" style="color:${MUTED};text-decoration:underline;text-underline-offset:3px">Read online</a></p>`,
     `<h1 class="sw-title" style="${TEXT};margin:16px 0 0;font-size:32px;line-height:38px;font-weight:600;letter-spacing:-0.8px;text-align:center">${escapeHtml(title)}</h1>`,
@@ -202,7 +180,6 @@ export const renderEmailHtml = async (issue: Issue, webUrl: string) => {
   ].join("\n");
 };
 
-/** Full email as subscribers see it: Kit template with this issue's content. */
 export const renderEmailPreview = async (issue: Issue, webUrl: string) => {
   const template = await readFile(KIT_TEMPLATE_PATH, "utf-8");
   return template

@@ -3,8 +3,6 @@ import { z } from "zod";
 import { OFFER_IDS } from "@/constants/sponsor";
 import { httpUrl } from "@/constants/sponsor-bookings";
 
-/** Shared by the sponsor modal (client validation) and the checkout API. */
-
 const emptyToUndefined = (value: unknown) =>
   typeof value === "string" && value.trim() === "" ? undefined : value;
 

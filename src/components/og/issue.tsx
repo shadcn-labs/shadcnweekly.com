@@ -8,7 +8,6 @@ import {
   renderOgPng,
 } from "@/lib/og";
 
-/** Lucide ArrowRight — inlined because lucide-react uses hooks that Satori can't run. */
 const ArrowRightIcon = () => (
   <svg
     width="36"

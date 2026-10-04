@@ -29,7 +29,6 @@ const host = new URL(SITE.URL).host.replace(/^www\./u, "");
   noindex
 >
   <Empty className="flex-1 gap-10 py-16">
-    {/* A newsletter that came back: addressed to the missing URL, stamped "return to sender". */}
     <div aria-hidden="true" class="w-full max-w-sm px-2">
       <div class="envelope relative">
         <div
@@ -125,7 +124,6 @@ const host = new URL(SITE.URL).host.replace(/^www\./u, "");
 </Layout>
 
 <script>
-  // Address the envelope to the URL that wasn't found.
   const address = document.querySelector("[data-missing-path]");
   if (address) {
     address.textContent = `${location.host.replace(/^www\./u, "")}${location.pathname}`;
@@ -133,7 +131,6 @@ const host = new URL(SITE.URL).host.replace(/^www\./u, "");
 </script>
 
 <style>
-  /* Air-mail border: diagonal stripes in the site's two tones. */
   .airmail {
     background: repeating-linear-gradient(
       -45deg,
@@ -142,10 +139,6 @@ const host = new URL(SITE.URL).host.replace(/^www\./u, "");
     );
   }
 
-  /*
-   * Perforated edge: the 4px ring is a grid of holes; the solid inner face
-   * covers the holes everywhere else.
-   */
   .postage {
     width: 4rem;
     height: 4.75rem;
@@ -159,7 +152,6 @@ const host = new URL(SITE.URL).host.replace(/^www\./u, "");
     animation: stamp-drop 500ms cubic-bezier(0.22, 1, 0.36, 1) 450ms both;
   }
 
-  /* 1. Envelope arrives; 2. jolts when the return stamp lands; 3. floats. */
   .envelope {
     animation:
       envelope-in 700ms cubic-bezier(0.22, 1, 0.36, 1) both,

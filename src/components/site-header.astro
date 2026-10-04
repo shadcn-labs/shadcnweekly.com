@@ -1,8 +1,6 @@
 ---
-import GithubLink from "@/components/github-link.astro";
-import XLink from "@/components/x-link.astro";
+import { BrandContextMenu } from "@/components/brand-context-menu";
 import { Logo } from "@/components/logo";
-import { ThemeToggle } from "@/components/theme-toggle";
 import { buttonVariants } from "@/components/ui/button";
 import { ROUTES } from "@/constants/routes";
 import { SITE } from "@/constants/site";
@@ -22,21 +20,21 @@ const sponsorClass = cn(
   "rounded-full px-3.5",
 );
 
-// Hamburger: bars are 18px wide (size-4.5), 1.5px tall, 4.5px apart (6px
-// centre to centre), so ±6px meets in the middle.
 const bar =
   "h-[1.5px] w-full rounded-full bg-current transition duration-300 ease-[cubic-bezier(0.32,0.72,0,1)]";
 ---
 
-<header class="group/header relative z-40 px-6 py-4" data-site-header>
-  <div class="flex items-center justify-between">
-    <a
-      href={ROUTES.HOME}
-      class="flex items-center gap-2 transition-opacity hover:opacity-80"
-    >
-      <Logo className="size-6" />
-      <span class="text-lg font-semibold tracking-tight">{SITE.NAME}</span>
-    </a>
+<header class="group/header relative z-40 h-(--header-height)" data-site-header>
+  <div class="page-container flex h-full items-center justify-between">
+    <BrandContextMenu client:load>
+      <a
+        href={ROUTES.HOME}
+        class="flex items-center gap-2 transition-opacity hover:opacity-80"
+      >
+        <Logo className="size-6" />
+        <span class="text-lg font-semibold tracking-tight">{SITE.NAME}</span>
+      </a>
+    </BrandContextMenu>
 
     <div class="hidden items-center gap-2 sm:flex">
       <nav class="flex items-center gap-4" aria-label="Main">
@@ -52,16 +50,6 @@ const bar =
           ))
         }
       </nav>
-      <span class="ml-2 h-4 w-px bg-border" aria-hidden="true"></span>
-      <GithubLink />
-      <XLink />
-      <span class="h-4 w-px bg-border" aria-hidden="true"></span>
-      <ThemeToggle client:load hotkey />
-      <span class="h-4 w-px bg-border" aria-hidden="true"></span>
-      {
-        /* ml-2: a filled button has no inner padding, so this matches the ~16px
-          visible gap the ghost buttons get from their own padding. */
-      }
       <a href={ROUTES.SPONSOR} class={cn(sponsorClass, "ml-2")}>Sponsor</a>
     </div>
 
@@ -111,14 +99,6 @@ const bar =
         ))
       }
     </nav>
-    <span class="-mx-1.5 my-1.5 block h-px bg-border" aria-hidden="true"></span>
-    <div class="flex items-center justify-between">
-      <div class="flex items-center">
-        <GithubLink large />
-        <XLink large />
-      </div>
-      <ThemeToggle client:load large />
-    </div>
   </div>
 </header>
 
@@ -130,7 +110,6 @@ const bar =
   if (header && toggle && panel) {
     const setOpen = (open: boolean) => {
       header.toggleAttribute("data-open", open);
-      // `inert` keeps the closed panel's links out of the tab order.
       panel.toggleAttribute("inert", !open);
       toggle.setAttribute("aria-expanded", String(open));
       toggle.setAttribute("aria-label", open ? "Close menu" : "Open menu");

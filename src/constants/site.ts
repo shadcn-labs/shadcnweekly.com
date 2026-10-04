@@ -23,17 +23,14 @@ export const SITE = {
   ],
   LOCALE: "en_US",
   NAME: "Shadcn Weekly",
-  /** Organization that publishes the newsletter (copyright holder). */
   ORG: {
     NAME: "Shadcn Labs",
     URL: "https://www.shadcn-labs.com",
   },
-  /** The newsletter's own X account (`twitter:site`); the author is `twitter:creator`. */
   TWITTER: "@shadcnweekly",
   URL: import.meta.env.SITE as string,
 };
 
-/** Browser UI color (`theme-color`), matching `--background` in global.css. */
 export const META_THEME_COLORS = {
   dark: "#0a0a0a",
   light: "#ffffff",

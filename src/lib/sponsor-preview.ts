@@ -5,11 +5,6 @@ import type {
   SponsorPlacement,
 } from "@/constants/sponsor-bookings";
 
-/**
- * Live placement previews: `/issues/<n>?sponsor=primary,secondary` scrolls to
- * and highlights those sponsor slots. Issues without a secondary booking get
- * `SAMPLE_SPONSOR` in that slot.
- */
 export const SPONSOR_PREVIEW_PARAM = "sponsor";
 
 const PREVIEW_ISSUE_PATH = "/issues/1";

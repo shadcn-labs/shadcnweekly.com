@@ -5,7 +5,6 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 
-/** Tooltip around server-rendered content (e.g. an Astro link) passed as children. */
 export const LinkTooltip = ({
   children,
   label,

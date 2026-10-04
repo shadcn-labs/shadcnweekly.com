@@ -1,5 +1,6 @@
 ---
 import Head from "@/components/head.astro";
+import { Toaster } from "@/components/ui/sonner";
 import { META_THEME_COLORS } from "@/constants/site";
 import "@/styles/global.css";
 
@@ -29,8 +30,6 @@ const seoProps = Astro.props;
       is:inline
       define:vars={{ themeColors: META_THEME_COLORS }}
     >
-      // Saved choice from the header toggle wins; otherwise follow the system.
-      // Inline so the class is set before first paint (no flash).
       const saved = localStorage.getItem("theme");
       const dark =
         saved === "dark" ||
@@ -44,5 +43,6 @@ const seoProps = Astro.props;
   </head>
   <body class="antialiased flex flex-col min-h-svh">
     <slot />
+    <Toaster client:idle position="bottom-center" />
   </body>
 </html>

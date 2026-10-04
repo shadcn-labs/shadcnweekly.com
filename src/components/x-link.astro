@@ -4,7 +4,6 @@ import { buttonVariants } from "@/components/ui/button";
 import { LINKS } from "@/constants/links";
 
 interface Props {
-  /** 36px button with a size-5 icon (mobile menu). */
   large?: boolean;
 }
 
@@ -22,8 +21,7 @@ const { large = false } = Astro.props;
       variant: "ghost",
     })}
   >
-    {/* lucide-react 1.x ships no brand icons. */}
-    <svg
+  <svg
       viewBox="0 0 24 24"
       class={large ? "size-4.5" : "size-3.5"}
       fill="currentColor"

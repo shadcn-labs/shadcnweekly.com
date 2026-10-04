@@ -17,11 +17,6 @@ interface DodoEvent {
 const text = (value: unknown) =>
   typeof value === "string" && value !== "" ? value : undefined;
 
-/**
- * Dodo webhook: a succeeded sponsor payment opens a pull request adding the
- * booking. Non-2xx responses make Dodo retry, which is safe because the PR
- * flow is idempotent per payment.
- */
 export const POST: APIRoute = async ({ request }) => {
   const secret = process.env.DODO_PAYMENTS_WEBHOOK_KEY;
   if (!secret) {
@@ -51,7 +46,6 @@ export const POST: APIRoute = async ({ request }) => {
   }
 
   const paymentId = event.data?.payment_id;
-  // `placement` is comma-separated: the combo offer books both slots.
   const bookings = String(metadata.placement ?? "")
     .split(",")
     .map((placement) =>

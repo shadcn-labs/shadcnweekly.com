@@ -42,14 +42,12 @@ const TITLE = "Book a sponsorship";
 const DESCRIPTION =
   "Enter your details, pick a placement and issue weeks, then pay.";
 
-/** Selectable tiles (placements, weeks), with the site's neutral selected state. */
 const TILE_CLASS =
   "flex items-center justify-between rounded-lg border text-left text-sm transition-colors disabled:pointer-events-none disabled:opacity-50";
-const TILE_SELECTED_CLASS = "border-foreground bg-muted";
+const TILE_SELECTED_CLASS = "border-primary bg-primary/5 text-foreground";
 const STEP_CLASS = "text-sm font-medium transition-colors";
 const STEP_IDLE_CLASS = "text-muted-foreground hover:text-foreground";
 
-/** An offer as rendered on /sponsor, with build-time availability. */
 export interface SponsorOffer {
   id: SponsorPlacementOffer["id"];
   title: string;
@@ -58,9 +56,7 @@ export interface SponsorOffer {
   issues: SponsorPlacementOffer["issues"];
   placements: SponsorPlacementOffer["placements"];
   tag: SponsorPlacementOffer["tag"];
-  /** Screenshot URLs of the offer's slot in an issue. */
   thumbnail: { light: string; dark: string };
-  /** Open issue Mondays (YYYY-MM-DD) for this offer's slot(s). */
   weeks: string[];
 }
 
@@ -252,10 +248,6 @@ const WeekPicker = ({
   </div>
 );
 
-/**
- * Selectable offer with its slot screenshot: `stacked` (thumbnail above, the
- * desktop sidebar) or `row` (thumbnail beside, the mobile carousel).
- */
 const PlacementCard = ({
   offer,
   selected,
@@ -275,7 +267,7 @@ const PlacementCard = ({
       "relative flex shrink-0 overflow-hidden rounded-xl border bg-background text-left text-sm transition-colors",
       layout === "stacked" ? "flex-col" : "w-64 snap-start items-center",
       selected
-        ? "border-foreground ring-1 ring-foreground"
+        ? "border-primary ring-1 ring-primary"
         : "hover:border-foreground/30"
     )}
   >
@@ -301,7 +293,7 @@ const PlacementCard = ({
     {selected ? (
       <CheckIcon
         aria-hidden="true"
-        className="absolute top-2 right-2 size-5 rounded-full bg-foreground p-1 text-background"
+        className="absolute top-2 right-2 size-5 rounded-full bg-primary p-1 text-primary-foreground"
       />
     ) : null}
     <span
@@ -320,10 +312,6 @@ const PlacementCard = ({
   </button>
 );
 
-/**
- * Upsell from a single-slot, single-issue offer to the multi-slot combo,
- * priced against booking each of the combo's slots separately.
- */
 const comboUpsell = (offers: SponsorOffer[], offer: SponsorOffer) => {
   const combo = offers.find((entry) => entry.placements.length > 1);
   if (!combo || offer.issues !== 1 || offer.placements.length !== 1) {
@@ -359,7 +347,6 @@ export const SponsorModal = ({
   offers: SponsorOffer[];
   defaultOffer: SponsorOffer["id"];
 }) => {
-  // Desktop on the server, so SSR markup matches the common case.
   const isDesktop = useMediaQuery("(min-width: 640px)", true);
   const [open, setOpen] = useState(false);
   const [step, setStep] = useState<"details" | "slot">("details");
@@ -541,7 +528,6 @@ export const SponsorModal = ({
   if (!isDesktop) {
     return (
       <Drawer open={open} onOpenChange={handleOpenChange} showSwipeHandle>
-        {/* flex: lets a full-width trigger child (mobile Book CTA) stretch. */}
         <DrawerTrigger nativeButton={false} render={<span className="flex" />}>
           {children}
         </DrawerTrigger>
@@ -554,7 +540,6 @@ export const SponsorModal = ({
           <div className="min-h-0 flex-1 overflow-y-auto p-6">
             {stepContent}
           </div>
-          {/* Outside the scroller, so placements stay pinned above the footer. */}
           <div className="flex shrink-0 flex-col gap-3 border-t py-4">
             <p className="px-6 text-sm font-medium">Placements</p>
             <div className="flex snap-x snap-mandatory scroll-px-6 gap-3 overflow-x-auto px-6 py-0.5">
@@ -581,7 +566,7 @@ export const SponsorModal = ({
         {children}
       </DialogTrigger>
       <DialogContent
-        className="sm:max-w-4xl p-0 gap-0 overflow-hidden"
+        className="sm:max-w-5xl p-0 gap-0 overflow-hidden"
         showCloseButton
       >
         <DialogHeader className="sr-only">
@@ -591,7 +576,6 @@ export const SponsorModal = ({
 
         <div className="flex h-[min(680px,calc(100dvh-4rem))] flex-col">
           <div className="flex min-h-0 flex-1">
-            {/* Heading outside the scroller, so it stays put while cards scroll. */}
             <div className="flex w-72 shrink-0 flex-col border-r bg-muted/50">
               <p className="shrink-0 p-4 pb-3 text-sm font-medium">
                 Placements

@@ -26,8 +26,6 @@ const decodeFont = (dataUrl: string) => {
   return Buffer.from(encodedFont, "base64");
 };
 
-// Keep fonts in the server bundle so Astro's build-time prerenderer and the
-// deployed function do not depend on different filesystem layouts.
 const regularFont = decodeFont(regularFontUrl);
 const boldFont = decodeFont(boldFontUrl);
 

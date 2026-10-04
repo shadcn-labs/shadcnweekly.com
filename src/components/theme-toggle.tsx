@@ -12,7 +12,6 @@ import { cn } from "@/lib/utils";
 
 const HOTKEY = "d";
 
-/** Flips the root `dark` class and remembers the choice (see layouts/main.astro). */
 const toggleTheme = () => {
   const dark = !document.documentElement.classList.contains("dark");
   document.documentElement.classList.toggle("dark", dark);
@@ -26,20 +25,10 @@ const toggleTheme = () => {
 };
 
 interface ThemeToggleProps {
-  /** 36px button with a size-5 icon (mobile menu). */
   large?: boolean;
-  /**
-   * Register the D shortcut. Enable on exactly one instance: two listeners
-   * would toggle twice per keypress and cancel out.
-   */
   hotkey?: boolean;
 }
 
-/**
- * Light/dark toggle. The half-filled icon turns 180° via the `dark:` variant,
- * so it animates on every toggle and is correct on first paint without any
- * React state.
- */
 export const ThemeToggle = ({
   large = false,
   hotkey = false,
