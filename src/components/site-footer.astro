@@ -7,7 +7,7 @@ import XLink from "@/components/x-link.astro";
 import { OTHER_PRODUCTS } from "@/constants/products";
 import { ROUTES } from "@/constants/routes";
 import { SITE } from "@/constants/site";
-import { withUtm } from "@/lib/utm";
+import { FOOTER_UTM, withUtm } from "@/lib/utm";
 
 const COLUMNS = [
   {
@@ -83,7 +83,7 @@ const linkClass =
           {
             OTHER_PRODUCTS.map((product) => (
               <li>
-                <a href={withUtm(product.url, "footer")} class={linkClass}>
+                <a href={withUtm(product.url, FOOTER_UTM)} class={linkClass}>
                   {product.name}
                 </a>
               </li>
@@ -103,14 +103,14 @@ const linkClass =
     <p>
       &copy; {new Date().getFullYear()}{" "}
       <a
-        href={withUtm(SITE.ORG.URL, "footer")}
+        href={withUtm(SITE.ORG.URL, FOOTER_UTM)}
         class="transition-colors hover:text-foreground"
       >
         {SITE.ORG.NAME}
       </a>
       {" · "}Built by{" "}
       <a
-        href={withUtm(SITE.AUTHOR.URL, "footer")}
+        href={withUtm(SITE.AUTHOR.URL, FOOTER_UTM)}
         class="transition-colors hover:text-foreground"
       >
         {SITE.AUTHOR.NAME.split(" ")[0]}

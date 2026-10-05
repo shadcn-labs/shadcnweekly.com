@@ -1,5 +1,4 @@
 ---
-import { getCollection } from "astro:content";
 import { ArrowLeftIcon, ArrowUpRightIcon, ChevronDownIcon } from "lucide-react";
 
 import { SponsorModal } from "@/components/sponsor-modal";
@@ -19,7 +18,7 @@ import { SPONSOR_PLACEMENTS } from "@/constants/sponsor";
 import type { SponsorPlacement } from "@/constants/sponsor-bookings";
 import { availableWeeks } from "@/constants/sponsor-bookings";
 import Layout from "@/layouts/site.astro";
-import { getAudienceStats } from "@/lib/kit";
+import { getAudienceStats, getSponsorClickRate } from "@/lib/kit";
 import { sponsorPreviewUrl } from "@/lib/sponsor-preview";
 import { breadcrumbJsonLd } from "@/seo/json-ld";
 import JsonLd from "@/seo/json-ld.astro";
@@ -30,9 +29,9 @@ Astro.response.headers.set(
   "public, s-maxage=3600, stale-while-revalidate=86400",
 );
 
-const [audience, issues] = await Promise.all([
+const [audience, sponsorClickRate] = await Promise.all([
   getAudienceStats(),
-  getCollection("archive"),
+  getSponsorClickRate(),
 ]);
 
 const formatRate = (rate: number) =>
@@ -52,7 +51,12 @@ const stats = audience
       audience.clickRate === null
         ? null
         : { label: "Avg. click rate", value: formatRate(audience.clickRate) },
-      { label: "Issues sent", value: issues.length.toLocaleString("en-US") },
+      sponsorClickRate === null
+        ? null
+        : {
+            label: "Sponsorship CTR",
+            value: formatRate(sponsorClickRate),
+          },
     ].filter((stat) => stat !== null)
   : [];
 
@@ -130,6 +134,9 @@ const cards = SPONSOR_PLACEMENTS.map((placement) => ({
     })),
   ),
 }));
+
+// Offers grouped by slot (1st, 2nd, both); a separator goes between groups.
+const groupOf = (card: (typeof cards)[number]) => card.placements.join("+");
 ---
 
 <Layout
@@ -163,7 +170,7 @@ const cards = SPONSOR_PLACEMENTS.map((placement) => ({
       {
         stats.length > 0 ? (
           <section aria-label="Audience" class="flex flex-col gap-2">
-            <dl class="grid grid-cols-2 gap-3 sm:auto-cols-fr sm:grid-flow-col sm:grid-cols-none">
+            <dl class="grid grid-cols-2 gap-3 max-sm:[&>*:last-child:nth-child(odd)]:col-span-2 sm:auto-cols-fr sm:grid-flow-col sm:grid-cols-none">
               {stats.map((stat) => (
                 <Card className="flex-col-reverse gap-1 border border-border px-4 ring-0">
                   <dt class="text-sm text-muted-foreground">{stat.label}</dt>
@@ -174,8 +181,9 @@ const cards = SPONSOR_PLACEMENTS.map((placement) => ({
               ))}
             </dl>
             <p class="text-xs text-muted-foreground">
-              Live from our email provider; rates averaged over the last 90
-              days.
+              Live from our email provider. Open and click rates over the last
+              90 days; sponsorship CTR is unique clicks on sponsor links per
+              recipient, averaged over recent issues.
             </p>
           </section>
         ) : null
@@ -212,97 +220,107 @@ const cards = SPONSOR_PLACEMENTS.map((placement) => ({
 
           <div class="flex flex-col gap-4">
             {
-              cards.map((card) => (
-                <Card className="border border-border ring-0">
-                  <CardHeader>
-                    <div class="flex flex-wrap items-center gap-x-3 gap-y-1.5">
-                      <CardTitle>{card.title}</CardTitle>
-                      {card.tag ? (
-                        <Badge variant={TAG_VARIANT[card.tag]}>
-                          {card.tag}
-                        </Badge>
-                      ) : null}
-                    </div>
-                  </CardHeader>
-                  <CardContent>
-                    <p class="text-sm leading-relaxed text-muted-foreground">
-                      {card.description}
-                    </p>
-                  </CardContent>
-                  <CardFooter className="flex-col items-stretch gap-0 p-0">
-                    <div class="flex flex-wrap items-center gap-x-2 gap-y-3 p-4">
-                      <button
-                        type="button"
-                        class:list={[
-                          buttonVariants({ size: "sm", variant: "ghost" }),
-                          "group",
-                        ]}
-                        aria-expanded="false"
-                        aria-controls={`preview-${card.id}`}
-                        data-preview-toggle
-                      >
-                        Preview
-                        <ChevronDownIcon className="size-4 transition-transform group-aria-expanded:rotate-180" />
-                      </button>
-                      <a
-                        href={card.livePreview}
-                        target="_blank"
-                        rel="noopener"
-                        class={buttonVariants({ size: "sm", variant: "ghost" })}
-                      >
-                        Live preview
-                        <ArrowUpRightIcon className="size-4" />
-                      </a>
-                      <div class="w-full sm:ml-auto sm:w-auto">
-                        <SponsorModal
-                          client:load
-                          offers={offers}
-                          defaultOffer={card.id}
-                        >
-                          <span
-                            class:list={[
-                              buttonVariants({ variant: "default" }),
-                              "w-full sm:w-auto",
-                            ]}
-                          >
-                            Book for ${card.price}
-                          </span>
-                        </SponsorModal>
+              cards.map((card, index) => (
+                <>
+                  {index > 0 && groupOf(card) !== groupOf(cards[index - 1]) ? (
+                    <hr class="my-2 border-border" />
+                  ) : null}
+                  <Card className="border border-border ring-0">
+                    <CardHeader>
+                      <div class="flex flex-wrap items-center gap-x-3 gap-y-1.5">
+                        <CardTitle>{card.title}</CardTitle>
+                        {card.tag ? (
+                          <Badge variant={TAG_VARIANT[card.tag]}>
+                            {card.tag}
+                          </Badge>
+                        ) : null}
                       </div>
-                    </div>
-                    <div
-                      id={`preview-${card.id}`}
-                      class="flex flex-col gap-4 border-t bg-background p-4"
-                      hidden
-                    >
-                      {card.previews.map((preview) => (
-                        <figure class="flex flex-col gap-2">
-                          <img
-                            src={preview.src.light}
-                            alt={`${card.title}: ${preview.caption}`}
-                            width={preview.width}
-                            height={preview.height}
-                            loading="lazy"
-                            decoding="async"
-                            class="h-auto w-full rounded-md border dark:hidden"
-                          />
-                          <img
-                            src={preview.src.dark}
-                            alt={`${card.title}: ${preview.caption}`}
-                            width={preview.width}
-                            height={preview.height}
-                            loading="lazy"
-                            decoding="async"
-                            class="hidden h-auto w-full rounded-md border dark:block"
-                          />
-                          <figcaption class="text-xs text-muted-foreground">
-                            {preview.caption}
-                          </figcaption>
-                        </figure>
-                      ))}
-                    </div>
-                  </CardFooter>
-                </Card>
+                    </CardHeader>
+                    <CardContent>
+                      <p class="text-sm leading-relaxed text-muted-foreground">
+                        {card.description}
+                      </p>
+                    </CardContent>
+                    <CardFooter className="flex-col items-stretch gap-0 border-t-0 bg-transparent p-0">
+                      <div class="flex flex-wrap items-center gap-x-2 gap-y-3 p-4 pt-0">
+                        <button
+                          type="button"
+                          class:list={[
+                            buttonVariants({ size: "sm", variant: "ghost" }),
+                            "group",
+                          ]}
+                          aria-expanded="false"
+                          aria-controls={`preview-${card.id}`}
+                          data-preview-toggle
+                        >
+                          Preview
+                          <ChevronDownIcon className="size-4 transition-transform group-aria-expanded:rotate-180" />
+                        </button>
+                        <a
+                          href={card.livePreview}
+                          target="_blank"
+                          rel="noopener"
+                          class={buttonVariants({ size: "sm", variant: "ghost" })}
+                        >
+                          Live preview
+                          <ArrowUpRightIcon className="size-4" />
+                        </a>
+                        <div class="w-full sm:ml-auto sm:w-auto">
+                          <SponsorModal
+                            client:load
+                            offers={offers}
+                            defaultOffer={card.id}
+                          >
+                            <span
+                              class:list={[
+                                buttonVariants({
+                                  variant:
+                                    groupOf(card) === "primary"
+                                      ? "default"
+                                      : "secondary",
+                                }),
+                                "w-full sm:w-auto",
+                              ]}
+                            >
+                              Book for ${card.price}
+                            </span>
+                          </SponsorModal>
+                        </div>
+                      </div>
+                      <div
+                        id={`preview-${card.id}`}
+                        class="flex flex-col gap-4 border-t p-4"
+                        hidden
+                      >
+                        {card.previews.map((preview) => (
+                          <figure class="flex flex-col gap-2">
+                            <img
+                              src={preview.src.light}
+                              alt={`${card.title}: ${preview.caption}`}
+                              width={preview.width}
+                              height={preview.height}
+                              loading="lazy"
+                              decoding="async"
+                              class="h-auto w-full rounded-md border dark:hidden"
+                            />
+                            <img
+                              src={preview.src.dark}
+                              alt={`${card.title}: ${preview.caption}`}
+                              width={preview.width}
+                              height={preview.height}
+                              loading="lazy"
+                              decoding="async"
+                              class="hidden h-auto w-full rounded-md border dark:block"
+                            />
+                            <figcaption class="text-xs text-muted-foreground">
+                              {preview.caption}
+                            </figcaption>
+                          </figure>
+                        ))}
+                      </div>
+                    </CardFooter>
+                  </Card>
+                </>
               ))
             }
           </div>

@@ -10,7 +10,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { MORE_PRODUCTS, SHADCN_LABS_PROJECTS } from "@/constants/products";
-import { withUtm } from "@/lib/utm";
+import { FOOTER_UTM, withUtm } from "@/lib/utm";
 
 export const FooterMoreMenu = () => (
   <DropdownMenu>
@@ -26,7 +26,7 @@ export const FooterMoreMenu = () => (
         {MORE_PRODUCTS.map((product) => (
           <DropdownMenuLinkItem
             key={product.name}
-            href={withUtm(product.url, "footer")}
+            href={withUtm(product.url, FOOTER_UTM)}
           >
             {product.name}
           </DropdownMenuLinkItem>
@@ -38,7 +38,7 @@ export const FooterMoreMenu = () => (
         {SHADCN_LABS_PROJECTS.map((project) => (
           <DropdownMenuLinkItem
             key={project.name}
-            href={withUtm(project.url, "footer")}
+            href={withUtm(project.url, FOOTER_UTM)}
           >
             {project.name}
           </DropdownMenuLinkItem>

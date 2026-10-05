@@ -1,5 +1,7 @@
 ---
 import { fetchPageMeta } from "@/lib/page-meta";
+import { issueCampaign, withUtm } from "@/lib/utm";
+import { SITE } from "@/constants/site";
 
 interface Props {
   website: string;
@@ -12,6 +14,15 @@ const { website, name: nameOverride, logo: logoOverride } = Astro.props;
 const meta = await fetchPageMeta(website);
 const name = nameOverride ?? meta.title;
 const logo = logoOverride ?? meta.logo;
+const href = withUtm(
+  website,
+  {
+    campaign: issueCampaign(Astro.url.pathname) ?? "website",
+    content: "together-with",
+    medium: "referral",
+  },
+  new URL(SITE.URL).hostname,
+);
 ---
 
 <div
@@ -20,7 +31,7 @@ const logo = logoOverride ?? meta.logo;
 >
   <p class="text-sm text-muted-foreground">Together with</p>
   <a
-    href={website}
+    href={href}
     target="_blank"
     rel="noopener noreferrer"
     class="inline-flex items-center gap-1 text-foreground no-underline transition-opacity hover:opacity-80"

@@ -131,7 +131,43 @@
   }
   html {
     @apply font-sans;
+    scrollbar-width: thin;
+    scrollbar-color: color-mix(
+        in oklab,
+        var(--primary) 45%,
+        var(--muted-foreground)
+      )
+      transparent;
   }
+}
+
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+::selection {
+  background-color: #dfdfdc;
+  color: var(--primary);
+}
+
+.dark ::selection {
+  background-color: #2b2b2b;
+  color: #41a4ff;
+}
+
+.selection-contrast::selection,
+.selection-contrast *::selection {
+  color: #000;
+}
+
+.dark .selection-contrast::selection,
+.dark .selection-contrast *::selection {
+  color: #fff;
 }
 
 @utility desc-text {

@@ -1,4 +1,5 @@
 ---
+import { withUtm } from "@/lib/utm";
 import { ExternalLink } from "lucide-react";
 
 interface Props {
@@ -10,10 +11,15 @@ interface Props {
 }
 
 const { title, description, category, screenshot, primary } = Astro.props;
+const href = withUtm(primary, {
+  campaign: "tools",
+  content: "tool-card",
+  medium: "referral",
+});
 ---
 
 <a
-  href={primary}
+  href={href}
   target="_blank"
   rel="noopener noreferrer"
   data-tool-card

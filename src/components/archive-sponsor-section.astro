@@ -1,6 +1,8 @@
 ---
 import { fetchPageMeta } from "@/lib/page-meta";
 import { cn } from "@/lib/utils";
+import { issueCampaign, withUtm } from "@/lib/utm";
+import { SITE } from "@/constants/site";
 
 interface Props {
   website: string;
@@ -30,6 +32,15 @@ const image = imageOverride ?? meta?.image;
 const name = nameOverride ?? title;
 
 const linkClass = "not-typeset no-underline text-foreground hover:underline";
+const href = withUtm(
+  website,
+  {
+    campaign: issueCampaign(Astro.url.pathname) ?? "website",
+    content: "sponsor-block",
+    medium: "referral",
+  },
+  new URL(SITE.URL).hostname,
+);
 ---
 
 <section data-sponsor-section class={cn("flex flex-col gap-3", className)}>
@@ -38,7 +49,7 @@ const linkClass = "not-typeset no-underline text-foreground hover:underline";
   {
     image ? (
       <a
-        href={website}
+        href={href}
         target="_blank"
         rel="noopener noreferrer"
         class={linkClass}
@@ -55,7 +66,7 @@ const linkClass = "not-typeset no-underline text-foreground hover:underline";
 
   <div>
     <a
-      href={website}
+      href={href}
       target="_blank"
       rel="noopener noreferrer"
       class={cn(

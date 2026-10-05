@@ -6,6 +6,7 @@ import { LINKS } from "../../src/constants/links.ts";
 import { ROUTES } from "../../src/constants/routes.ts";
 import { fetchPageMeta } from "../../src/lib/page-meta.ts";
 import { isSvgUrl, sponsorLogoHost } from "../../src/lib/sponsor-logo.ts";
+import { withUtm } from "../../src/lib/utm.ts";
 import type { Issue } from "./lib.ts";
 import { request, SITE_URL } from "./lib.ts";
 
@@ -102,7 +103,17 @@ const sponsorLogo = async (
   }
 };
 
-const sponsorSection = async (attributes: string) => {
+// Sponsor links use the shared UTM convention (src/lib/utm.ts).
+const sponsorLink = (website: string, issue: number, placement: string) =>
+  escapeHtml(
+    withUtm(website, {
+      campaign: `issue-${issue}`,
+      content: placement,
+      medium: "newsletter",
+    })
+  );
+
+const sponsorSection = async (attributes: string, issue: number) => {
   const website = prop(attributes, "website");
   if (!website) {
     return "";
@@ -112,7 +123,7 @@ const sponsorSection = async (attributes: string) => {
   const name = prop(attributes, "name") ?? title;
   const description = prop(attributes, "description") ?? meta.description;
   const image = emailImage(prop(attributes, "image") ?? meta.image);
-  const href = escapeHtml(website);
+  const href = sponsorLink(website, issue, "sponsor-block");
   return [
     `<h2 style="${H2}">⚡️ Sponsor: ${escapeHtml(name)}</h2>`,
     image
@@ -125,13 +136,13 @@ const sponsorSection = async (attributes: string) => {
   ].join("\n");
 };
 
-const togetherWith = async (website: string) => {
+const togetherWith = async (website: string, issue: number) => {
   const meta = await fetchPageMeta(website);
   const logo = await sponsorLogo(website, meta.logo);
   const logoHtml = logo
     ? `<img src="${escapeHtml(logo)}" alt="" width="20" height="20" style="vertical-align:middle;border-radius:4px;margin-right:6px" />`
     : "";
-  return `<p style="${MUTED_P};margin-top:24px;font-size:14px;line-height:20px;text-align:center">Together with&nbsp;&nbsp;<a href="${escapeHtml(website)}" style="color:${FG};text-decoration:none;font-weight:600">${logoHtml}${escapeHtml(meta.title)}</a></p>`;
+  return `<p style="${MUTED_P};margin-top:24px;font-size:14px;line-height:20px;text-align:center">Together with&nbsp;&nbsp;<a href="${sponsorLink(website, issue, "together-with")}" style="color:${FG};text-decoration:none;font-weight:600">${logoHtml}${escapeHtml(meta.title)}</a></p>`;
 };
 
 export const renderEmailHtml = async (issue: Issue, webUrl: string) => {
@@ -139,7 +150,9 @@ export const renderEmailHtml = async (issue: Issue, webUrl: string) => {
     ...issue.body.matchAll(/^<ArchiveSponsorSection\b(?<attrs>[\s\S]*?)\/>/gmu),
   ];
   const sponsors = await Promise.all(
-    sponsorBlocks.map((match) => sponsorSection(match.groups?.attrs ?? ""))
+    sponsorBlocks.map((match) =>
+      sponsorSection(match.groups?.attrs ?? "", issue.issue)
+    )
   );
   let sponsorIndex = 0;
   const source = issue.body
@@ -172,7 +185,9 @@ export const renderEmailHtml = async (issue: Issue, webUrl: string) => {
     `<p style="${MUTED_P};margin-top:32px;font-size:14px;line-height:20px;text-align:center">Issue #${issue.issue}&nbsp;&nbsp;·&nbsp;&nbsp;${date}&nbsp;&nbsp;·&nbsp;&nbsp;<a href="${webUrl}" style="color:${MUTED};text-decoration:underline;text-underline-offset:3px">Read online</a></p>`,
     `<h1 class="sw-title" style="${TEXT};margin:16px 0 0;font-size:32px;line-height:38px;font-weight:600;letter-spacing:-0.8px;text-align:center">${escapeHtml(title)}</h1>`,
     `<hr style="${HR};margin-top:24px" />`,
-    typeof sponsorUrl === "string" ? await togetherWith(sponsorUrl) : "",
+    typeof sponsorUrl === "string"
+      ? await togetherWith(sponsorUrl, issue.issue)
+      : "",
     body,
     `<p style="${P};margin-top:40px">Have a link you want to share? Send me an email at <a href="mailto:${LINKS.EMAIL}" style="${LINK}">${LINKS.EMAIL}</a></p>`,
     `<p style="${MUTED_P};margin-top:0">All submissions are appreciated.</p>`,
