@@ -3,11 +3,13 @@ import { mdxComponents } from "@/components/mdx";
 import ArchiveSponsorSection from "@/components/archive-sponsor-section.astro";
 import ArchiveTogetherWith from "@/components/archive-together-with.astro";
 import { IssueReader } from "@/components/issue-reader";
+import { IssueCopyPage } from "@/components/issue-copy-page";
 import Layout from "@/layouts/site.astro";
 import { ArrowLeftIcon } from "lucide-react";
 import { getCollection, render } from "astro:content";
 import { ROUTES } from "@/constants/routes";
 import { LINKS } from "@/constants/links";
+import { SITE } from "@/constants/site";
 import { OG_IMAGE_HEIGHT, OG_IMAGE_TYPE, OG_IMAGE_WIDTH } from "@/lib/og";
 import { SAMPLE_SPONSOR } from "@/lib/sponsor-preview";
 import { breadcrumbJsonLd, issueJsonLd } from "@/seo/json-ld";
@@ -73,7 +75,7 @@ const formattedDate = issue.data.date.toLocaleDateString("en-US", {
 
   <div class="flex flex-1 flex-col items-center py-16">
     <div class="reading-container flex flex-col gap-8">
-      <div>
+      <div class="flex items-center justify-between gap-4">
         <a
           href={ROUTES.ISSUES}
           class="inline-flex items-center gap-2 text-sm text-muted-foreground transition-colors hover:text-foreground"
@@ -81,6 +83,12 @@ const formattedDate = issue.data.date.toLocaleDateString("en-US", {
           <ArrowLeftIcon className="size-4" />
           Back to archive
         </a>
+        <IssueCopyPage
+          client:load
+          githubUrl={`${LINKS.GITHUB}/blob/main/${issue.filePath}`}
+          markdownUrl={`${ROUTES.ISSUES}/${issue.id}.md`}
+          pageUrl={new URL(`${ROUTES.ISSUES}/${issue.id}`, SITE.URL).href}
+        />
       </div>
 
       <header class="flex flex-col items-center gap-6 text-center">

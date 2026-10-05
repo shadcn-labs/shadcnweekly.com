@@ -120,6 +120,24 @@ const ogImageURL = new URL(ogImagePath, SITE.URL).href;
         href: ROUTES.LLMS,
         title: `${SITE.NAME} for LLMs`,
       },
+      {
+        rel: "alternate",
+        type: "application/rss+xml",
+        href: ROUTES.RSS,
+        title: `${SITE.NAME} RSS Feed`,
+      },
+      {
+        rel: "alternate",
+        type: "application/atom+xml",
+        href: ROUTES.ATOM,
+        title: `${SITE.NAME} Atom Feed`,
+      },
+      {
+        rel: "alternate",
+        type: "application/feed+json",
+        href: ROUTES.JSON_FEED,
+        title: `${SITE.NAME} JSON Feed`,
+      },
     ],
   }}
 />

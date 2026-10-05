@@ -40,6 +40,7 @@ ${issues
 
 ## Optional
 
+- [RSS feed](${url(ROUTES.RSS)}), [Atom feed](${url(ROUTES.ATOM)}), [JSON Feed](${url(ROUTES.JSON_FEED)})
 - [Source code](${LINKS.GITHUB})
 - [X](${LINKS.X})
 - [Privacy policy](${url(ROUTES.PRIVACY)})

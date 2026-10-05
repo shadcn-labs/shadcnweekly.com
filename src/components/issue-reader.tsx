@@ -81,6 +81,10 @@ const READER_OFFSET = 144;
 const BAR_HEIGHT = 52;
 const BAR_WIDTH = 368;
 const PANEL_WIDTH = 448;
+// Closed: a full pill like the site's other small controls. Open: the theme's
+// rounded-2xl (1.8 × 0.625rem), since a pill radius would clip the panel.
+const BAR_RADIUS = BAR_HEIGHT / 2;
+const PANEL_RADIUS = 18;
 const PANEL_TRANSITION = {
   bounce: 0.08,
   duration: 0.32,
@@ -706,7 +710,11 @@ const ReaderControls = ({
       <div
         className={cn(
           "flex h-[50px] shrink-0 items-center px-[7px]",
-          panel ? "shadow-[inset_0_1px_0_var(--color-border)]" : undefined
+          // Keep corners concentric with the bar: pill buttons in the pill bar,
+          // the default rounded-lg inside the open panel's 18px corners.
+          panel
+            ? "shadow-[inset_0_1px_0_var(--color-border)]"
+            : "**:[button]:rounded-[18px]"
         )}
       >
         <BarTooltip
@@ -900,10 +908,11 @@ const IssueReaderSurface = ({
       <style>{`::highlight(${ACTIVE_HIGHLIGHT}) { background-color: color-mix(in oklch, var(--foreground) 16%, transparent); color: inherit; }`}</style>
       <m.div
         animate={{
+          borderRadius: panel ? PANEL_RADIUS : BAR_RADIUS,
           height: panel ? panelHeight + BAR_HEIGHT : BAR_HEIGHT,
           width: panel ? PANEL_WIDTH : BAR_WIDTH,
         }}
-        className="pointer-events-auto absolute bottom-0 left-1/2 flex max-w-[calc(100vw-2rem)] -translate-x-1/2 flex-col overflow-hidden rounded-2xl border bg-background/95 text-foreground shadow-lg backdrop-blur-md"
+        className="pointer-events-auto absolute bottom-0 left-1/2 flex max-w-[calc(100vw-2rem)] -translate-x-1/2 flex-col overflow-hidden border bg-background/95 text-foreground shadow-lg backdrop-blur-md"
         initial={false}
         transition={reduceMotion ? { duration: 0 } : PANEL_TRANSITION}
       >
