@@ -132,12 +132,7 @@
   html {
     @apply font-sans;
     scrollbar-width: thin;
-    scrollbar-color: color-mix(
-        in oklab,
-        var(--primary) 45%,
-        var(--muted-foreground)
-      )
-      transparent;
+    scrollbar-color: gray transparent;
   }
 }
 
