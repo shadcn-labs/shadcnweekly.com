@@ -8,9 +8,12 @@ interface Props {
   category: string;
   screenshot?: string;
   primary: string;
+  /** Server-rendered filter state; the page script toggles it afterwards. */
+  hidden?: boolean;
 }
 
-const { title, description, category, screenshot, primary } = Astro.props;
+const { title, description, category, screenshot, primary, hidden } =
+  Astro.props;
 const href = withUtm(primary, {
   campaign: "tools",
   content: "tool-card",
@@ -23,6 +26,7 @@ const href = withUtm(primary, {
   target="_blank"
   rel="noopener noreferrer"
   data-tool-card
+  hidden={hidden}
   data-category={category}
   data-search={`${title} ${description}`.toLowerCase()}
   class="group flex flex-col overflow-hidden rounded-lg border border-border bg-card transition-colors hover:bg-accent/50"

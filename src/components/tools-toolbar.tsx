@@ -9,6 +9,12 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { TOOLS_EVENT } from "@/lib/tools-events";
 import { cn } from "@/lib/utils";
 
@@ -18,19 +24,32 @@ export interface ToolCategory {
   value: string;
 }
 
+const VIEWS = [
+  { icon: ListIcon, label: "List view", value: "list" },
+  { icon: LayoutGridIcon, label: "Grid view", value: "grid" },
+] as const;
+
 interface ToolsToolbarProps {
   categories: ToolCategory[];
   className?: string;
+  /** Server-rendered state, so the first paint already matches the URL. */
+  initialCategory: string;
+  initialCounts: Record<string, number>;
+  initialView: "grid" | "list";
 }
 
 const detailOf = <T,>(event: Event) => (event as CustomEvent<T>).detail;
 
-export const ToolsToolbar = ({ categories, className }: ToolsToolbarProps) => {
-  const [category, setCategory] = useState("");
-  const [counts, setCounts] = useState<Record<string, number>>(() =>
-    Object.fromEntries(categories.map(({ count, value }) => [value, count]))
-  );
-  const [view, setView] = useState("grid");
+export const ToolsToolbar = ({
+  categories,
+  className,
+  initialCategory,
+  initialCounts,
+  initialView,
+}: ToolsToolbarProps) => {
+  const [category, setCategory] = useState(initialCategory);
+  const [counts, setCounts] = useState(initialCounts);
+  const [view, setView] = useState<string>(initialView);
 
   useEffect(() => {
     const onCategory = (event: Event) => setCategory(detailOf<string>(event));
@@ -96,6 +115,7 @@ export const ToolsToolbar = ({ categories, className }: ToolsToolbarProps) => {
                 <DropdownMenuRadioItem
                   key={item.value}
                   value={item.value}
+                  closeOnClick
                   className="group h-8 justify-between gap-3 pr-2.5 font-normal data-checked:bg-accent data-checked:font-medium [&>[data-slot=dropdown-menu-radio-item-indicator]]:hidden"
                 >
                   <span>{item.label}</span>
@@ -109,26 +129,39 @@ export const ToolsToolbar = ({ categories, className }: ToolsToolbarProps) => {
         </DropdownMenuContent>
       </DropdownMenu>
 
-      <Tabs value={view} onValueChange={(value) => selectView(String(value))}>
-        <TabsList>
-          <TabsTrigger
-            value="list"
-            aria-label="List view"
-            title="List view"
-            className="px-2"
-          >
-            <ListIcon className="size-4" />
-          </TabsTrigger>
-          <TabsTrigger
-            value="grid"
-            aria-label="Grid view"
-            title="Grid view"
-            className="px-2"
-          >
-            <LayoutGridIcon className="size-4" />
-          </TabsTrigger>
-        </TabsList>
-      </Tabs>
+      {/* One Tooltip root with two triggers: moving between the tabs moves the
+          same popup (its payload swaps) instead of animating a second one. */}
+      <TooltipProvider>
+        <Tooltip>
+          {({ payload }) => (
+            <>
+              <Tabs
+                value={view}
+                onValueChange={(value) => selectView(String(value))}
+              >
+                <TabsList className="h-8 gap-0.5 p-0.5">
+                  {VIEWS.map(({ icon: Icon, label, value }) => (
+                    <TooltipTrigger
+                      key={value}
+                      payload={label}
+                      render={
+                        <TabsTrigger
+                          value={value}
+                          aria-label={label}
+                          className="size-7 flex-none p-0"
+                        />
+                      }
+                    >
+                      <Icon className="size-4" />
+                    </TooltipTrigger>
+                  ))}
+                </TabsList>
+              </Tabs>
+              <TooltipContent>{payload as string}</TooltipContent>
+            </>
+          )}
+        </Tooltip>
+      </TooltipProvider>
     </div>
   );
 };

@@ -1,6 +1,7 @@
 ---
 import { ArrowLeftIcon, ArrowUpRightIcon, ChevronDownIcon } from "lucide-react";
 
+import { InfoTooltip } from "@/components/info-tooltip";
 import { SponsorModal } from "@/components/sponsor-modal";
 import type { SponsorOffer } from "@/components/sponsor-modal";
 import { Badge } from "@/components/ui/badge";
@@ -42,18 +43,28 @@ const stats = audience
       audience.subscribers === null
         ? null
         : {
+            hint: "Active subscribers on the list right now.",
             label: "Subscribers",
             value: `${audience.subscribers.toLocaleString("en-US")}+`,
           },
       audience.openRate === null
         ? null
-        : { label: "Avg. open rate", value: formatRate(audience.openRate) },
+        : {
+            hint: "Share of delivered emails that were opened, averaged over the last 90 days.",
+            label: "Avg. open rate",
+            value: formatRate(audience.openRate),
+          },
       audience.clickRate === null
         ? null
-        : { label: "Avg. click rate", value: formatRate(audience.clickRate) },
+        : {
+            hint: "Share of delivered emails with at least one link clicked, averaged over the last 90 days.",
+            label: "Avg. click rate",
+            value: formatRate(audience.clickRate),
+          },
       sponsorClickRate === null
         ? null
         : {
+            hint: "Unique clicks on a sponsor's links divided by the issue's recipients, averaged over recent sponsored issues.",
             label: "Sponsorship CTR",
             value: formatRate(sponsorClickRate),
           },
@@ -167,28 +178,6 @@ const groupOf = (card: (typeof cards)[number]) => card.placements.join("+");
         </p>
       </div>
 
-      {
-        stats.length > 0 ? (
-          <section aria-label="Audience" class="flex flex-col gap-2">
-            <dl class="grid grid-cols-2 gap-3 max-sm:[&>*:last-child:nth-child(odd)]:col-span-2 sm:auto-cols-fr sm:grid-flow-col sm:grid-cols-none">
-              {stats.map((stat) => (
-                <Card className="flex-col-reverse gap-1 border border-border px-4 ring-0">
-                  <dt class="text-sm text-muted-foreground">{stat.label}</dt>
-                  <dd class="text-2xl font-semibold tracking-tight tabular-nums">
-                    {stat.value}
-                  </dd>
-                </Card>
-              ))}
-            </dl>
-            <p class="text-xs text-muted-foreground/60">
-              Live from our email provider. Open and click rates over the last
-              90 days; sponsorship CTR is unique clicks on sponsor links per
-              recipient, averaged over recent issues.
-            </p>
-          </section>
-        ) : null
-      }
-
       <div class="flex flex-col gap-8">
         <div class="flex flex-col gap-3">
           <h2 class="text-xl font-semibold">Why sponsor {SITE.NAME}?</h2>
@@ -214,6 +203,32 @@ const groupOf = (card: (typeof cards)[number]) => card.placements.join("+");
             </p>
           </div>
         </div>
+
+        {
+          stats.length > 0 ? (
+            <section aria-labelledby="stats-heading" class="flex flex-col gap-3">
+              <h2 id="stats-heading" class="text-xl font-semibold">
+                Stats
+              </h2>
+              <dl class="grid grid-cols-2 gap-3 max-sm:[&>*:last-child:nth-child(odd)]:col-span-2 sm:auto-cols-fr sm:grid-flow-col sm:grid-cols-none">
+                {stats.map((stat) => (
+                  <Card className="flex-col-reverse gap-1 border border-border px-4 ring-0">
+                    <dt class="flex items-center gap-1.5 text-sm text-muted-foreground">
+                      {stat.label}
+                      <InfoTooltip client:visible label={stat.hint} />
+                    </dt>
+                    <dd class="text-2xl font-semibold tracking-tight tabular-nums">
+                      {stat.value}
+                    </dd>
+                  </Card>
+                ))}
+              </dl>
+              <p class="text-xs text-muted-foreground/60">
+                Live from our email provider over the last 90 days.
+              </p>
+            </section>
+          ) : null
+        }
 
         <div class="flex flex-col gap-2">
           <h2 class="text-xl font-semibold">Placements</h2>

@@ -10,25 +10,59 @@ import {
   EmptyHeader,
   EmptyTitle,
 } from "@/components/ui/empty";
-import { ArrowLeftIcon, SearchIcon } from "lucide-react";
+import { ArrowLeftIcon, SearchIcon, XIcon } from "lucide-react";
 import { SITE } from "@/constants/site";
 import { ROUTES } from "@/constants/routes";
 import { TOOL_CATEGORIES } from "@/constants/tools";
 import { breadcrumbJsonLd } from "@/seo/json-ld";
 import JsonLd from "@/seo/json-ld.astro";
 
-export const prerender = true;
+// Rendered on demand so the URL filters (?q=&category=) and the saved view
+// cookie produce the final markup on the server: no flash of the unfiltered
+// grid before the script runs.
+export const prerender = false;
+
+const TOOLS_VIEW_COOKIE = "tools-view";
 
 const toolsCollection = await getCollection("tools");
 const tools = toolsCollection.toSorted(
   (a, b) => b.data.issue - a.data.issue || a.data.title.localeCompare(b.data.title),
 );
 
+const query = Astro.url.searchParams.get("q")?.trim() ?? "";
+const requestedCategory = Astro.url.searchParams.get("category") ?? "";
+const category = tools.some((tool) => tool.data.category === requestedCategory)
+  ? requestedCategory
+  : "";
+// List is the default; only an explicit "grid" cookie switches it.
+const view =
+  Astro.cookies.get(TOOLS_VIEW_COOKIE)?.value === "grid" ? "grid" : "list";
+
+// Same matching as the page script below: search on title + description.
+const needle = query.toLowerCase();
+const matchesQuery = (tool: (typeof tools)[number]) =>
+  !needle ||
+  `${tool.data.title} ${tool.data.description}`.toLowerCase().includes(needle);
+
+const counts: Record<string, number> = { "": 0 };
+for (const tool of tools) {
+  if (matchesQuery(tool)) {
+    counts[""] += 1;
+    counts[tool.data.category] = (counts[tool.data.category] ?? 0) + 1;
+  }
+}
+const visibleTools = new Set(
+  tools.filter(
+    (tool) =>
+      matchesQuery(tool) && (!category || tool.data.category === category),
+  ),
+);
+
 const filters = [
   { count: tools.length, label: "All", value: "" },
-  ...TOOL_CATEGORIES.flatMap((category) => {
-    const count = tools.filter((tool) => tool.data.category === category).length;
-    return count > 0 ? [{ count, label: category, value: category }] : [];
+  ...TOOL_CATEGORIES.flatMap((name) => {
+    const count = tools.filter((tool) => tool.data.category === name).length;
+    return count > 0 ? [{ count, label: name, value: name }] : [];
   }),
 ];
 ---
@@ -74,16 +108,40 @@ const filters = [
               placeholder="Search tools"
               aria-label="Search tools"
               autoComplete="off"
-              className="h-9 pl-9 pr-4"
+              className="h-9 pl-9 pr-9 [&::-webkit-search-cancel-button]:appearance-none"
+              defaultValue={query}
               data-tools-search
             />
+            <button
+              type="button"
+              aria-label="Clear search"
+              class="absolute top-1/2 right-1.5 flex size-6 -translate-y-1/2 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+              hidden={!query}
+              data-tools-clear
+            >
+              <XIcon className="size-3.5" aria-hidden="true" />
+            </button>
           </div>
-          <ToolsToolbar client:load categories={filters} />
+          <ToolsToolbar
+            client:load
+            categories={filters}
+            initialCategory={category}
+            initialCounts={counts}
+            initialView={view}
+          />
         </search>
 
-        <p class="sr-only" aria-live="polite" data-tools-status></p>
+        <p class="sr-only" aria-live="polite" data-tools-status>
+          {visibleTools.size === 1 ? "1 tool shown" : `${visibleTools.size} tools shown`}
+        </p>
 
-        <div class="grid gap-4 sm:grid-cols-2" data-tools-grid data-view="grid">
+        <div
+          class="grid gap-4 sm:grid-cols-2"
+          data-tools-grid
+          data-view={view}
+          data-category-filter={category}
+          hidden={visibleTools.size === 0}
+        >
           {
             tools.map((tool) => (
               <ToolCard
@@ -92,12 +150,17 @@ const filters = [
                 category={tool.data.category}
                 screenshot={tool.data.image}
                 primary={tool.data.url}
+                hidden={!visibleTools.has(tool)}
               />
             ))
           }
         </div>
 
-        <Empty className="border border-border" hidden data-tools-empty>
+        <Empty
+          className="border border-border"
+          hidden={visibleTools.size > 0}
+          data-tools-empty
+        >
           <EmptyHeader>
             <EmptyTitle className="text-base">No tools found</EmptyTitle>
             <EmptyDescription>
@@ -124,15 +187,6 @@ const filters = [
     window.dispatchEvent(new CustomEvent(name, { detail }));
   };
 
-  const readSavedView = () => {
-    try {
-      const saved = localStorage.getItem("tools-view");
-      return saved === "list" || saved === "grid" ? saved : "grid";
-    } catch {
-      return "grid";
-    }
-  };
-
   const search = document.querySelector<HTMLInputElement>(
     "[data-tools-search]",
   );
@@ -149,14 +203,10 @@ const filters = [
       ...cards.map((card) => card.dataset.category ?? ""),
     ]);
 
-    const params = new URLSearchParams(window.location.search);
-    const initialCategory = params.get("category") ?? "";
-    let category = knownCategories.has(initialCategory)
-      ? initialCategory
-      : "";
-    let view = readSavedView();
-    search.value = params.get("q") ?? "";
-    grid.dataset.view = view;
+    // The server already rendered this state; read it back instead of
+    // recomputing from the URL so nothing changes on load.
+    let category = grid.dataset.categoryFilter ?? "";
+    let view = grid.dataset.view === "grid" ? "grid" : "list";
 
     const apply = () => {
       const query = search.value.trim().toLowerCase();
@@ -200,20 +250,36 @@ const filters = [
     const applyView = (next: string) => {
       view = next;
       grid.dataset.view = next;
-      try {
-        localStorage.setItem("tools-view", next);
-      } catch {
-        // localStorage unavailable; the view still switches for this visit.
-      }
+      // Cookie, not localStorage, so the server renders the saved view.
+      // oxlint-disable-next-line unicorn/no-document-cookie -- Cookie Store API is missing in Firefox; one static cookie needs no library.
+      document.cookie = `tools-view=${next}; path=/tools; max-age=31536000; samesite=lax`;
       dispatch(TOOLS_EVENT.VIEW, view);
     };
 
-    search.addEventListener("input", apply);
+    const clear = document.querySelector<HTMLButtonElement>(
+      "[data-tools-clear]",
+    );
+    const syncClear = () => {
+      if (clear) {
+        clear.hidden = !search.value;
+      }
+    };
+    search.addEventListener("input", () => {
+      syncClear();
+      apply();
+    });
+    clear?.addEventListener("click", () => {
+      search.value = "";
+      syncClear();
+      apply();
+      search.focus();
+    });
     document
       .querySelector("[data-tools-reset]")
       ?.addEventListener("click", () => {
         search.value = "";
         category = "";
+        syncClear();
         apply();
         search.focus();
       });
@@ -235,8 +301,6 @@ const filters = [
       dispatch(TOOLS_EVENT.VIEW, view);
     });
 
-    apply();
-    dispatch(TOOLS_EVENT.VIEW, view);
   }
 </script>
 
