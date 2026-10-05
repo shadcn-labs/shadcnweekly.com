@@ -1,7 +1,4 @@
-import { marked } from "marked";
-
-import { fetchPageMeta } from "../../src/lib/page-meta.ts";
-import type { Issue } from "./lib.ts";
+import { renderEmailHtml } from "./email.ts";
 import {
   log,
   readIssues,
@@ -14,65 +11,10 @@ import {
 } from "./lib.ts";
 
 const KIT_API = "https://api.kit.com/v4";
+const KIT_TEMPLATE_NAME = "Shadcn Weekly";
 const LIVE_TIMEOUT_MS = 20 * 60_000;
 const LIVE_POLL_MS = 20_000;
 const SEND_DELAY_MS = 5 * 60_000;
-
-const escapeHtml = (value: string) =>
-  value
-    .replaceAll("&", "&amp;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;")
-    .replaceAll('"', "&quot;");
-
-const prop = (attributes: string, name: string) =>
-  new RegExp(`\\b${name}="(?<value>[^"]*)"`, "u").exec(attributes)?.groups
-    ?.value;
-
-const sponsorHtml = async (attributes: string) => {
-  const website = prop(attributes, "website");
-  if (!website) {
-    return "";
-  }
-  const meta = await fetchPageMeta(website);
-  const title = prop(attributes, "title") ?? meta.title;
-  const name = prop(attributes, "name") ?? title;
-  const description = prop(attributes, "description") ?? meta.description;
-  const href = escapeHtml(website);
-  return [
-    `<h2>⚡️ Sponsor: ${escapeHtml(name)}</h2>`,
-    meta.image
-      ? `<p><a href="${href}"><img src="${escapeHtml(meta.image)}" alt="${escapeHtml(title)}" style="max-width:100%;border-radius:6px" /></a></p>`
-      : "",
-    `<p><a href="${href}"><strong>${escapeHtml(title)}</strong></a><br />${escapeHtml(description)}</p>`,
-  ].join("\n");
-};
-
-/** Converts an archive MDX issue into email HTML for a Kit Classic template. */
-export const renderEmailHtml = async (issue: Issue, webUrl: string) => {
-  const sponsorMatch = /<ArchiveSponsorSection\b(?<attrs>[\s\S]*?)\/>/u.exec(
-    issue.body
-  );
-  const sponsor = sponsorMatch?.groups
-    ? await sponsorHtml(sponsorMatch.groups.attrs)
-    : "";
-  const markdown = issue.body
-    .replace(/<ArchiveSponsorSection\b[\s\S]*?\/>/u, "SPONSOR_PLACEHOLDER")
-    // Remaining JSX components (e.g. SubscribeSection) are site-only.
-    .replaceAll(/<[A-Z][A-Za-z]*\b[\s\S]*?\/>/gu, "");
-  const html = await marked.parse(markdown);
-  const body = html.replace(/<p>SPONSOR_PLACEHOLDER<\/p>/u, sponsor);
-  const description = String(issue.frontmatter.description ?? "");
-
-  return [
-    `<p>${escapeHtml(description)}</p>`,
-    `<p><a href="${webUrl}">Read this issue on the web →</a></p>`,
-    "<hr />",
-    body,
-    "<hr />",
-    `<p>You're receiving this because you subscribed to <a href="${SITE_URL}">Shadcn Weekly</a>. Browse past issues at <a href="${SITE_URL}/issues">${SITE_URL.replace(/^https?:\/\//u, "")}/issues</a>.</p>`,
-  ].join("\n");
-};
 
 const isLive = async (url: string) => {
   try {
@@ -98,19 +40,18 @@ const waitUntilLive = async (url: string) => {
 
 const main = async () => {
   const apiKey = requireEnv("KIT_API_KEY");
-  // The issue number is explicit (from the merged PR), so editing an older
-  // issue later can never resend it.
   const number = Number(process.argv[2]);
+  const preview = process.argv.includes("--preview");
   const issues = await readIssues();
   const issue = issues.find((entry) => entry.issue === number);
   if (!issue) {
     throw new Error(
-      `Usage: newsletter:send <issue>; issue "${process.argv[2]}" not found`
+      `Usage: newsletter:send <issue> [--preview]; issue "${process.argv[2]}" not found`
     );
   }
 
   const title = String(issue.frontmatter.title);
-  const subject = `Shadcn Weekly #${issue.issue}: ${title}`;
+  const subject = `${preview ? "[Preview] " : ""}Shadcn Weekly #${issue.issue}: ${title}`;
   const headers = {
     "Content-Type": "application/json",
     "X-Kit-Api-Key": apiKey,
@@ -122,13 +63,25 @@ const main = async () => {
   const duplicate = broadcasts.find(
     (broadcast) => broadcast.subject === subject
   );
-  if (duplicate) {
+  if (duplicate && !preview) {
     log(`Kit broadcast ${duplicate.id} already exists for "${subject}"`);
     return;
   }
 
+  const { email_templates: templates } = await requestJson<{
+    email_templates: { id: number; name: string }[];
+  }>(`${KIT_API}/email_templates`, { headers });
+  const template = templates.find((entry) => entry.name === KIT_TEMPLATE_NAME);
+  if (!template) {
+    warn(
+      `Kit email template "${KIT_TEMPLATE_NAME}" not found; using the account default template`
+    );
+  }
+
   const webUrl = `${SITE_URL}/issues/${issue.issue}`;
-  if (await waitUntilLive(webUrl)) {
+  if (preview) {
+    log("Preview draft: not waiting for the issue page");
+  } else if (await waitUntilLive(webUrl)) {
     log(`${webUrl} is live`);
   } else {
     warn(
@@ -136,8 +89,6 @@ const main = async () => {
     );
   }
 
-  // No automatic retry: a 5xx after Kit stored the broadcast would double-send.
-  // The workflow's second Monday run retries safely via the duplicate check.
   const now = Date.now();
   const { broadcast } = await requestJson<{
     broadcast: { id: number; send_at: string };
@@ -146,11 +97,12 @@ const main = async () => {
     {
       body: JSON.stringify({
         content: await renderEmailHtml(issue, webUrl),
+        ...(template ? { email_template_id: template.id } : {}),
         description: `Issue #${issue.issue}`,
         preview_text: String(issue.frontmatter.description ?? ""),
         public: false,
         published_at: new Date(now).toISOString(),
-        send_at: new Date(now + SEND_DELAY_MS).toISOString(),
+        send_at: preview ? null : new Date(now + SEND_DELAY_MS).toISOString(),
         subject,
       }),
       headers,
@@ -158,7 +110,11 @@ const main = async () => {
     },
     { retries: 0 }
   );
-  log(`Scheduled Kit broadcast ${broadcast.id} for ${broadcast.send_at}`);
+  log(
+    preview
+      ? `Created draft broadcast ${broadcast.id} "${subject}" (not scheduled; open Broadcasts in Kit)`
+      : `Scheduled Kit broadcast ${broadcast.id} for ${broadcast.send_at}`
+  );
 };
 
 if (process.argv[1] === import.meta.filename) {

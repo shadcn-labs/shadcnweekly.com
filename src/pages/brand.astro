@@ -1,0 +1,173 @@
+---
+import { ArrowLeftIcon, DownloadIcon } from "lucide-react";
+
+import { Logo } from "@/components/logo";
+import { LINKS } from "@/constants/links";
+import { ROUTES } from "@/constants/routes";
+import { SITE } from "@/constants/site";
+import Layout from "@/layouts/site.astro";
+import { cn } from "@/lib/utils";
+import { breadcrumbJsonLd } from "@/seo/json-ld";
+import JsonLd from "@/seo/json-ld.astro";
+
+export const prerender = true;
+
+const ASSETS = [
+  {
+    files: [
+      { href: "/brand/shadcnweekly-logomark-black.svg", label: "SVG" },
+      { href: "/brand/shadcnweekly-logomark-black.png", label: "PNG" },
+    ],
+    name: "Logomark, black",
+    preview: "bg-white text-[#0a0a0a] ring-1 ring-border",
+  },
+  {
+    files: [
+      { href: "/brand/shadcnweekly-logomark-white.svg", label: "SVG" },
+      { href: "/brand/shadcnweekly-logomark-white.png", label: "PNG" },
+    ],
+    name: "Logomark, white",
+    preview: "bg-[#0a0a0a] text-white",
+  },
+  {
+    files: [
+      { href: "/brand/shadcnweekly-app-icon.svg", label: "SVG" },
+      { href: "/brand/shadcnweekly-app-icon-512.png", label: "PNG" },
+    ],
+    name: "App icon",
+    preview: "primary-gradient",
+  },
+];
+
+const COLORS = [
+  { hex: "#0082FB", name: "Blue", swatch: "bg-[#0082fb]" },
+  { hex: "#41A4FF", name: "Light blue", swatch: "bg-[#41a4ff]" },
+  { hex: "#0A0A0A", name: "Black", swatch: "bg-[#0a0a0a]" },
+  { hex: "#FFFFFF", name: "White", swatch: "bg-white" },
+];
+---
+
+<Layout
+  title="Brand"
+  description={`Logos, colors and usage guidelines for writing about ${SITE.NAME}.`}
+>
+  <JsonLd
+    slot="head"
+    data={breadcrumbJsonLd([{ name: "Brand", path: ROUTES.BRAND }])}
+  />
+  <div class="flex flex-1 flex-col items-center py-16">
+    <div class="reading-container flex flex-col gap-10">
+      <div>
+        <a
+          href={ROUTES.HOME}
+          class="inline-flex items-center gap-2 text-sm text-muted-foreground transition-colors hover:text-foreground"
+        >
+          <ArrowLeftIcon className="size-4" />
+          Back to home
+        </a>
+      </div>
+
+      <div class="flex flex-col gap-3">
+        <h1 class="text-3xl font-semibold tracking-tight">Brand</h1>
+        <p class="text-base text-muted-foreground">
+          Logos and colors for writing about {SITE.NAME}. The logomark is a W
+          built from the shadcn mark and its mirror image; set the name in
+          plain text next to it.
+        </p>
+      </div>
+
+      <section class="flex flex-col gap-4">
+        <h2 class="text-xl font-semibold">Logomark</h2>
+        <div class="grid gap-4 sm:grid-cols-3">
+          {
+            ASSETS.map((asset) => (
+              <div class="flex flex-col gap-3">
+                <div
+                  class={cn(
+                    "flex aspect-video items-center justify-center rounded-xl",
+                    asset.preview
+                  )}
+                >
+                  <Logo className="size-14" />
+                </div>
+                <div class="flex items-center justify-between gap-2 text-sm">
+                  <span class="text-foreground">{asset.name}</span>
+                  <span class="flex gap-3 text-muted-foreground">
+                    {asset.files.map((file) => (
+                      <a
+                        href={file.href}
+                        download
+                        class="inline-flex items-center gap-1 transition-colors hover:text-foreground"
+                      >
+                        <DownloadIcon aria-hidden="true" className="size-3.5" />
+                        {file.label}
+                      </a>
+                    ))}
+                  </span>
+                </div>
+              </div>
+            ))
+          }
+        </div>
+      </section>
+
+      <section class="flex flex-col gap-4">
+        <h2 class="text-xl font-semibold">Colors</h2>
+        <div class="grid grid-cols-2 gap-4 sm:grid-cols-4">
+          {
+            COLORS.map((color) => (
+              <div class="flex items-center gap-3">
+                <span
+                  aria-hidden="true"
+                  class={cn(
+                    "size-10 shrink-0 rounded-lg ring-1 ring-foreground/10",
+                    color.swatch
+                  )}
+                />
+                <span class="flex flex-col text-sm">
+                  <span class="text-foreground">{color.name}</span>
+                  <span class="font-mono text-muted-foreground">
+                    {color.hex}
+                  </span>
+                </span>
+              </div>
+            ))
+          }
+        </div>
+        <p class="text-sm text-muted-foreground">
+          Buttons and the app icon use a top-to-bottom gradient from Light blue
+          to Blue.
+        </p>
+      </section>
+
+      <section class="flex flex-col gap-3">
+        <h2 class="text-xl font-semibold">Usage</h2>
+        <ul
+          class="flex list-disc flex-col gap-1.5 pl-5 leading-relaxed text-muted-foreground"
+        >
+          <li>
+            Write the name as {SITE.NAME}: two words, capital S and W.
+          </li>
+          <li>
+            Keep clear space around the logomark of at least half its height.
+          </li>
+          <li>
+            Don't stretch, rotate, recolor outside the palette, or add effects.
+          </li>
+          <li>
+            Don't use the mark in a way that suggests we endorse your product.
+          </li>
+          <li>
+            {SITE.NAME} is independent and not affiliated with shadcn/ui.
+          </li>
+        </ul>
+        <p class="leading-relaxed text-muted-foreground">
+          Questions or a press request? Email <a
+            href={`mailto:${LINKS.EMAIL}`}
+            class="link">{LINKS.EMAIL}</a
+          >.
+        </p>
+      </section>
+    </div>
+  </div>
+</Layout>

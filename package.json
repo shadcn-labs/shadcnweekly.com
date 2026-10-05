@@ -13,7 +13,9 @@
     "fix": "ultracite fix",
     "prepare": "lefthook install",
     "newsletter:draft": "node scripts/newsletter/draft.ts",
-    "newsletter:send": "node scripts/newsletter/send.ts"
+    "newsletter:send": "node scripts/newsletter/send.ts",
+    "newsletter:preview": "node scripts/newsletter/preview.ts",
+    "newsletter:social": "node scripts/newsletter/social.ts"
   },
   "dependencies": {
     "@astrojs/mdx": "^5.0.6",
@@ -31,7 +33,9 @@
     "border-beam": "^1.3.0",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
+    "feed": "^6.0.0",
     "lucide-react": "^1.23.0",
+    "motion": "^12.42.2",
     "react": "^19.2.6",
     "react-dom": "^19.2.6",
     "react-hook-form": "^7.81.0",

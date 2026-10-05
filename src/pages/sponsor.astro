@@ -1,0 +1,344 @@
+---
+import { getCollection } from "astro:content";
+import { ArrowLeftIcon, ArrowUpRightIcon, ChevronDownIcon } from "lucide-react";
+
+import { SponsorModal } from "@/components/sponsor-modal";
+import type { SponsorOffer } from "@/components/sponsor-modal";
+import { Badge } from "@/components/ui/badge";
+import { buttonVariants } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { ROUTES } from "@/constants/routes";
+import { SITE } from "@/constants/site";
+import { SPONSOR_PLACEMENTS } from "@/constants/sponsor";
+import type { SponsorPlacement } from "@/constants/sponsor-bookings";
+import { availableWeeks } from "@/constants/sponsor-bookings";
+import Layout from "@/layouts/site.astro";
+import { getAudienceStats } from "@/lib/kit";
+import { sponsorPreviewUrl } from "@/lib/sponsor-preview";
+import { breadcrumbJsonLd } from "@/seo/json-ld";
+import JsonLd from "@/seo/json-ld.astro";
+
+// Server-rendered so audience stats stay fresh; the CDN caches it for an hour.
+Astro.response.headers.set(
+  "Cache-Control",
+  "public, s-maxage=3600, stale-while-revalidate=86400",
+);
+
+const [audience, issues] = await Promise.all([
+  getAudienceStats(),
+  getCollection("archive"),
+]);
+
+const formatRate = (rate: number) =>
+  `${rate.toLocaleString("en-US", { maximumFractionDigits: 1 })}%`;
+
+const stats = audience
+  ? [
+      audience.subscribers === null
+        ? null
+        : {
+            label: "Subscribers",
+            value: `${audience.subscribers.toLocaleString("en-US")}+`,
+          },
+      audience.openRate === null
+        ? null
+        : { label: "Avg. open rate", value: formatRate(audience.openRate) },
+      audience.clickRate === null
+        ? null
+        : { label: "Avg. click rate", value: formatRate(audience.clickRate) },
+      { label: "Issues sent", value: issues.length.toLocaleString("en-US") },
+    ].filter((stat) => stat !== null)
+  : [];
+
+interface Preview {
+  caption: string;
+  stem: string;
+  width: number;
+  height: number;
+}
+
+const PREVIEW_BASE =
+  "https://yffrvzi8zwbljfuj.public.blob.vercel-storage.com/shadcnweekly/sponsor";
+
+const SLOT_PREVIEWS: Record<SponsorPlacement, Preview[]> = {
+  primary: [
+    {
+      caption: '"Together with" in the issue header',
+      height: 303,
+      stem: "header-geist",
+      width: 1280,
+    },
+    {
+      caption: "Sponsor block in the first half",
+      height: 1207,
+      stem: "primary-geist",
+      width: 1280,
+    },
+  ],
+  secondary: [
+    {
+      caption: 'Sponsor block after "Projects, Packages & Tools"',
+      height: 1207,
+      stem: "secondary-geist",
+      width: 1280,
+    },
+  ],
+};
+
+const previewSrc = (preview: Preview) => ({
+  dark: `${PREVIEW_BASE}/${preview.stem}-dark.webp`,
+  light: `${PREVIEW_BASE}/${preview.stem}-light.webp`,
+});
+
+const TAG_VARIANT = {
+  "Best Value": "success",
+  "Most Performing": "warning",
+  "Save 20%": "success",
+} as const;
+
+const offers: SponsorOffer[] = SPONSOR_PLACEMENTS.map((placement) => {
+  const preview = SLOT_PREVIEWS[placement.placements[0] ?? "primary"].at(-1);
+  if (!preview) {
+    throw new Error(`No preview for ${placement.id}`);
+  }
+  return {
+    description: placement.description,
+    id: placement.id,
+    issues: placement.issues,
+    placements: placement.placements,
+    price: placement.price,
+    tag: placement.tag,
+    thumbnail: previewSrc(preview),
+    title: placement.title,
+    weeks: availableWeeks(placement.placements),
+  };
+});
+
+const cards = SPONSOR_PLACEMENTS.map((placement) => ({
+  ...placement,
+  livePreview: sponsorPreviewUrl(placement.placements),
+  previews: placement.placements.flatMap((slot) =>
+    SLOT_PREVIEWS[slot].map((preview) => ({
+      ...preview,
+      src: previewSrc(preview),
+    })),
+  ),
+}));
+---
+
+<Layout
+  title="Sponsor"
+  description={`Sponsor ${SITE.NAME} and reach shadcn developers, designers, and builders every week.`}
+>
+  <JsonLd
+    slot="head"
+    data={breadcrumbJsonLd([{ name: "Sponsor", path: ROUTES.SPONSOR }])}
+  />
+  <div class="flex flex-1 flex-col items-center py-16">
+    <div class="reading-container flex flex-col gap-8">
+      <div>
+        <a
+          href={ROUTES.HOME}
+          class="inline-flex text-sm items-center gap-2 text-muted-foreground transition-colors hover:text-foreground"
+        >
+          <ArrowLeftIcon className="size-4" />
+          Back to home
+        </a>
+      </div>
+
+      <div class="flex flex-col gap-3">
+        <h1 class="text-3xl font-semibold tracking-tight">Sponsor</h1>
+        <p class="text-base text-muted-foreground">
+          Put your product, library, or service in front of developers who
+          actually build with shadcn/ui every day.
+        </p>
+      </div>
+
+      {
+        stats.length > 0 ? (
+          <section aria-label="Audience" class="flex flex-col gap-2">
+            <dl class="grid grid-cols-2 gap-3 sm:auto-cols-fr sm:grid-flow-col sm:grid-cols-none">
+              {stats.map((stat) => (
+                <Card className="flex-col-reverse gap-1 border border-border px-4 ring-0">
+                  <dt class="text-sm text-muted-foreground">{stat.label}</dt>
+                  <dd class="text-2xl font-semibold tracking-tight tabular-nums">
+                    {stat.value}
+                  </dd>
+                </Card>
+              ))}
+            </dl>
+            <p class="text-xs text-muted-foreground">
+              Live from our email provider; rates averaged over the last 90
+              days.
+            </p>
+          </section>
+        ) : null
+      }
+
+      <div class="flex flex-col gap-8">
+        <div class="flex flex-col gap-3">
+          <h2 class="text-xl font-semibold">Why sponsor {SITE.NAME}?</h2>
+          <div
+            class="flex flex-col gap-3 leading-relaxed text-muted-foreground"
+          >
+            <p>
+              {SITE.NAME} goes out every Monday. It's a curated newsletter for the
+              shadcn ecosystem — new releases, community projects, tutorials, and
+              tools.
+            </p>
+            <p>
+              This isn't a generic dev blast with 100k subscribers who never
+              open it. The audience here is builders — people who read the
+              changelog, try new component libraries on weekends, and care about
+              clean UI code. If your product speaks to that crowd, this is the
+              place to be.
+            </p>
+            <p>
+              Sponsorships are limited and the pricing is fair. No programmatic
+              ad slots, no "sponsored by" walls. Every booking is reviewed
+              before it runs.
+            </p>
+          </div>
+        </div>
+
+        <div class="flex flex-col gap-4">
+          <h2 class="text-xl font-semibold">Placements</h2>
+
+          <div class="flex flex-col gap-4">
+            {
+              cards.map((card) => (
+                <Card className="border border-border ring-0">
+                  <CardHeader>
+                    <div class="flex flex-wrap items-center gap-x-3 gap-y-1.5">
+                      <CardTitle>{card.title}</CardTitle>
+                      {card.tag ? (
+                        <Badge variant={TAG_VARIANT[card.tag]}>
+                          {card.tag}
+                        </Badge>
+                      ) : null}
+                    </div>
+                  </CardHeader>
+                  <CardContent>
+                    <p class="text-sm leading-relaxed text-muted-foreground">
+                      {card.description}
+                    </p>
+                  </CardContent>
+                  <CardFooter className="flex-col items-stretch gap-0 p-0">
+                    <div class="flex flex-wrap items-center gap-x-2 gap-y-3 p-4">
+                      <button
+                        type="button"
+                        class:list={[
+                          buttonVariants({ size: "sm", variant: "ghost" }),
+                          "group",
+                        ]}
+                        aria-expanded="false"
+                        aria-controls={`preview-${card.id}`}
+                        data-preview-toggle
+                      >
+                        Preview
+                        <ChevronDownIcon className="size-4 transition-transform group-aria-expanded:rotate-180" />
+                      </button>
+                      <a
+                        href={card.livePreview}
+                        target="_blank"
+                        rel="noopener"
+                        class={buttonVariants({ size: "sm", variant: "ghost" })}
+                      >
+                        Live preview
+                        <ArrowUpRightIcon className="size-4" />
+                      </a>
+                      <div class="w-full sm:ml-auto sm:w-auto">
+                        <SponsorModal
+                          client:load
+                          offers={offers}
+                          defaultOffer={card.id}
+                        >
+                          <span
+                            class:list={[
+                              buttonVariants({ variant: "default" }),
+                              "w-full sm:w-auto",
+                            ]}
+                          >
+                            Book for ${card.price}
+                          </span>
+                        </SponsorModal>
+                      </div>
+                    </div>
+                    <div
+                      id={`preview-${card.id}`}
+                      class="flex flex-col gap-4 border-t bg-background p-4"
+                      hidden
+                    >
+                      {card.previews.map((preview) => (
+                        <figure class="flex flex-col gap-2">
+                          <img
+                            src={preview.src.light}
+                            alt={`${card.title}: ${preview.caption}`}
+                            width={preview.width}
+                            height={preview.height}
+                            loading="lazy"
+                            decoding="async"
+                            class="h-auto w-full rounded-md border dark:hidden"
+                          />
+                          <img
+                            src={preview.src.dark}
+                            alt={`${card.title}: ${preview.caption}`}
+                            width={preview.width}
+                            height={preview.height}
+                            loading="lazy"
+                            decoding="async"
+                            class="hidden h-auto w-full rounded-md border dark:block"
+                          />
+                          <figcaption class="text-xs text-muted-foreground">
+                            {preview.caption}
+                          </figcaption>
+                        </figure>
+                      ))}
+                    </div>
+                  </CardFooter>
+                </Card>
+              ))
+            }
+          </div>
+          <p class="text-xs text-muted-foreground/60">
+            Payments processed securely by{" "}
+            <a
+              href="https://dodopayments.com"
+              class="link"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              Dodo Payments
+            </a>
+            . Booking means you agree to the{" "}
+            <a href={ROUTES.TERMS} class="link">terms</a> and{" "}
+            <a href={ROUTES.REFUNDS} class="link">refunds</a>.
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+</Layout>
+
+<script>
+  for (const toggle of document.querySelectorAll<HTMLButtonElement>(
+    "[data-preview-toggle]",
+  )) {
+    const panel = document.querySelector<HTMLElement>(
+      `#${toggle.getAttribute("aria-controls")}`,
+    );
+    toggle.addEventListener("click", () => {
+      const open = toggle.getAttribute("aria-expanded") !== "true";
+      toggle.setAttribute("aria-expanded", String(open));
+      if (panel) {
+        panel.hidden = !open;
+      }
+    });
+  }
+</script>

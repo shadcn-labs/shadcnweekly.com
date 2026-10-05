@@ -8,7 +8,7 @@ export const GET: APIRoute = async ({ url }) => {
   const description =
     url.searchParams.get("description")?.trim() || SITE.DESCRIPTION.LONG;
 
-  const image = await generateOg({ description, title });
+  const image = await generateOg({ description, title }, url);
   const body = Uint8Array.from(image).buffer;
 
   return new Response(body, {

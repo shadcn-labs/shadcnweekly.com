@@ -1,30 +1,143 @@
 ---
-import { SITE } from "@/constants/site";
-import { ROUTES } from "@/constants/routes";
+import { BrandContextMenu } from "@/components/brand-context-menu";
 import { Logo } from "@/components/logo";
+import { buttonVariants } from "@/components/ui/button";
+import { ROUTES } from "@/constants/routes";
+import { SITE } from "@/constants/site";
+import { cn } from "@/lib/utils";
+
+const NAV_LINKS = [
+  { href: ROUTES.TOOLS, label: "Tools" },
+  { href: ROUTES.ISSUES, label: "Archive" },
+];
+
+const pathname = Astro.url.pathname.replace(/\/$/u, "") || "/";
+const isCurrent = (href: string) =>
+  pathname === href || pathname.startsWith(`${href}/`);
+
+const sponsorClass = cn(
+  buttonVariants({ variant: "default" }),
+  "rounded-full px-3.5",
+);
+
+const bar =
+  "h-[1.5px] w-full rounded-full bg-current transition duration-300 ease-[cubic-bezier(0.32,0.72,0,1)]";
 ---
 
-<header class="flex items-center justify-between px-6 py-4">
-  <a
-    href={ROUTES.HOME}
-    class="flex items-center gap-2 transition-opacity hover:opacity-80"
-  >
-    <Logo className="size-5" />
-    <span class="text-lg font-semibold tracking-tight">{SITE.NAME}</span>
-  </a>
+<header class="group/header relative z-40 h-(--header-height)" data-site-header>
+  <div class="page-container flex h-full items-center justify-between">
+    <BrandContextMenu client:load>
+      <a
+        href={ROUTES.HOME}
+        class="flex items-center gap-2 transition-opacity hover:opacity-80"
+      >
+        <Logo className="size-6" />
+        <span class="text-lg font-semibold tracking-tight">{SITE.NAME}</span>
+      </a>
+    </BrandContextMenu>
 
-  <nav class="flex items-center gap-6">
-    <a
-      href={ROUTES.TOOLS}
-      class="text-sm text-muted-foreground transition-colors hover:text-foreground"
-    >
-      Tools
-    </a>
-    <a
-      href={ROUTES.ISSUES}
-      class="text-sm text-muted-foreground transition-colors hover:text-foreground"
-    >
-      Archive
-    </a>
-  </nav>
+    <div class="hidden items-center gap-2 sm:flex">
+      <nav class="flex items-center gap-4" aria-label="Main">
+        {
+          NAV_LINKS.map((link) => (
+            <a
+              href={link.href}
+              aria-current={isCurrent(link.href) ? "page" : undefined}
+              class="text-sm text-muted-foreground transition-colors hover:text-foreground aria-[current=page]:text-foreground"
+            >
+              {link.label}
+            </a>
+          ))
+        }
+      </nav>
+      <a href={ROUTES.SPONSOR} class={cn(sponsorClass, "ml-2")}>Sponsor</a>
+    </div>
+
+    <div class="flex items-center gap-2 sm:hidden">
+      <a href={ROUTES.SPONSOR} class={cn(sponsorClass, "h-9 px-4")}>Sponsor</a>
+      <button
+        type="button"
+        class="-mr-2 inline-flex size-9 items-center justify-center rounded-md transition-colors hover:bg-muted"
+        aria-controls="mobile-menu"
+        aria-expanded="false"
+        aria-label="Open menu"
+        data-menu-toggle
+      >
+        <span class="flex w-4.5 flex-col gap-[4.5px]" aria-hidden="true">
+          <span
+            class:list={[
+              bar,
+              "group-data-open/header:translate-y-[6px] group-data-open/header:rotate-45",
+            ]}></span>
+          <span class:list={[bar, "group-data-open/header:opacity-0"]}></span>
+          <span
+            class:list={[
+              bar,
+              "group-data-open/header:-translate-y-[6px] group-data-open/header:-rotate-45",
+            ]}></span>
+        </span>
+      </button>
+    </div>
+  </div>
+
+  <div
+    id="mobile-menu"
+    class="pointer-events-none invisible absolute inset-x-3 top-full -translate-y-2 scale-[0.98] rounded-xl border bg-background/95 p-1.5 opacity-0 shadow-lg backdrop-blur-md transition-[opacity,translate,scale,visibility] duration-200 ease-out group-data-open/header:pointer-events-auto group-data-open/header:visible group-data-open/header:translate-y-0 group-data-open/header:scale-100 group-data-open/header:opacity-100 sm:hidden"
+    inert
+    data-menu-panel
+  >
+    <nav class="flex flex-col" aria-label="Mobile">
+      {
+        NAV_LINKS.map((link) => (
+          <a
+            href={link.href}
+            aria-current={isCurrent(link.href) ? "page" : undefined}
+            class="rounded-md px-2.5 py-1.5 text-base text-muted-foreground transition-colors hover:bg-muted hover:text-foreground aria-[current=page]:text-foreground"
+          >
+            {link.label}
+          </a>
+        ))
+      }
+    </nav>
+  </div>
 </header>
+
+<script>
+  const header = document.querySelector<HTMLElement>("[data-site-header]");
+  const toggle = header?.querySelector<HTMLButtonElement>("[data-menu-toggle]");
+  const panel = header?.querySelector<HTMLElement>("[data-menu-panel]");
+
+  if (header && toggle && panel) {
+    const setOpen = (open: boolean) => {
+      header.toggleAttribute("data-open", open);
+      panel.toggleAttribute("inert", !open);
+      toggle.setAttribute("aria-expanded", String(open));
+      toggle.setAttribute("aria-label", open ? "Close menu" : "Open menu");
+    };
+
+    toggle.addEventListener("click", () => {
+      setOpen(!Object.hasOwn(header.dataset, "open"));
+    });
+    document.addEventListener("keydown", (event) => {
+      if (event.key === "Escape" && Object.hasOwn(header.dataset, "open")) {
+        setOpen(false);
+        toggle.focus();
+      }
+    });
+    document.addEventListener("click", (event) => {
+      if (
+        Object.hasOwn(header.dataset, "open") &&
+        !header.contains(event.target as Node)
+      ) {
+        setOpen(false);
+      }
+    });
+    window
+      .matchMedia("(min-width: 640px)")
+      .addEventListener("change", (event) => {
+        if (event.matches) {
+          setOpen(false);
+        }
+      });
+  }
+</script>

@@ -10,6 +10,10 @@ on:
       issue:
         description: Issue number to (re)send; skipped if Kit already has it
         required: true
+      preview:
+        description: Only create an unscheduled "[Preview]" draft in Kit (sends nothing)
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -66,7 +70,8 @@ jobs:
         env:
           KIT_API_KEY: ${{ secrets.KIT_API_KEY }}
           LIST: ${{ steps.issues.outputs.list }}
+          PREVIEW: ${{ inputs.preview && '--preview' || '' }}
         run: |
           for issue in $LIST; do
-            pnpm newsletter:send "$issue"
+            pnpm newsletter:send "$issue" $PREVIEW
           done

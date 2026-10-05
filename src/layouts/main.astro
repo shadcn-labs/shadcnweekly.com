@@ -1,5 +1,7 @@
 ---
 import Head from "@/components/head.astro";
+import { Toaster } from "@/components/ui/sonner";
+import { META_THEME_COLORS } from "@/constants/site";
 import "@/styles/global.css";
 
 interface Props {
@@ -21,15 +23,31 @@ const seoProps = Astro.props;
 
 <html lang="en">
   <head>
-    <Head {...seoProps} />
-    <script is:inline>
-      const theme = window.matchMedia("(prefers-color-scheme: dark)").matches
-        ? "dark"
-        : "light";
-      document.documentElement.classList.toggle("dark", theme === "dark");
+    <Head {...seoProps}>
+      <slot name="head" />
+    </Head>
+    <script
+      is:inline
+      define:vars={{ themeColors: META_THEME_COLORS }}
+    >
+      const saved = localStorage.getItem("theme");
+      const dark =
+        saved === "dark" ||
+        (saved !== "light" &&
+          window.matchMedia("(prefers-color-scheme: dark)").matches);
+      document.documentElement.classList.toggle("dark", dark);
+      document
+        .querySelector('meta[name="theme-color"]')
+        ?.setAttribute("content", dark ? themeColors.dark : themeColors.light);
     </script>
   </head>
   <body class="antialiased flex flex-col min-h-svh">
     <slot />
+    <Toaster client:idle position="bottom-center" />
+    <script>
+      import { captureAttribution } from "@/lib/attribution";
+
+      captureAttribution();
+    </script>
   </body>
 </html>

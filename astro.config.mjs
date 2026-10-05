@@ -37,10 +37,28 @@ export default defineConfig({
   }),
   fonts: [
     {
-      cssVariable: "--font-sans",
+      cssVariable: "--font-geist-sans",
       fallbacks: ["sans-serif"],
-      name: "Inter",
+      name: "Geist",
       provider: fontProviders.fontsource(),
+      weights: ["100 900"],
+    },
+    {
+      cssVariable: "--font-geist-mono",
+      fallbacks: ["monospace"],
+      name: "Geist Mono",
+      provider: fontProviders.fontsource(),
+      weights: ["100 900"],
+    },
+    {
+      // Static WOFF files for Satori OG images (no WOFF2 or variable font support); never rendered via <Font>.
+      cssVariable: "--font-og",
+      formats: ["woff"],
+      name: "Geist",
+      provider: fontProviders.fontsource(),
+      styles: ["normal"],
+      subsets: ["latin"],
+      weights: [400, 700],
     },
   ],
   integrations: [
@@ -48,6 +66,7 @@ export default defineConfig({
     react(),
     sitemap({
       changefreq: "weekly",
+      filter: (page) => !page.includes("/sponsor/thanks"),
       lastmod: new Date(),
       priority: 0.7,
     }),

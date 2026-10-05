@@ -1,0 +1,140 @@
+---
+import { ArrowLeftIcon } from "lucide-react";
+
+import { LINKS } from "@/constants/links";
+import { ROUTES } from "@/constants/routes";
+import { SITE } from "@/constants/site";
+import Layout from "@/layouts/site.astro";
+import { breadcrumbJsonLd } from "@/seo/json-ld";
+import JsonLd from "@/seo/json-ld.astro";
+
+const SECTIONS = [
+  "Top stories: the biggest launches and releases of the week",
+  "Articles, tutorials and news from around the community",
+  "Projects, packages and tools, each added to the tools directory",
+  "Related: adjacent work worth knowing about",
+];
+---
+
+<Layout
+  title="About"
+  description={`${SITE.NAME} is a weekly newsletter about the shadcn/ui ecosystem, published by ${SITE.ORG.NAME}.`}
+>
+  <JsonLd
+    slot="head"
+    data={breadcrumbJsonLd([{ name: "About", path: ROUTES.ABOUT }])}
+  />
+  <div class="flex flex-1 flex-col items-center py-16">
+    <div class="reading-container flex flex-col gap-8">
+      <div>
+        <a
+          href={ROUTES.HOME}
+          class="inline-flex text-sm items-center gap-2 text-muted-foreground transition-colors hover:text-foreground"
+        >
+          <ArrowLeftIcon className="size-4" />
+          Back to home
+        </a>
+      </div>
+
+      <div class="flex flex-col gap-3">
+        <h1 class="text-3xl font-semibold tracking-tight">About</h1>
+        <p class="text-base text-muted-foreground">
+          {SITE.DESCRIPTION.LONG}
+        </p>
+      </div>
+
+      <section class="flex flex-col gap-3">
+        <h2 class="text-xl font-semibold">What you get</h2>
+        <p class="leading-relaxed text-muted-foreground">
+          One email every Monday with what happened in the shadcn/ui ecosystem
+          that week: new components, registries, blocks, templates, tooling
+          and tutorials. Every issue is also published in the <a
+            href={ROUTES.ISSUES}
+            class="link">archive</a
+          >, and every project it features lands in the <a
+            href={ROUTES.TOOLS}
+            class="link">tools directory</a
+          >.
+        </p>
+        <ul
+          class="flex list-disc flex-col gap-1.5 pl-5 leading-relaxed text-muted-foreground"
+        >
+          {SECTIONS.map((section) => <li>{section}</li>)}
+        </ul>
+      </section>
+
+      <section class="flex flex-col gap-3">
+        <h2 class="text-xl font-semibold">Who's behind it</h2>
+        <p class="leading-relaxed text-muted-foreground">
+          {SITE.NAME} is published by <a
+            href={SITE.ORG.URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            class="link">{SITE.ORG.NAME}</a
+          >, an independent org building open-source tools for the shadcn/ui
+          ecosystem, and curated by <a
+            href={SITE.AUTHOR.URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            class="link">{SITE.AUTHOR.NAME}</a
+          >. Links are collected from X, the official shadcn/ui registry
+          directory, awesome-shadcn-ui and the wider web, then reviewed by hand
+          before each issue goes out. The site is <a
+            href={LINKS.GITHUB}
+            target="_blank"
+            rel="noopener noreferrer"
+            class="link">open source</a
+          >.
+        </p>
+      </section>
+
+      <section class="flex flex-col gap-3">
+        <h2 class="text-xl font-semibold">Get involved</h2>
+        <ul
+          class="flex list-disc flex-col gap-1.5 pl-5 leading-relaxed text-muted-foreground"
+        >
+          <li>
+            Built something with shadcn/ui? Email <a
+              href={`mailto:${LINKS.EMAIL}`}
+              class="link">{LINKS.EMAIL}</a
+            > or use the <a href={ROUTES.CONTACT} class="link">contact form</a>.
+          </li>
+          <li>
+            Want to reach the readers? See <a
+              href={ROUTES.SPONSOR}
+              class="link">sponsorships</a
+            >.
+          </li>
+          <li>
+            Chat with the community on <a
+              href={LINKS.DISCORD}
+              target="_blank"
+              rel="noopener noreferrer"
+              class="link">Discord</a
+            > or follow <a
+              href={`https://x.com/${SITE.AUTHOR.TWITTER.replace(/^@/u, "")}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              class="link">{SITE.AUTHOR.TWITTER}</a
+            > on X.
+          </li>
+          <li>
+            Read how subscriber data is handled in the <a
+              href={ROUTES.PRIVACY}
+              class="link">privacy policy</a
+            >.
+          </li>
+        </ul>
+      </section>
+
+      <p class="text-sm text-muted-foreground">
+        {SITE.NAME} is not endorsed by or affiliated with <a
+          href="https://shadcn.com"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="link">shadcn</a
+        >.
+      </p>
+    </div>
+  </div>
+</Layout>

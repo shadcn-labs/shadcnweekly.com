@@ -6,12 +6,12 @@ import * as z from "zod";
 
 import { Button } from "@/components/ui/button";
 import { ROUTES } from "@/constants/routes";
+import { getReferrer } from "@/lib/attribution";
 
 const subscribeSchema = z.object({
   email: z
-    .string()
-    .min(1, "Email is required")
-    .email("Please enter a valid email address"),
+    .email("Please enter a valid email address")
+    .min(1, "Email is required"),
 });
 
 type SubscribeFormData = z.infer<typeof subscribeSchema>;
@@ -34,7 +34,7 @@ export const SubscribeForm = () => {
 
     try {
       const res = await fetch(ROUTES.SUBSCRIBE_API, {
-        body: JSON.stringify({ email: data.email }),
+        body: JSON.stringify({ email: data.email, referrer: getReferrer() }),
         headers: { "Content-Type": "application/json" },
         method: "POST",
       });
@@ -71,12 +71,7 @@ export const SubscribeForm = () => {
 
   return (
     <div className="flex w-full flex-col items-center gap-2">
-      <BorderBeam
-        className="w-full"
-        size="md"
-        duration={4}
-        colorVariant="colorful"
-      >
+      <BorderBeam className="w-full" duration={4} colorVariant="mono">
         <form
           onSubmit={form.handleSubmit(onSubmit)}
           className="flex items-center rounded-full border border-border bg-background p-1"

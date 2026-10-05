@@ -4,17 +4,21 @@ import { ExternalLink } from "lucide-react";
 interface Props {
   title: string;
   description: string;
+  category: string;
   screenshot?: string;
   primary: string;
 }
 
-const { title, description, screenshot, primary } = Astro.props;
+const { title, description, category, screenshot, primary } = Astro.props;
 ---
 
 <a
   href={primary}
   target="_blank"
   rel="noopener noreferrer"
+  data-tool-card
+  data-category={category}
+  data-search={`${title} ${description}`.toLowerCase()}
   class="group flex flex-col overflow-hidden rounded-lg border border-border bg-card transition-colors hover:bg-accent/50"
 >
   {
@@ -39,5 +43,6 @@ const { title, description, screenshot, primary } = Astro.props;
     <p class="flex-1 text-sm leading-relaxed text-muted-foreground">
       {description}
     </p>
+    <span class="text-xs text-muted-foreground">{category}</span>
   </div>
 </a>

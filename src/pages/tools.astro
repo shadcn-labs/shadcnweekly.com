@@ -2,45 +2,46 @@
 import { getCollection } from "astro:content";
 import Layout from "@/layouts/site.astro";
 import ToolCard from "@/components/tool-card.astro";
-import { ArrowLeftIcon } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import {
+  Empty,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyTitle,
+} from "@/components/ui/empty";
+import { ArrowLeftIcon, SearchIcon } from "lucide-react";
 import { SITE } from "@/constants/site";
 import { ROUTES } from "@/constants/routes";
+import { TOOL_CATEGORIES } from "@/constants/tools";
+import { breadcrumbJsonLd } from "@/seo/json-ld";
+import JsonLd from "@/seo/json-ld.astro";
+
+export const prerender = true;
 
 const toolsCollection = await getCollection("tools");
 const tools = toolsCollection.toSorted(
   (a, b) => b.data.issue - a.data.issue || a.data.title.localeCompare(b.data.title),
 );
+
+const filters = [
+  { count: tools.length, label: "All", value: "" },
+  ...TOOL_CATEGORIES.flatMap((category) => {
+    const count = tools.filter((tool) => tool.data.category === category).length;
+    return count > 0 ? [{ count, label: category, value: category }] : [];
+  }),
+];
 ---
 
 <Layout
   title="Tools"
   description={`Hand-picked shadcn tools, libraries, and resources curated by ${SITE.NAME}. Discover the best tools for your next project.`}
 >
-  <script
-    is:inline
+  <JsonLd
     slot="head"
-    type="application/ld+json"
-    set:html={JSON.stringify({
-      "@context": "https://schema.org",
-      "@type": "BreadcrumbList",
-      itemListElement: [
-        {
-          "@type": "ListItem",
-          position: 1,
-          name: "Home",
-          item: SITE.URL,
-        },
-        {
-          "@type": "ListItem",
-          position: 2,
-          name: "Tools",
-          item: `${SITE.URL}${ROUTES.TOOLS}`,
-        },
-      ],
-    })}
+    data={breadcrumbJsonLd([{ name: "Tools", path: ROUTES.TOOLS }])}
   />
   <div class="flex flex-1 flex-col items-center py-16">
-    <div class="flex w-full max-w-3xl flex-col gap-8">
+    <div class="reading-container flex flex-col gap-8">
       <div>
         <a
           href={ROUTES.HOME}
@@ -59,18 +60,173 @@ const tools = toolsCollection.toSorted(
         </p>
       </div>
 
-      <div class="grid gap-4 sm:grid-cols-2">
-        {
-          tools.map((tool) => (
-            <ToolCard
-              title={tool.data.title}
-              description={tool.data.description}
-              screenshot={tool.data.image}
-              primary={tool.data.url}
+      <div class="flex flex-col gap-6">
+        <search class="flex flex-col gap-3">
+          <div class="relative">
+            <SearchIcon
+              className="pointer-events-none absolute top-1/2 left-3.5 size-4 -translate-y-1/2 text-muted-foreground"
+              aria-hidden="true"
             />
-          ))
-        }
+            <Input
+              type="search"
+              name="q"
+              placeholder="Search tools"
+              aria-label="Search tools"
+              autoComplete="off"
+              className="h-9 rounded-full pl-9 pr-4"
+              data-tools-search
+            />
+          </div>
+          <div
+            class="flex flex-wrap gap-2"
+            role="group"
+            aria-label="Filter by category"
+            data-category-filters
+          >
+            {
+              filters.map((filter) => (
+                <button
+                  type="button"
+                  aria-pressed={filter.value === "" ? "true" : "false"}
+                  data-category-filter={filter.value}
+                  class="inline-flex items-center gap-1.5 rounded-full border border-border bg-background px-3 py-1 text-sm text-muted-foreground transition-colors hover:border-foreground/20 hover:text-foreground aria-pressed:border-foreground aria-pressed:bg-foreground aria-pressed:text-background"
+                >
+                  {filter.label}
+                  <span class="text-xs tabular-nums opacity-60" data-count>
+                    {filter.count}
+                  </span>
+                </button>
+              ))
+            }
+          </div>
+        </search>
+
+        <p class="sr-only" aria-live="polite" data-tools-status></p>
+
+        <div class="grid gap-4 sm:grid-cols-2" data-tools-grid>
+          {
+            tools.map((tool) => (
+              <ToolCard
+                title={tool.data.title}
+                description={tool.data.description}
+                category={tool.data.category}
+                screenshot={tool.data.image}
+                primary={tool.data.url}
+              />
+            ))
+          }
+        </div>
+
+        <Empty className="border border-border" hidden data-tools-empty>
+          <EmptyHeader>
+            <EmptyTitle className="text-base">No tools found</EmptyTitle>
+            <EmptyDescription>
+              Try a different search or category.
+            </EmptyDescription>
+          </EmptyHeader>
+          <button
+            type="button"
+            class="rounded-full border border-border bg-background px-3 py-1 text-sm text-muted-foreground transition-colors hover:border-foreground/20 hover:text-foreground"
+            data-tools-reset
+          >
+            Clear filters
+          </button>
+        </Empty>
       </div>
     </div>
   </div>
 </Layout>
+
+<script>
+  const search = document.querySelector<HTMLInputElement>(
+    "[data-tools-search]",
+  );
+  const grid = document.querySelector<HTMLElement>("[data-tools-grid]");
+  const empty = document.querySelector<HTMLElement>("[data-tools-empty]");
+  const status = document.querySelector<HTMLElement>("[data-tools-status]");
+
+  if (search && grid && empty && status) {
+    const pills = [
+      ...document.querySelectorAll<HTMLButtonElement>("[data-category-filter]"),
+    ];
+    const cards = [
+      ...grid.querySelectorAll<HTMLElement>("[data-tool-card]"),
+    ];
+    const categories = new Set(
+      pills.map((pill) => pill.dataset.categoryFilter ?? ""),
+    );
+
+    const params = new URLSearchParams(window.location.search);
+    const initialCategory = params.get("category") ?? "";
+    let category = categories.has(initialCategory) ? initialCategory : "";
+    search.value = params.get("q") ?? "";
+
+    const apply = () => {
+      const query = search.value.trim().toLowerCase();
+      const counts = new Map<string, number>();
+
+      let visible = 0;
+      for (const card of cards) {
+        const cardCategory = card.dataset.category ?? "";
+        const matches = !query || Boolean(card.dataset.search?.includes(query));
+        if (matches) {
+          counts.set("", (counts.get("") ?? 0) + 1);
+          counts.set(cardCategory, (counts.get(cardCategory) ?? 0) + 1);
+        }
+        const show = matches && (!category || cardCategory === category);
+        card.hidden = !show;
+        visible += Number(show);
+      }
+
+      for (const pill of pills) {
+        const value = pill.dataset.categoryFilter ?? "";
+        pill.setAttribute("aria-pressed", String(value === category));
+        const count = pill.querySelector("[data-count]");
+        if (count) {
+          count.textContent = String(counts.get(value) ?? 0);
+        }
+      }
+
+      grid.hidden = visible === 0;
+      empty.hidden = visible > 0;
+      status.textContent =
+        visible === 1 ? "1 tool shown" : `${visible} tools shown`;
+
+      const url = new URL(window.location.href);
+      if (query) {
+        url.searchParams.set("q", search.value.trim());
+      } else {
+        url.searchParams.delete("q");
+      }
+      if (category) {
+        url.searchParams.set("category", category);
+      } else {
+        url.searchParams.delete("category");
+      }
+      window.history.replaceState(window.history.state, "", url);
+    };
+
+    search.addEventListener("input", apply);
+    document
+      .querySelector("[data-category-filters]")
+      ?.addEventListener("click", (event) => {
+        const pill = (event.target as Element).closest<HTMLElement>(
+          "[data-category-filter]",
+        );
+        if (pill) {
+          category = pill.dataset.categoryFilter ?? "";
+          apply();
+        }
+      });
+    document
+      .querySelector("[data-tools-reset]")
+      ?.addEventListener("click", () => {
+        search.value = "";
+        category = "";
+        apply();
+        search.focus();
+      });
+
+    apply();
+  }
+</script>

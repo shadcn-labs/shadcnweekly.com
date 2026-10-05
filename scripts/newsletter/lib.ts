@@ -22,9 +22,7 @@ export interface Candidate {
   title: string;
   text: string;
   date?: string;
-  /** Engagement signal (likes, stars, points); higher is more notable. */
   score?: number;
-  /** Extra links found alongside the item (e.g. URLs inside a post). */
   links?: string[];
 }
 
@@ -42,19 +40,16 @@ export const sleep = (ms: number) => {
   return promise;
 };
 
-// Logs go to stderr so stdout stays clean for `--dry-run` JSON output.
 export const log = (message: string) => {
   console.error(`[newsletter] ${message}`);
 };
 
 export const warn = (message: string) => {
-  // GitHub Actions renders `::warning::` as an annotation on the run.
   console.error(
     process.env.GITHUB_ACTIONS ? `::warning::${message}` : `WARN ${message}`
   );
 };
 
-/** fetch with timeout and exponential backoff on network errors, 429 and 5xx. */
 export const request = async (
   url: string,
   init: RequestInit = {},
@@ -102,7 +97,6 @@ export const requestJson = async <T>(
 
 const TRACKING_PARAM = /^(?:utm_|ref$|ref_src$|s$|t$|si$|fbclid$|gclid$)/u;
 
-/** Canonical form used for deduplication; never shown to readers. */
 export const normalizeUrl = (raw: string): string => {
   try {
     const url = new URL(raw.trim());
@@ -142,7 +136,6 @@ export const splitFrontmatter = (source: string) => {
   };
 };
 
-/** All archive issues, oldest first. */
 export const readIssues = async (): Promise<Issue[]> => {
   const entries = await readdir(ARCHIVE_DIR);
   const files = entries.filter((file) => /\.mdx?$/u.test(file));
@@ -167,9 +160,31 @@ export const readIssues = async (): Promise<Issue[]> => {
   return issues.toSorted((a, b) => a.issue - b.issue);
 };
 
+export interface Tool {
+  slug: string;
+  title: string;
+  url: string;
+}
+
+export const readTools = async (): Promise<Tool[]> => {
+  const entries = await readdir(TOOLS_DIR);
+  const files = entries.filter((file) => /\.mdx?$/u.test(file));
+  return Promise.all(
+    files.map(async (file) => {
+      const { frontmatter } = splitFrontmatter(
+        await readFile(`${TOOLS_DIR}/${file}`, "utf-8")
+      );
+      return {
+        slug: file.replace(/\.mdx?$/u, ""),
+        title: String(frontmatter.title),
+        url: String(frontmatter.url),
+      };
+    })
+  );
+};
+
 const URL_PATTERN = /https?:\/\/[^\s)"'<>\]]+/gu;
 
-/** Every URL already published in an issue or listed as a tool. */
 export const readPublishedUrls = async (): Promise<Set<string>> => {
   const paths = await Promise.all(
     [ARCHIVE_DIR, TOOLS_DIR].map(async (dir) => {
@@ -189,7 +204,6 @@ export const readPublishedUrls = async (): Promise<Set<string>> => {
   return urls;
 };
 
-/** Expose a step output to later GitHub Actions steps; no-op locally. */
 export const setOutput = async (name: string, value: string) => {
   const file = process.env.GITHUB_OUTPUT;
   if (file) {

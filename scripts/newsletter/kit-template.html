@@ -1,0 +1,145 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="light" />
+    <meta name="supported-color-schemes" content="light" />
+    <title>Shadcn Weekly</title>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      body {
+        margin: 0;
+        padding: 0;
+        background: #ffffff;
+        -webkit-text-size-adjust: 100%;
+      }
+      img {
+        border: 0;
+        outline: none;
+      }
+      @media only screen and (max-width: 620px) {
+        .sw-container {
+          padding: 32px 20px !important;
+        }
+        .sw-title {
+          font-size: 28px !important;
+          line-height: 34px !important;
+        }
+      }
+    </style>
+  </head>
+  <body style="margin: 0; padding: 0; background: #ffffff">
+    <table
+      role="presentation"
+      width="100%"
+      cellpadding="0"
+      cellspacing="0"
+      border="0"
+      style="background: #ffffff"
+    >
+      <tr>
+        <td align="center" class="sw-container" style="padding: 48px 24px">
+          <!--[if mso]><table role="presentation" width="600" align="center" cellpadding="0" cellspacing="0" border="0"><tr><td><![endif]-->
+          <table
+            role="presentation"
+            width="100%"
+            cellpadding="0"
+            cellspacing="0"
+            border="0"
+            style="
+              max-width: 600px;
+              text-align: left;
+              font-family:
+                Geist,
+                -apple-system,
+                BlinkMacSystemFont,
+                &quot;Segoe UI&quot;,
+                Roboto,
+                Helvetica,
+                Arial,
+                sans-serif;
+              color: #0a0a0a;
+              font-size: 16px;
+              line-height: 28px;
+            "
+          >
+            <tr>
+              <td>{{ message_content }}</td>
+            </tr>
+            <tr>
+              <td style="padding-top: 40px">
+                <hr
+                  style="
+                    border: 0;
+                    border-top: 1px solid #e5e5e5;
+                    margin: 0;
+                    height: 0;
+                  "
+                />
+                <p
+                  style="
+                    margin: 24px 0 0;
+                    font-family:
+                      Geist,
+                      -apple-system,
+                      BlinkMacSystemFont,
+                      &quot;Segoe UI&quot;,
+                      Roboto,
+                      Helvetica,
+                      Arial,
+                      sans-serif;
+                    font-size: 12px;
+                    line-height: 20px;
+                    color: #737373;
+                  "
+                >
+                  You're receiving this because you subscribed to
+                  <a
+                    href="https://www.shadcnweekly.com"
+                    style="color: #737373; text-decoration: underline"
+                    >Shadcn Weekly</a
+                  >.
+                  <a
+                    href="{{ subscriber_preferences_url }}"
+                    style="color: #737373; text-decoration: underline"
+                    >Update your preferences</a
+                  >
+                  or
+                  <a
+                    href="{{ unsubscribe_url }}"
+                    style="color: #737373; text-decoration: underline"
+                    >unsubscribe</a
+                  >.
+                </p>
+                <p
+                  style="
+                    margin: 8px 0 0;
+                    font-family:
+                      Geist,
+                      -apple-system,
+                      BlinkMacSystemFont,
+                      &quot;Segoe UI&quot;,
+                      Roboto,
+                      Helvetica,
+                      Arial,
+                      sans-serif;
+                    font-size: 12px;
+                    line-height: 20px;
+                    color: #737373;
+                  "
+                >
+                  {{ address }}
+                </p>
+              </td>
+            </tr>
+          </table>
+          <!--[if mso]></td></tr></table><![endif]-->
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>

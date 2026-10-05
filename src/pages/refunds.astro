@@ -1,0 +1,61 @@
+---
+import { LINKS } from "@/constants/links";
+import { ROUTES } from "@/constants/routes";
+import { SITE } from "@/constants/site";
+import LegalLayout from "@/layouts/legal.astro";
+---
+
+<LegalLayout
+  title="Refund Policy"
+  description={`Cancellations, rescheduling and refunds for ${SITE.NAME} sponsorships.`}
+  path={ROUTES.REFUNDS}
+  updated="October 2026"
+>
+  <p>
+    The newsletter is free, so this policy covers sponsorship placements bought
+    on the <a href={ROUTES.SPONSOR} class="link">sponsor page</a>. There are no
+    subscriptions or recurring charges.
+  </p>
+
+  <h2>Full refunds</h2>
+  <ul>
+    <li>We decline your booking during review.</li>
+    <li>
+      You cancel at least 7 days before your first booked issue goes out.
+    </li>
+    <li>
+      We can't run an issue you booked, or the week was already taken, and you
+      don't want to move to another week.
+    </li>
+  </ul>
+
+  <h2>Rescheduling instead of a refund</h2>
+  <p>
+    If you cancel less than 7 days before a booked issue, we can move you to
+    another open week at no cost instead of refunding.
+  </p>
+
+  <h2>Bundles</h2>
+  <p>
+    For a four-issue bundle, issues that haven't gone out yet follow the rules
+    above. Issues that already went out aren't refundable; if you cancel the
+    rest of a bundle, we refund the unsent issues at the bundle's per-issue
+    price.
+  </p>
+
+  <h2>After an issue goes out</h2>
+  <p>
+    A placement that ran as booked isn't refundable. If we made a mistake in
+    your sponsor block (wrong link, wrong copy), tell us and we'll fix the issue
+    page and either refund or run the corrected block in another issue, your
+    choice.
+  </p>
+
+  <h2>How to request one</h2>
+  <p>
+    Email <a href={`mailto:${LINKS.EMAIL}`} class="link">{LINKS.EMAIL}</a> with
+    the email you paid with. Refunds go back to the original payment method
+    through our payment provider, Dodo Payments, and usually arrive within 5–10
+    business days depending on your bank.
+  </p>
+</LegalLayout>

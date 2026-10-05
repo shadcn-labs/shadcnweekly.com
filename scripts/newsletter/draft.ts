@@ -1,17 +1,28 @@
-import { existsSync } from "node:fs";
 import { writeFile } from "node:fs/promises";
 
 import { stringify as stringifyYaml } from "yaml";
 import { z } from "zod";
 
+import type {
+  SponsorBooking,
+  SponsorContent,
+} from "../../src/constants/sponsor-bookings.ts";
+import {
+  HOUSE_SPONSOR,
+  SPONSOR_BOOKINGS,
+  weekStart,
+} from "../../src/constants/sponsor-bookings.ts";
+import { TOOL_CATEGORIES } from "../../src/constants/tools.ts";
 import { fetchPageMeta } from "../../src/lib/page-meta.ts";
 import { collectCandidates } from "./collect.ts";
-import type { Candidate, Issue } from "./lib.ts";
+import type { Candidate, Issue, Tool } from "./lib.ts";
 import {
   addDays,
   ARCHIVE_DIR,
   log,
+  normalizeUrl,
   readIssues,
+  readTools,
   requestJson,
   requireEnv,
   setOutput,
@@ -26,24 +37,14 @@ const STYLE_EXAMPLE_CHARS = 8000;
 const ATTEMPTS_PER_MODEL = 3;
 const GEMINI_URL =
   "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions";
-/** Free-tier Gemini models, tried in order. Override with LLM_MODEL. */
 const DEFAULT_MODELS = ["gemini-3.8-flash", "gemini-3.7-flash"];
 
-const DEFAULT_SUBSCRIBE_SECTION = `<SubscribeSection
-  class="not-typeset border px-4 py-4 rounded-lg bg-muted [margin-block:calc(var(--typeset-flow)*1.4)] [scroll-margin-block-start:calc(var(--typeset-flow)*1.4)]"
-  formClass="mt-3"
-/>`;
-
-// ---------------------------------------------------------------------------
-// Draft schema: the model references candidates by id, never by raw URL, so
-// every published link is guaranteed to come from a collected source.
-// ---------------------------------------------------------------------------
+const DEFAULT_SUBSCRIBE_SECTION = `<SubscribeCta class="not-typeset [margin-block:4rem] [scroll-margin-block-start:4rem]" />`;
 
 const entrySchema = z.object({
   body: z.string().min(20),
   heading: z.string().min(3),
   id: z.number().int(),
-  /** Optional: one of the candidate's `links` to use instead of its url. */
   link: z.string().optional(),
 });
 
@@ -54,6 +55,8 @@ const draftSchema = z.object({
   projects: z
     .array(
       entrySchema.extend({
+        category: z.enum(TOOL_CATEGORIES),
+        existingTool: z.string().nullish(),
         name: z.string().min(1),
         toolDescription: z.string().min(20).max(300),
       })
@@ -100,7 +103,7 @@ You receive this week's collected items as JSON, each with a numeric "id". Write
   "top": [{ "id": 1, "heading": "Name: Short Tagline", "body": "1-3 short markdown paragraphs" }],
   "roundup": { "heading": "Theme of the Week", "intro": "one sentence", "items": [{ "id": 2, "label": "Name", "summary": "one sentence" }] } or null,
   "articles": [{ "id": 3, "heading": "...", "body": "1-2 sentences" }],
-  "projects": [{ "id": 4, "heading": "...", "body": "1-2 sentences", "name": "Project name", "toolDescription": "one-sentence description for a tools directory" }],
+  "projects": [{ "id": 4, "heading": "...", "body": "1-2 sentences", "name": "Project name", "toolDescription": "one-sentence description for a tools directory", "category": "tools directory category", "existingTool": "slug from the listed tools when this is an update to one of them, otherwise null" }],
   "related": [{ "id": 5, "heading": "...", "body": "1-2 sentences" }]
 }
 
@@ -111,12 +114,12 @@ Rules:
 - "top": 2-4 biggest stories of the week (launches, official shadcn releases, high-engagement posts).
 - "roundup": optional group of 3+ related smaller updates around one theme; null if there is no theme.
 - "articles": tutorials, blog posts, news coverage. "projects": libraries, registries, blocks, templates, tools (new registry directory entries belong here). "related": adjacent ecosystem items.
+- "projects" may cover new releases or updates of tools already listed on the site. When a project is one of the listed tools (same product, even if renamed or linked differently), set "existingTool" to that tool's "slug"; otherwise set it to null.
+- Every project sets "category" to exactly one of ${JSON.stringify(TOOL_CATEGORIES)}: "Components" for component libraries, individual components and effects; "Blocks & Templates" for page blocks, starter kits and app templates; "Themes" for theme builders, presets and styling systems; "Registries" for shadcn registries and registry directories; "Tooling" for CLIs, editor or Figma plugins, generators and developer utilities; "AI" for AI-powered tools, MCP servers and agent skills; "Apps" for products and sites built with shadcn/ui.
 - Skip anything not about shadcn/ui or its ecosystem (e.g. unrelated "shading"/"shader" results), spam, giveaways, and engagement bait.
 - Prefer quality over quantity: leave weak items out.
 - Plain markdown only inside strings: no HTML, no JSX, no curly braces.
 - Match the tone of the example issue: factual, concise, developer-focused, no hype.`;
-
-// ---------------------------------------------------------------------------
 
 const callModel = async (
   model: string,
@@ -147,7 +150,6 @@ const callModel = async (
   return content.replaceAll(/^```(?:json)?\s*|\s*```$/gu, "");
 };
 
-/** Drops entries pointing at unknown or duplicate ids; fixes invalid links. */
 const sanitizeDraft = (draft: Draft, candidates: Candidate[]): Draft => {
   const used = new Set<number>();
   const keep = <T extends { id: number; link?: string }>(entry: T) => {
@@ -179,6 +181,7 @@ const sanitizeDraft = (draft: Draft, candidates: Candidate[]): Draft => {
 
 const writeDraft = async (
   candidates: Candidate[],
+  tools: Tool[],
   styleExample: string
 ): Promise<Draft> => {
   const models = process.env.LLM_MODEL
@@ -191,7 +194,7 @@ const writeDraft = async (
     const messages = [
       { content: SYSTEM_PROMPT, role: "system" },
       {
-        content: `Example of a previous issue (style reference only, do not reuse its items):\n\n${styleExample.slice(0, STYLE_EXAMPLE_CHARS)}\n\nThis week's items:\n\n${JSON.stringify(items)}`,
+        content: `Example of a previous issue (style reference only, do not reuse its items):\n\n${styleExample.slice(0, STYLE_EXAMPLE_CHARS)}\n\nTools already listed on the site:\n\n${JSON.stringify(tools)}\n\nThis week's items:\n\n${JSON.stringify(items)}`,
         role: "user",
       },
     ];
@@ -228,11 +231,6 @@ const writeDraft = async (
   throw new Error(`Could not produce a valid draft:\n${errors.join("\n")}`);
 };
 
-// ---------------------------------------------------------------------------
-// MDX rendering
-// ---------------------------------------------------------------------------
-
-/** Escapes characters MDX would parse as JSX/expressions, outside code spans. */
 const mdxText = (text: string) =>
   text
     .split(/(?<code>`[^`]*`)/u)
@@ -272,26 +270,69 @@ const section = (heading: string, entries: Entry[], candidates: Candidate[]) =>
 const componentPattern = (name: string) =>
   new RegExp(`<${name}\\b[\\s\\S]*?\\/>`, "u");
 
+export interface IssueSponsors {
+  primary: SponsorContent;
+  primaryBooked: boolean;
+  secondary?: SponsorContent;
+}
+
+export const pickSponsors = (
+  date: string,
+  bookings: SponsorBooking[] = SPONSOR_BOOKINGS
+): IssueSponsors => {
+  const week = weekStart(date);
+  const booked = (placement: SponsorBooking["placement"]) => {
+    const matches = bookings.filter(
+      (booking) =>
+        booking.placement === placement &&
+        booking.weeks.some((day) => weekStart(day) === week)
+    );
+    if (matches.length > 1) {
+      warn(
+        `${matches.length} ${placement} sponsor bookings for the week of ${week}; using the first`
+      );
+    }
+    return matches.at(0);
+  };
+  const primary = booked("primary");
+  return {
+    primary: primary ?? HOUSE_SPONSOR,
+    primaryBooked: Boolean(primary),
+    secondary: booked("secondary"),
+  };
+};
+
+const sponsorComponent = (sponsor: SponsorContent) => {
+  const attributes = (
+    ["website", "name", "title", "description", "image"] as const
+  )
+    .filter((key) => sponsor[key])
+    .map((key) => `  ${key}={${JSON.stringify(sponsor[key])}}`);
+  return `<ArchiveSponsorSection\n${attributes.join("\n")}\n/>`;
+};
+
 export const renderIssueMdx = (
   draft: Draft,
   candidates: Candidate[],
-  meta: { issue: number; date: string; previous?: Issue }
+  meta: {
+    issue: number;
+    date: string;
+    sponsors: IssueSponsors;
+    previous?: Issue;
+  }
 ): string => {
-  const sponsor = meta.previous?.frontmatter.sponsor;
+  const { sponsors } = meta;
   const frontmatter = stringifyYaml({
     date: meta.date,
     description: draft.description,
     highlights: draft.highlights,
     issue: meta.issue,
-    ...(typeof sponsor === "string" ? { sponsor } : {}),
+    sponsor: sponsors.primary.website,
     title: draft.title,
   }).trim();
 
-  const sponsorBlock = meta.previous?.body.match(
-    componentPattern("ArchiveSponsorSection")
-  )?.[0];
   const subscribeBlock =
-    meta.previous?.body.match(componentPattern("SubscribeSection"))?.[0] ??
+    meta.previous?.body.match(componentPattern("SubscribeCta"))?.[0] ??
     DEFAULT_SUBSCRIBE_SECTION;
 
   const lead = draft.top.map((entry) => entryBlock(entry, candidates));
@@ -305,10 +346,11 @@ export const renderIssueMdx = (
     );
   }
 
-  const middle = [sponsorBlock, subscribeBlock].filter(Boolean).join("\n\n");
+  const middle = `${sponsorComponent(sponsors.primary)}\n\n${subscribeBlock}`;
   const sections = [
     ...section("📙 Articles, Tutorials & News", draft.articles, candidates),
     ...section("📦 Projects, Packages & Tools", draft.projects, candidates),
+    ...(sponsors.secondary ? [sponsorComponent(sponsors.secondary)] : []),
     ...section("🌈 Related", draft.related, candidates),
   ];
 
@@ -325,19 +367,34 @@ const slugify = (value: string) =>
 const writeTools = async (
   draft: Draft,
   candidates: Candidate[],
+  tools: Tool[],
   issue: number
 ) => {
+  const listedSlugs = new Set(
+    tools.flatMap((tool) => [tool.slug, slugify(tool.title)])
+  );
+  const listedUrls = new Set(tools.map((tool) => normalizeUrl(tool.url)));
+
   const bySlug = new Map(
     draft.projects.map((project) => [slugify(project.name), project])
   );
-  const fresh = [...bySlug].filter(
-    ([slug]) => slug && !existsSync(`${TOOLS_DIR}/${slug}.md`)
-  );
+  const fresh = [...bySlug].filter(([slug, project]) => {
+    const url = project.link ?? candidates[project.id].url;
+    const listed =
+      (project.existingTool && listedSlugs.has(project.existingTool)) ||
+      listedSlugs.has(slug) ||
+      listedUrls.has(normalizeUrl(url));
+    if (listed) {
+      log(`Tool ${project.existingTool ?? slug} already listed, skipping`);
+    }
+    return slug && !listed;
+  });
   await Promise.all(
     fresh.map(async ([slug, project]) => {
       const url = project.link ?? candidates[project.id].url;
       const { image } = await fetchPageMeta(url);
       const frontmatter = stringifyYaml({
+        category: project.category,
         description: project.toolDescription,
         ...(image ? { image } : {}),
         issue,
@@ -380,14 +437,25 @@ const main = async () => {
     return;
   }
 
-  const draft = await writeDraft(candidates, previous?.body ?? "");
+  const tools = await readTools();
+  const draft = await writeDraft(candidates, tools, previous?.body ?? "");
+  const sponsors = pickSponsors(today);
   await writeFile(
     `${ARCHIVE_DIR}/${issue}.mdx`,
-    renderIssueMdx(draft, candidates, { date: today, issue, previous })
+    renderIssueMdx(draft, candidates, {
+      date: today,
+      issue,
+      previous,
+      sponsors,
+    })
   );
-  await writeTools(draft, candidates, issue);
+  await writeTools(draft, candidates, tools, issue);
   await setOutput("issue", String(issue));
   await setOutput("title", draft.title.replaceAll("\n", " "));
+  await setOutput(
+    "sponsors",
+    `1st: ${sponsors.primary.website}${sponsors.primaryBooked ? "" : " (house, no booking)"} · 2nd: ${sponsors.secondary?.website ?? "none booked"}`
+  );
   log(`Wrote ${ARCHIVE_DIR}/${issue}.mdx`);
 };
 

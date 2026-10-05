@@ -29,6 +29,9 @@ jobs:
   draft:
     runs-on: ubuntu-latest
     timeout-minutes: 45
+    outputs:
+      branch: ${{ steps.pr.outputs.branch }}
+      pr: ${{ steps.pr.outputs.pr }}
     steps:
       - uses: actions/checkout@v4
 
@@ -73,10 +76,12 @@ jobs:
         run: pnpm build
 
       - name: Open pull request
+        id: pr
         if: steps.open.outputs.skip != 'true'
         env:
           ISSUE: ${{ steps.draft.outputs.issue }}
           TITLE: ${{ steps.draft.outputs.title }}
+          SPONSORS: ${{ steps.draft.outputs.sponsors }}
         run: |
           git add src/content
           if git diff --cached --quiet; then
@@ -92,7 +97,34 @@ jobs:
 
           - Read the rendered issue on the Vercel Preview deployment for this PR at \`/issues/$ISSUE\`.
           - Edit anything directly in this PR: \`src/content/archive/$ISSUE.mdx\`, plus any new files in \`src/content/tools/\`.
+          - Sponsors (from \`src/data/sponsor-bookings.json\`): $SPONSORS
           - **Merging publishes the issue and emails it to all Kit subscribers.** Close the PR to skip this week.
           EOF
-          gh pr create --base main --head "$branch" \
-            --title "Newsletter #$ISSUE: $TITLE" --body-file "$RUNNER_TEMP/body.md"
+          pr=$(gh pr create --base main --head "$branch" \
+            --title "Newsletter #$ISSUE: $TITLE" --body-file "$RUNNER_TEMP/body.md")
+          echo "$pr"
+          echo "branch=$branch" >> "$GITHUB_OUTPUT"
+          echo "pr=$pr" >> "$GITHUB_OUTPUT"
+
+      # Ready-to-post X and Reddit copy as a PR comment; nothing is auto-posted.
+      - name: Comment social posts
+        if: steps.pr.outputs.pr != ''
+        continue-on-error: true
+        env:
+          ISSUE: ${{ steps.draft.outputs.issue }}
+          PR: ${{ steps.pr.outputs.pr }}
+          REDDIT_SUBREDDITS: ${{ vars.REDDIT_SUBREDDITS || 'shadcn' }}
+        run: |
+          node scripts/newsletter/social.ts "$ISSUE" > "$RUNNER_TEMP/social.md"
+          gh pr comment "$PR" --body-file "$RUNNER_TEMP/social.md"
+
+  # PRs opened with GITHUB_TOKEN don't trigger `pull_request` workflows, so the
+  # link check runs here for the bot's push. Later human pushes to the PR
+  # branch trigger check-issue-links.yml directly.
+  links:
+    needs: draft
+    if: needs.draft.outputs.pr != ''
+    uses: ./.github/workflows/check-issue-links.yml
+    with:
+      ref: ${{ needs.draft.outputs.branch }}
+      pr: ${{ needs.draft.outputs.pr }}

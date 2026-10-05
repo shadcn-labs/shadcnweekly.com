@@ -69,7 +69,7 @@ const absoluteUrl = (value: string | undefined, base: string) => {
     try {
       resolved = new URL(value, base).href;
     } catch {
-      // Invalid URL — leave unresolved
+      void 0;
     }
   }
 
@@ -82,7 +82,7 @@ const emptyMeta = (url: string): PageMeta => {
   try {
     title = new URL(url).hostname.replace(/^www\./u, "");
   } catch {
-    // keep url as title
+    void 0;
   }
 
   return {

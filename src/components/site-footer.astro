@@ -1,39 +1,121 @@
 ---
-import { SITE } from "@/constants/site";
+import { FooterMoreMenu } from "@/components/footer-more-menu";
+import GithubLink from "@/components/github-link.astro";
+import { Logo } from "@/components/logo";
+import { ThemeToggle } from "@/components/theme-toggle";
+import XLink from "@/components/x-link.astro";
+import { OTHER_PRODUCTS } from "@/constants/products";
 import { ROUTES } from "@/constants/routes";
+import { SITE } from "@/constants/site";
+import { withUtm } from "@/lib/utm";
+
+const COLUMNS = [
+  {
+    links: [
+      { href: ROUTES.ISSUES, label: "Issues" },
+      { href: ROUTES.TOOLS, label: "Tools" },
+      { href: ROUTES.SPONSOR, label: "Sponsor" },
+      { href: ROUTES.RSS, label: "RSS" },
+    ],
+    title: "Newsletter",
+  },
+  {
+    links: [
+      { href: ROUTES.ABOUT, label: "About" },
+      { href: ROUTES.BRAND, label: "Brand" },
+      { href: ROUTES.CONTACT, label: "Contact" },
+    ],
+    title: "Company",
+  },
+  {
+    links: [
+      { href: ROUTES.TERMS, label: "Terms of service" },
+      { href: ROUTES.PRIVACY, label: "Privacy policy" },
+      { href: ROUTES.REFUNDS, label: "Refund policy" },
+    ],
+    title: "Legal",
+  },
+];
+
+const linkClass =
+  "text-muted-foreground transition-colors hover:text-foreground";
 ---
 
-<footer class="flex flex-col items-center gap-4 px-6 pb-8 pt-4">
-  <div class="flex items-center gap-2 text-sm text-muted-foreground">
-    <a href={ROUTES.PRIVACY} class="transition-colors hover:text-foreground">
-      Privacy Policy
-    </a>
-    <span>&middot;</span>
-    <a href={ROUTES.CONTACT} class="transition-colors hover:text-foreground">
-      Contact
-    </a>
+<footer class="page-container pt-16 pb-10">
+  <div class="grid gap-12 lg:grid-cols-[minmax(0,1fr)_minmax(0,2fr)]">
+    <div class="flex flex-col gap-4">
+      <a
+        href={ROUTES.HOME}
+        class="flex w-fit items-center gap-2 text-lg font-semibold tracking-tight"
+      >
+        <Logo className="size-6" />
+        {SITE.NAME}
+      </a>
+      <p class="max-w-xs text-sm text-muted-foreground">
+        {SITE.DESCRIPTION.LONG}
+      </p>
+      <div class="-ml-2 flex items-center gap-1">
+        <GithubLink />
+        <XLink />
+      </div>
+    </div>
+
+    <nav aria-label="Footer" class="grid grid-cols-2 gap-8 sm:grid-cols-4">
+      {
+        COLUMNS.map((column) => (
+          <div class="flex flex-col gap-3">
+            <h2 class="text-sm font-medium text-foreground">{column.title}</h2>
+            <ul class="flex flex-col gap-2 text-sm">
+              {column.links.map((link) => (
+                <li>
+                  <a href={link.href} class={linkClass}>
+                    {link.label}
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </div>
+        ))
+      }
+      <div class="flex flex-col gap-3">
+        <h2 class="text-sm font-medium text-foreground">Other products</h2>
+        <ul class="flex flex-col gap-2 text-sm">
+          {
+            OTHER_PRODUCTS.map((product) => (
+              <li>
+                <a href={withUtm(product.url, "footer")} class={linkClass}>
+                  {product.name}
+                </a>
+              </li>
+            ))
+          }
+          <li>
+            <FooterMoreMenu client:visible />
+          </li>
+        </ul>
+      </div>
+    </nav>
   </div>
 
   <div
-    class="flex flex-col items-center gap-1 text-[10px] leading-tight text-muted-foreground/60"
+    class="mt-16 flex gap-4 text-sm text-muted-foreground items-center justify-between"
   >
     <p>
-      &copy; 2026 {SITE.NAME} | Curated by <a
-        href={SITE.AUTHOR.URL}
-        target="_blank"
-        rel="noopener noreferrer"
-        class="link"
+      &copy; {new Date().getFullYear()}{" "}
+      <a
+        href={withUtm(SITE.ORG.URL, "footer")}
+        class="transition-colors hover:text-foreground"
       >
-        {SITE.AUTHOR.NAME}
+        {SITE.ORG.NAME}
+      </a>
+      {" · "}Built by{" "}
+      <a
+        href={withUtm(SITE.AUTHOR.URL, "footer")}
+        class="transition-colors hover:text-foreground"
+      >
+        {SITE.AUTHOR.NAME.split(" ")[0]}
       </a>
     </p>
-    <p>
-      This newsletter is not endorsed by or affiliated with <a
-        href="https://shadcn.com"
-        target="_blank"
-        rel="noopener noreferrer"
-        class="link">shadcn</a
-      >.
-    </p>
+    <ThemeToggle client:load hotkey />
   </div>
 </footer>

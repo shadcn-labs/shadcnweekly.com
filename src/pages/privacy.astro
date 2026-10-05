@@ -1,74 +1,81 @@
 ---
-import Layout from "@/layouts/site.astro";
-import { ArrowLeftIcon } from "lucide-react";
-import { SITE } from "@/constants/site";
+import { LINKS } from "@/constants/links";
 import { ROUTES } from "@/constants/routes";
+import { SITE } from "@/constants/site";
+import LegalLayout from "@/layouts/legal.astro";
 ---
 
-<Layout
+<LegalLayout
   title="Privacy Policy"
-  description={`${SITE.NAME} privacy policy. We respect your privacy and do not collect, store, or share any personal information from our subscribers.`}
+  description={`What ${SITE.NAME} collects, why, and who processes it.`}
+  path={ROUTES.PRIVACY}
+  updated="October 2026"
 >
-  <script
-    is:inline
-    slot="head"
-    type="application/ld+json"
-    set:html={JSON.stringify({
-      "@context": "https://schema.org",
-      "@type": "BreadcrumbList",
-      itemListElement: [
-        {
-          "@type": "ListItem",
-          position: 1,
-          name: "Home",
-          item: SITE.URL,
-        },
-        {
-          "@type": "ListItem",
-          position: 2,
-          name: "Privacy Policy",
-          item: `${SITE.URL}${ROUTES.PRIVACY}`,
-        },
-      ],
-    })}
-  />
-  <div class="flex flex-1 flex-col items-center py-16">
-    <div class="flex max-w-2xl flex-col gap-6">
-      <div>
-        <a
-          href={ROUTES.HOME}
-          class="inline-flex text-sm items-center gap-2 text-muted-foreground transition-colors hover:text-foreground"
-        >
-          <ArrowLeftIcon className="size-4" />
-          Back to home
-        </a>
-      </div>
+  <p>
+    {SITE.NAME} collects only what it needs to send the newsletter, answer
+    messages and run sponsorships. We never sell or rent your data.
+  </p>
 
-      <h1 class="text-3xl font-semibold tracking-tight">Privacy Policy</h1>
+  <h2>Newsletter subscribers</h2>
+  <p>
+    Your email address, stored with our email provider <a
+      href="https://kit.com"
+      target="_blank"
+      rel="noopener noreferrer"
+      class="link">Kit</a
+    >, which sends the confirmation email and every issue and records basic
+    delivery stats (opens, clicks). You can unsubscribe at any time from the
+    link in every email, and we'll delete your address on request.
+  </p>
 
-      <div
-        class="prose prose-neutral dark:prose-invert flex flex-col gap-4 text-base leading-relaxed text-muted-foreground"
-      >
-        <p>
-          {SITE.NAME} respects your privacy. We do not collect, store, or share any
-          personal information from our subscribers.
-        </p>
-        <p>
-          Email addresses provided for newsletter subscription are used solely
-          for delivering the weekly newsletter. We do not sell, trade, or
-          otherwise transfer your email to third parties.
-        </p>
-        <p>
-          You can unsubscribe at any time by clicking the unsubscribe link
-          included in every newsletter email.
-        </p>
-        <p>
-          We may use basic analytics to understand aggregate traffic patterns on
-          our website, but this data is anonymous and cannot be used to identify
-          individual visitors.
-        </p>
-        <p class="text-sm text-muted-foreground/60">Last updated: July 2026</p>
-      </div>
-    </div>
-  </div>
-</Layout>
+  <h2>Contact form</h2>
+  <p>
+    Your name, email and message are delivered to our inbox by <a
+      href="https://formsubmit.co"
+      target="_blank"
+      rel="noopener noreferrer"
+      class="link">FormSubmit</a
+    > and used only to reply to you.
+  </p>
+
+  <h2>Sponsors</h2>
+  <p>
+    When you book a placement, your email and payment are handled by <a
+      href="https://dodopayments.com"
+      target="_blank"
+      rel="noopener noreferrer"
+      class="link">Dodo Payments</a
+    >, our merchant of record; we never see your card details. The sponsor
+    content you submit (name, headline, description, link, image) is published
+    in the issues you booked. Your email address is kept with Dodo Payments and
+    is never published.
+  </p>
+
+  <h2>Website</h2>
+  <p>
+    The site is hosted on <a
+      href="https://vercel.com"
+      target="_blank"
+      rel="noopener noreferrer"
+      class="link">Vercel</a
+    >. We use <a
+      href="https://vercel.com/docs/analytics/privacy-policy"
+      target="_blank"
+      rel="noopener noreferrer"
+      class="link">Vercel Web Analytics</a
+    > to understand aggregate traffic. It sets no cookies and records each page
+    view anonymously: the page and referrer, approximate location (country,
+    region, city), and your browser, operating system and device type. Visitors
+    are counted with a hash of the request that is discarded after 24 hours, so
+    the data can't identify you or follow you across other sites.
+  </p>
+  <p>Your light/dark theme choice is saved in your browser only.</p>
+
+  <h2>Contact</h2>
+  <p>
+    To access or delete your data, email <a
+      href={`mailto:${LINKS.EMAIL}`}
+      class="link">{LINKS.EMAIL}</a
+    >.
+  </p>
+</LegalLayout>
