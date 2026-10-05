@@ -28,6 +28,9 @@ export const withUtm = (
   } catch {
     return url;
   }
+  if (target.protocol !== "https:" && target.protocol !== "http:") {
+    return url;
+  }
   const host = target.hostname.replace(/^www\./u, "");
   if (host === siteHost?.replace(/^www\./u, "")) {
     return url;

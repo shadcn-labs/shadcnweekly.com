@@ -180,7 +180,7 @@ const groupOf = (card: (typeof cards)[number]) => card.placements.join("+");
                 </Card>
               ))}
             </dl>
-            <p class="text-xs text-muted-foreground">
+            <p class="text-xs text-muted-foreground/60">
               Live from our email provider. Open and click rates over the last
               90 days; sponsorship CTR is unique clicks on sponsor links per
               recipient, averaged over recent issues.
@@ -215,10 +215,10 @@ const groupOf = (card: (typeof cards)[number]) => card.placements.join("+");
           </div>
         </div>
 
-        <div class="flex flex-col gap-4">
+        <div class="flex flex-col gap-2">
           <h2 class="text-xl font-semibold">Placements</h2>
 
-          <div class="flex flex-col gap-4">
+          <div class="mt-2 flex flex-col gap-4">
             {
               cards.map((card, index) => (
                 <>
@@ -260,7 +260,10 @@ const groupOf = (card: (typeof cards)[number]) => card.placements.join("+");
                           href={card.livePreview}
                           target="_blank"
                           rel="noopener"
-                          class={buttonVariants({ size: "sm", variant: "ghost" })}
+                          class={buttonVariants({
+                            size: "sm",
+                            variant: "ghost",
+                          })}
                         >
                           Live preview
                           <ArrowUpRightIcon className="size-4" />

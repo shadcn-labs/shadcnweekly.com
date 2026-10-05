@@ -1,6 +1,6 @@
 export const TOOL_CATEGORIES = [
   "Components",
-  "Blocks & Templates",
+  "Frameworks",
   "Themes",
   "Registries",
   "Tooling",

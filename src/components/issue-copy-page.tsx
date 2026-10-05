@@ -82,13 +82,13 @@ export const IssueCopyPage = ({
   ];
 
   return (
-    <div className="inline-flex items-center rounded-full border border-border bg-background p-0.5 text-muted-foreground transition-colors has-hover:border-foreground/20">
+    <div className="inline-flex items-center rounded-lg border border-border bg-background p-0.5 text-muted-foreground transition-colors has-hover:border-foreground/20">
       <button
         type="button"
         onClick={copyPage}
         className={cn(
           buttonVariants({ size: "sm", variant: "ghost" }),
-          "rounded-full pl-2.5 font-medium hover:text-foreground [&_svg:not([class*='size-'])]:size-3.5"
+          "pl-2.5 font-medium hover:text-foreground [&_svg:not([class*='size-'])]:size-3.5"
         )}
       >
         {copied ? <CheckIcon /> : <CopyIcon />}
@@ -100,7 +100,7 @@ export const IssueCopyPage = ({
           aria-label="More page actions"
           className={cn(
             buttonVariants({ size: "icon-sm", variant: "ghost" }),
-            "rounded-full hover:text-foreground aria-expanded:text-foreground"
+            "hover:text-foreground aria-expanded:text-foreground"
           )}
         >
           <ChevronDownIcon className="size-3.5 transition-transform in-data-popup-open:rotate-180" />

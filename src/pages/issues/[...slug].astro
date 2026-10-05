@@ -84,7 +84,7 @@ const formattedDate = issue.data.date.toLocaleDateString("en-US", {
 
   <div class="flex flex-1 flex-col items-center py-16">
     <div class="reading-container flex flex-col gap-8">
-      <div class="flex items-center justify-between gap-4">
+      <div class="relative flex items-center">
         <a
           href={ROUTES.ISSUES}
           class="inline-flex items-center gap-2 text-sm text-muted-foreground transition-colors hover:text-foreground"
@@ -92,12 +92,14 @@ const formattedDate = issue.data.date.toLocaleDateString("en-US", {
           <ArrowLeftIcon className="size-4" />
           Back to archive
         </a>
-        <IssueCopyPage
-          client:load
-          githubUrl={`${LINKS.GITHUB}/blob/main/${issue.filePath}`}
-          markdownUrl={`${ROUTES.ISSUES}/${issue.id}.md`}
-          pageUrl={new URL(`${ROUTES.ISSUES}/${issue.id}`, SITE.URL).href}
-        />
+        <div class="absolute top-1/2 right-0 -translate-y-1/2">
+          <IssueCopyPage
+            client:load
+            githubUrl={`${LINKS.GITHUB}/blob/main/${issue.filePath}`}
+            markdownUrl={`${ROUTES.ISSUES}/${issue.id}.md`}
+            pageUrl={new URL(`${ROUTES.ISSUES}/${issue.id}`, SITE.URL).href}
+          />
+        </div>
       </div>
 
       <header class="flex flex-col items-center gap-6 text-center">

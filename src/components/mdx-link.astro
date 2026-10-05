@@ -1,0 +1,25 @@
+---
+import { SITE } from "@/constants/site";
+import { issueCampaign, withUtm } from "@/lib/utm";
+
+interface Props {
+  href?: string;
+  class?: string;
+  target?: string;
+  rel?: string;
+  title?: string;
+}
+
+const { href = "", ...rest } = Astro.props;
+const resolved = withUtm(
+  href,
+  {
+    campaign: issueCampaign(Astro.url.pathname) ?? "issues",
+    content: "article-link",
+    medium: "referral",
+  },
+  new URL(SITE.URL).hostname,
+);
+---
+
+<a {...rest} href={resolved}><slot /></a>
