@@ -11,6 +11,7 @@ import {
   EmptyTitle,
 } from "@/components/ui/empty";
 import { ArrowLeftIcon, SearchIcon, XIcon } from "lucide-react";
+import { buttonVariants } from "@/components/ui/button";
 import { SITE } from "@/constants/site";
 import { ROUTES } from "@/constants/routes";
 import { TOOL_CATEGORIES } from "@/constants/tools";
@@ -87,7 +88,7 @@ const filters = [
         </a>
       </div>
 
-      <div class="flex flex-col gap-2">
+      <div class="flex flex-col gap-3">
         <h1 class="text-3xl font-semibold tracking-tight">Tools</h1>
         <p class="text-base text-muted-foreground">
           Hand-picked tools, libraries, and resources from the shadcn ecosystem.
@@ -169,7 +170,7 @@ const filters = [
           </EmptyHeader>
           <button
             type="button"
-            class="rounded-full border border-border bg-background px-3 py-1 text-sm text-muted-foreground transition-colors hover:border-foreground/20 hover:text-foreground"
+            class={buttonVariants({ size: "sm", variant: "outline" })}
             data-tools-reset
           >
             Clear filters

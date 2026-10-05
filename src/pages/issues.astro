@@ -13,6 +13,7 @@ const formatDate = (date: Date) =>
   date.toLocaleDateString("en-US", {
     day: "numeric",
     month: "long",
+    timeZone: "UTC",
     year: "numeric",
   });
 ---
@@ -38,7 +39,7 @@ const formatDate = (date: Date) =>
         </a>
       </div>
 
-      <div class="flex flex-col gap-2">
+      <div class="flex flex-col gap-3">
         <h1 class="text-3xl font-semibold tracking-tight">
           Newsletter Archive
         </h1>
@@ -49,26 +50,40 @@ const formatDate = (date: Date) =>
 
       <div class="flex flex-col gap-3">
         {
-          sortedIssues.map((issue) => (
-              <a
-                href={`/issues/${issue.id}`}
-                class="group flex items-start gap-4 rounded-lg border border-border bg-card p-4 transition-colors hover:bg-accent/50"
-              >
-                <span class="inline-flex size-10 shrink-0 items-center justify-center rounded-full bg-muted text-sm font-semibold text-muted-foreground">
-                  #{issue.data.issue}
-                </span>
-                <div class="flex flex-1 flex-col gap-1">
-                  <h2 class="text-base font-semibold leading-tight group-hover:underline">
-                    {issue.data.title}
-                  </h2>
-                  <p class="text-sm text-muted-foreground">
-                    {issue.data.description}
-                  </p>
-                  <time class="text-xs text-muted-foreground/60">
-                    {formatDate(issue.data.date)}
-                  </time>
-                </div>
-              </a>
+          sortedIssues.map((issue, index) => (
+            <a
+              href={`${ROUTES.ISSUES}/${issue.id}`}
+              class="group flex flex-col gap-2 rounded-lg border border-border bg-card p-4 transition-colors hover:bg-accent/50"
+            >
+              <div class="flex items-center justify-between gap-3">
+                {/* Both variants are h-5 so every card's top row is the same height. */}
+                {index === 0 ? (
+                  <span class="inline-flex h-5 items-center gap-1.5 rounded-full bg-muted px-2 text-xs leading-none font-semibold text-foreground ring-1 ring-border ring-inset">
+                    <span class="relative flex size-1.5">
+                      <span class="absolute inline-flex size-full animate-ping rounded-full bg-primary opacity-75" />
+                      <span class="relative inline-flex size-1.5 rounded-full bg-primary" />
+                    </span>
+                    Latest
+                  </span>
+                ) : (
+                  <span class="inline-flex h-5 items-center text-sm leading-none font-semibold text-primary">
+                    Issue #{issue.data.issue}
+                  </span>
+                )}
+                <time
+                  datetime={issue.data.date.toISOString()}
+                  class="shrink-0 text-xs text-muted-foreground/60"
+                >
+                  {formatDate(issue.data.date)}
+                </time>
+              </div>
+              <h2 class="text-base font-semibold leading-snug group-hover:underline">
+                {issue.data.title}
+              </h2>
+              <p class="text-sm leading-relaxed text-muted-foreground">
+                {issue.data.description}
+              </p>
+            </a>
           ))
         }
       </div>
