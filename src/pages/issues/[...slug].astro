@@ -5,7 +5,7 @@ import ArchiveTogetherWith from "@/components/archive-together-with.astro";
 import { IssueReader } from "@/components/issue-reader";
 import { IssueCopyPage } from "@/components/issue-copy-page";
 import Layout from "@/layouts/site.astro";
-import { ArrowLeftIcon } from "lucide-react";
+import { ArrowLeftIcon, ArrowRightIcon } from "lucide-react";
 import { getCollection, render } from "astro:content";
 import { ROUTES } from "@/constants/routes";
 import { LINKS } from "@/constants/links";
@@ -32,8 +32,10 @@ export const getStaticPaths = async () => {
 
 const { issue, next, previous } = Astro.props;
 const adjacent = [
-  ...(previous ? [{ entry: previous, label: "← Previous", side: "start" }] : []),
-  ...(next ? [{ entry: next, label: "Next →", side: "end" }] : []),
+  ...(previous
+    ? [{ entry: previous, label: "Previous", side: "start" }]
+    : []),
+  ...(next ? [{ entry: next, label: "Next", side: "end" }] : []),
 ];
 const { Content, headings } = await render(issue);
 const imageSlug = issue.id.split("/").map(encodeURIComponent).join("/");
@@ -152,7 +154,20 @@ const formattedDate = issue.data.date.toLocaleDateString("en-US", {
                   side === "end" && "text-right sm:col-start-2",
                 ]}
               >
-                <span class="text-sm text-muted-foreground">{label}</span>
+                <span
+                  class:list={[
+                    "flex items-center gap-1.5 text-sm text-muted-foreground",
+                    side === "end" && "justify-end",
+                  ]}
+                >
+                  {side === "start" ? (
+                    <ArrowLeftIcon className="size-3.5" />
+                  ) : null}
+                  {label}
+                  {side === "end" ? (
+                    <ArrowRightIcon className="size-3.5" />
+                  ) : null}
+                </span>
                 <span class="text-base font-medium text-balance">
                   #{entry.data.issue} · {entry.data.title}
                 </span>
