@@ -1,4 +1,5 @@
 ---
+import { getCollection } from "astro:content";
 import { ArrowLeftIcon, ArrowUpRightIcon, ChevronDownIcon } from "lucide-react";
 
 import { SponsorModal } from "@/components/sponsor-modal";
@@ -18,11 +19,42 @@ import { SPONSOR_PLACEMENTS } from "@/constants/sponsor";
 import type { SponsorPlacement } from "@/constants/sponsor-bookings";
 import { availableWeeks } from "@/constants/sponsor-bookings";
 import Layout from "@/layouts/site.astro";
+import { getAudienceStats } from "@/lib/kit";
 import { sponsorPreviewUrl } from "@/lib/sponsor-preview";
 import { breadcrumbJsonLd } from "@/seo/json-ld";
 import JsonLd from "@/seo/json-ld.astro";
 
-export const prerender = true;
+// Server-rendered so audience stats stay fresh; the CDN caches it for an hour.
+Astro.response.headers.set(
+  "Cache-Control",
+  "public, s-maxage=3600, stale-while-revalidate=86400",
+);
+
+const [audience, issues] = await Promise.all([
+  getAudienceStats(),
+  getCollection("archive"),
+]);
+
+const formatRate = (rate: number) =>
+  `${rate.toLocaleString("en-US", { maximumFractionDigits: 1 })}%`;
+
+const stats = audience
+  ? [
+      audience.subscribers === null
+        ? null
+        : {
+            label: "Subscribers",
+            value: `${audience.subscribers.toLocaleString("en-US")}+`,
+          },
+      audience.openRate === null
+        ? null
+        : { label: "Avg. open rate", value: formatRate(audience.openRate) },
+      audience.clickRate === null
+        ? null
+        : { label: "Avg. click rate", value: formatRate(audience.clickRate) },
+      { label: "Issues sent", value: issues.length.toLocaleString("en-US") },
+    ].filter((stat) => stat !== null)
+  : [];
 
 interface Preview {
   caption: string;
@@ -127,6 +159,27 @@ const cards = SPONSOR_PLACEMENTS.map((placement) => ({
           actually build with shadcn/ui every day.
         </p>
       </div>
+
+      {
+        stats.length > 0 ? (
+          <section aria-label="Audience" class="flex flex-col gap-2">
+            <dl class="grid grid-cols-2 gap-3 sm:auto-cols-fr sm:grid-flow-col sm:grid-cols-none">
+              {stats.map((stat) => (
+                <Card className="flex-col-reverse gap-1 border border-border px-4 ring-0">
+                  <dt class="text-sm text-muted-foreground">{stat.label}</dt>
+                  <dd class="text-2xl font-semibold tracking-tight tabular-nums">
+                    {stat.value}
+                  </dd>
+                </Card>
+              ))}
+            </dl>
+            <p class="text-xs text-muted-foreground">
+              Live from our email provider; rates averaged over the last 90
+              days.
+            </p>
+          </section>
+        ) : null
+      }
 
       <div class="flex flex-col gap-8">
         <div class="flex flex-col gap-3">

@@ -1,0 +1,105 @@
+name: Check issue links
+
+on:
+  pull_request:
+    paths:
+      - "src/content/archive/**"
+  # Called by newsletter-draft.yml: PRs it opens with GITHUB_TOKEN never
+  # trigger `pull_request` workflows, so it runs this check itself.
+  workflow_call:
+    inputs:
+      ref:
+        description: Branch or SHA to check
+        type: string
+        required: true
+      pr:
+        description: Pull request URL or number to comment on when links break
+        type: string
+        default: ""
+
+permissions:
+  contents: read
+  pull-requests: write
+
+concurrency:
+  group: issue-links-${{ inputs.ref || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  links:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.ref || github.event.pull_request.head.sha }}
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+
+      - name: Extract links from changed issues
+        id: extract
+        env:
+          BASE: ${{ github.event.pull_request.base.sha || 'origin/main' }}
+        run: |
+          # Issue files are named <number>.mdx, so word splitting is safe.
+          files=$(git diff --name-only --diff-filter=AM "$BASE"...HEAD -- 'src/content/archive/*.mdx' | xargs)
+          if [ -z "$files" ]; then
+            echo "No changed issue files."
+            exit 0
+          fi
+          echo "Checking $files"
+          # shellcheck disable=SC2086
+          node scripts/newsletter/links.ts $files > "$RUNNER_TEMP/links.txt"
+          cat "$RUNNER_TEMP/links.txt"
+          echo "files=$files" >> "$GITHUB_OUTPUT"
+
+      # x.com/twitter.com and linkedin.com reject bots with 4xx regardless of
+      # whether the post exists, so they are excluded rather than reported.
+      - name: Check links
+        id: lychee
+        if: steps.extract.outputs.files != ''
+        uses: lycheeverse/lychee-action@v2
+        with:
+          args: >-
+            --no-progress
+            --max-retries 3
+            --retry-wait-time 5
+            --timeout 30
+            --max-concurrency 8
+            --accept 200,206,429
+            --user-agent 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0 Safari/537.36'
+            --exclude '^https?://([a-z0-9-]+\.)?(x|twitter|linkedin)\.com/'
+            ${{ runner.temp }}/links.txt
+          output: ${{ runner.temp }}/lychee.md
+          token: ${{ github.token }}
+          jobSummary: true
+          fail: false
+          failIfEmpty: false
+
+      - name: Comment on pull request
+        if: steps.lychee.outputs.exit_code != '' && steps.lychee.outputs.exit_code != '0'
+        # Fork PRs get a read-only token; the job summary still has the report.
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR: ${{ inputs.pr || github.event.pull_request.number }}
+          FILES: ${{ steps.extract.outputs.files }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          {
+            echo "### Broken links in \`$FILES\`"
+            echo
+            echo "Fix or remove these links before merging. [Full report]($RUN_URL)"
+            echo
+            cat "$RUNNER_TEMP/lychee.md"
+          } > "$RUNNER_TEMP/comment.md"
+          gh pr comment "$PR" --repo "$GITHUB_REPOSITORY" --body-file "$RUNNER_TEMP/comment.md"
+
+      - name: Fail on broken links
+        if: steps.lychee.outputs.exit_code != '' && steps.lychee.outputs.exit_code != '0'
+        run: |
+          echo "::error::Broken links found, see the job summary."
+          exit 1

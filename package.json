@@ -14,7 +14,8 @@
     "prepare": "lefthook install",
     "newsletter:draft": "node scripts/newsletter/draft.ts",
     "newsletter:send": "node scripts/newsletter/send.ts",
-    "newsletter:preview": "node scripts/newsletter/preview.ts"
+    "newsletter:preview": "node scripts/newsletter/preview.ts",
+    "newsletter:social": "node scripts/newsletter/social.ts"
   },
   "dependencies": {
     "@astrojs/mdx": "^5.0.6",

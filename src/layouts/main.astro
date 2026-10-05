@@ -44,5 +44,10 @@ const seoProps = Astro.props;
   <body class="antialiased flex flex-col min-h-svh">
     <slot />
     <Toaster client:idle position="bottom-center" />
+    <script>
+      import { captureAttribution } from "@/lib/attribution";
+
+      captureAttribution();
+    </script>
   </body>
 </html>

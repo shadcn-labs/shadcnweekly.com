@@ -5,9 +5,15 @@ import { cn } from "@/lib/utils";
 interface Props {
   class?: string;
   formClass?: string;
+  /** Live subscriber count; when omitted or null the default footer is shown. */
+  subscriberCount?: number | null;
 }
 
-const { class: className, formClass: formClassName } = Astro.props;
+const {
+  class: className,
+  formClass: formClassName,
+  subscriberCount,
+} = Astro.props;
 ---
 
 <div class={cn("flex flex-col items-center text-center gap-3", className)}>
@@ -32,8 +38,20 @@ const { class: className, formClass: formClassName } = Astro.props;
   >
     <SubscribeForm client:load />
 
-    <p class="text-sm text-muted-foreground">
-      100% free &middot; Delivered every Monday
-    </p>
+    {
+      typeof subscriberCount === "number" ? (
+        <p class="text-sm text-muted-foreground">
+          Join{" "}
+          <span class="font-medium text-foreground tabular-nums">
+            {subscriberCount.toLocaleString("en-US")}+
+          </span>{" "}
+          developers reading every Monday &middot; 100% free
+        </p>
+      ) : (
+        <p class="text-sm text-muted-foreground">
+          100% free &middot; Delivered every Monday
+        </p>
+      )
+    }
   </div>
 </div>

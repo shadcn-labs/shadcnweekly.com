@@ -5,8 +5,12 @@ import SubscribeSection from "@/components/subscribe-section.astro";
 import { ArrowRightIcon } from "lucide-react";
 import { SITE } from "@/constants/site";
 import { ROUTES } from "@/constants/routes";
+import { getSubscriberCount } from "@/lib/kit";
 
-const issues = await getCollection("archive");
+const [issues, subscriberCount] = await Promise.all([
+  getCollection("archive"),
+  getSubscriberCount(),
+]);
 const [latestIssue] = issues.toSorted((a, b) => b.data.issue - a.data.issue);
 ---
 
@@ -42,6 +46,6 @@ const [latestIssue] = issues.toSorted((a, b) => b.data.issue - a.data.issue);
       </h1>
     </div>
 
-    <SubscribeSection formClass="mt-5" />
+    <SubscribeSection formClass="mt-5" subscriberCount={subscriberCount} />
   </div>
 </Layout>

@@ -27,11 +27,27 @@ const kit = async (path: string, init: RequestInit = {}) => {
 const reply = (status: number, message: string) =>
   Response.json({ message }, { status });
 
+const MAX_REFERRER_LENGTH = 1000;
+
+// Kit parses `referrer` into the subscriber's attribution (referrer + UTM
+// params). Only accept a URL on this site, as built by getReferrer().
+const sameSiteReferrer = (value: unknown, requestUrl: string) => {
+  if (typeof value !== "string" || value.length > MAX_REFERRER_LENGTH) {
+    return null;
+  }
+  try {
+    return new URL(value).origin === new URL(requestUrl).origin ? value : null;
+  } catch {
+    return null;
+  }
+};
+
 // oxlint-disable-next-line sonarjs/function-name
 export const POST: APIRoute = async ({ request }) => {
   try {
-    const { email } = await request.json();
-    if (!email) {
+    const payload = (await request.json()) as Record<string, unknown>;
+    const { email } = payload;
+    if (typeof email !== "string" || !email) {
       return reply(400, "Please provide an email");
     }
 
@@ -49,13 +65,16 @@ export const POST: APIRoute = async ({ request }) => {
       );
     }
 
-    const body = JSON.stringify({ email_address: email });
     await kit("/subscribers", {
       body: JSON.stringify({ email_address: email, state: "inactive" }),
       method: "POST",
     });
+    const referrer = sameSiteReferrer(payload.referrer, request.url);
     await kit(`/forms/${import.meta.env.KIT_FORM_ID as string}/subscribers`, {
-      body,
+      body: JSON.stringify({
+        email_address: email,
+        ...(referrer && { referrer }),
+      }),
       method: "POST",
     });
 

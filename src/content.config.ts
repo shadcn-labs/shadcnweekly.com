@@ -2,6 +2,8 @@ import { glob } from "astro/loaders";
 import { z } from "astro/zod";
 import { defineCollection } from "astro:content";
 
+import { TOOL_CATEGORIES } from "@/constants/tools";
+
 const archive = defineCollection({
   loader: glob({ base: "./src/content/archive", pattern: "**/*.{md,mdx}" }),
   schema: z.object({
@@ -25,6 +27,7 @@ const archive = defineCollection({
 const tools = defineCollection({
   loader: glob({ base: "./src/content/tools", pattern: "**/*.{md,mdx}" }),
   schema: z.object({
+    category: z.enum(TOOL_CATEGORIES),
     description: z.string(),
     image: z.url().optional(),
     issue: z.number(),

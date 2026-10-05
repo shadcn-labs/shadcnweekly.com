@@ -12,6 +12,7 @@ import {
   SPONSOR_BOOKINGS,
   weekStart,
 } from "../../src/constants/sponsor-bookings.ts";
+import { TOOL_CATEGORIES } from "../../src/constants/tools.ts";
 import { fetchPageMeta } from "../../src/lib/page-meta.ts";
 import { collectCandidates } from "./collect.ts";
 import type { Candidate, Issue, Tool } from "./lib.ts";
@@ -38,10 +39,7 @@ const GEMINI_URL =
   "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions";
 const DEFAULT_MODELS = ["gemini-3.8-flash", "gemini-3.7-flash"];
 
-const DEFAULT_SUBSCRIBE_SECTION = `<SubscribeSection
-  class="not-typeset border px-4 py-4 rounded-lg bg-muted [margin-block:calc(var(--typeset-flow)*1.4)] [scroll-margin-block-start:calc(var(--typeset-flow)*1.4)]"
-  formClass="mt-3"
-/>`;
+const DEFAULT_SUBSCRIBE_SECTION = `<SubscribeCta class="not-typeset [margin-block:4rem] [scroll-margin-block-start:4rem]" />`;
 
 const entrySchema = z.object({
   body: z.string().min(20),
@@ -57,6 +55,7 @@ const draftSchema = z.object({
   projects: z
     .array(
       entrySchema.extend({
+        category: z.enum(TOOL_CATEGORIES),
         existingTool: z.string().nullish(),
         name: z.string().min(1),
         toolDescription: z.string().min(20).max(300),
@@ -104,7 +103,7 @@ You receive this week's collected items as JSON, each with a numeric "id". Write
   "top": [{ "id": 1, "heading": "Name: Short Tagline", "body": "1-3 short markdown paragraphs" }],
   "roundup": { "heading": "Theme of the Week", "intro": "one sentence", "items": [{ "id": 2, "label": "Name", "summary": "one sentence" }] } or null,
   "articles": [{ "id": 3, "heading": "...", "body": "1-2 sentences" }],
-  "projects": [{ "id": 4, "heading": "...", "body": "1-2 sentences", "name": "Project name", "toolDescription": "one-sentence description for a tools directory", "existingTool": "slug from the listed tools when this is an update to one of them, otherwise null" }],
+  "projects": [{ "id": 4, "heading": "...", "body": "1-2 sentences", "name": "Project name", "toolDescription": "one-sentence description for a tools directory", "category": "tools directory category", "existingTool": "slug from the listed tools when this is an update to one of them, otherwise null" }],
   "related": [{ "id": 5, "heading": "...", "body": "1-2 sentences" }]
 }
 
@@ -116,6 +115,7 @@ Rules:
 - "roundup": optional group of 3+ related smaller updates around one theme; null if there is no theme.
 - "articles": tutorials, blog posts, news coverage. "projects": libraries, registries, blocks, templates, tools (new registry directory entries belong here). "related": adjacent ecosystem items.
 - "projects" may cover new releases or updates of tools already listed on the site. When a project is one of the listed tools (same product, even if renamed or linked differently), set "existingTool" to that tool's "slug"; otherwise set it to null.
+- Every project sets "category" to exactly one of ${JSON.stringify(TOOL_CATEGORIES)}: "Components" for component libraries, individual components and effects; "Blocks & Templates" for page blocks, starter kits and app templates; "Themes" for theme builders, presets and styling systems; "Registries" for shadcn registries and registry directories; "Tooling" for CLIs, editor or Figma plugins, generators and developer utilities; "AI" for AI-powered tools, MCP servers and agent skills; "Apps" for products and sites built with shadcn/ui.
 - Skip anything not about shadcn/ui or its ecosystem (e.g. unrelated "shading"/"shader" results), spam, giveaways, and engagement bait.
 - Prefer quality over quantity: leave weak items out.
 - Plain markdown only inside strings: no HTML, no JSX, no curly braces.
@@ -332,7 +332,7 @@ export const renderIssueMdx = (
   }).trim();
 
   const subscribeBlock =
-    meta.previous?.body.match(componentPattern("SubscribeSection"))?.[0] ??
+    meta.previous?.body.match(componentPattern("SubscribeCta"))?.[0] ??
     DEFAULT_SUBSCRIBE_SECTION;
 
   const lead = draft.top.map((entry) => entryBlock(entry, candidates));
@@ -394,6 +394,7 @@ const writeTools = async (
       const url = project.link ?? candidates[project.id].url;
       const { image } = await fetchPageMeta(url);
       const frontmatter = stringifyYaml({
+        category: project.category,
         description: project.toolDescription,
         ...(image ? { image } : {}),
         issue,

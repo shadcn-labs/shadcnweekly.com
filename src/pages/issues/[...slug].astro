@@ -18,14 +18,23 @@ import JsonLd from "@/seo/json-ld.astro";
 export const prerender = true;
 
 export const getStaticPaths = async () => {
-  const issues = await getCollection("archive");
-  return issues.map((issue) => ({
+  const archive = await getCollection("archive");
+  const issues = archive.toSorted((a, b) => a.data.issue - b.data.issue);
+  return issues.map((issue, index) => ({
     params: { slug: issue.id },
-    props: { issue },
+    props: {
+      issue,
+      next: issues[index + 1],
+      previous: issues[index - 1],
+    },
   }));
 };
 
-const { issue } = Astro.props;
+const { issue, next, previous } = Astro.props;
+const adjacent = [
+  ...(previous ? [{ entry: previous, label: "← Previous", side: "start" }] : []),
+  ...(next ? [{ entry: next, label: "Next →", side: "end" }] : []),
+];
 const { Content, headings } = await render(issue);
 const imageSlug = issue.id.split("/").map(encodeURIComponent).join("/");
 const sections = headings.flatMap(({ depth, slug, text }) =>
@@ -126,6 +135,30 @@ const formattedDate = issue.data.date.toLocaleDateString("en-US", {
           <p class="text-muted-foreground">👋 See you next week!</p>
         </div>
       </article>
+      {
+        adjacent.length > 0 ? (
+          <nav
+            aria-label="Issue navigation"
+            class="grid gap-4 sm:grid-cols-2"
+          >
+            {adjacent.map(({ entry, label, side }) => (
+              <a
+                href={`${ROUTES.ISSUES}/${entry.id}`}
+                rel={side === "start" ? "prev" : "next"}
+                class:list={[
+                  "flex flex-col gap-1 rounded-lg border border-border bg-card p-4 transition-colors hover:bg-accent/50",
+                  side === "end" && "text-right sm:col-start-2",
+                ]}
+              >
+                <span class="text-sm text-muted-foreground">{label}</span>
+                <span class="text-base font-medium text-balance">
+                  #{entry.data.issue} · {entry.data.title}
+                </span>
+              </a>
+            ))}
+          </nav>
+        ) : null
+      }
   {
     sections.length > 0 ? (
       <IssueReader
