@@ -239,7 +239,7 @@ const WeekPicker = ({
               )}
             >
               {formatWeek(week)}
-              {active ? <CheckIcon className="size-4" /> : null}
+              {active ? <CheckIcon className="size-4 text-primary" /> : null}
             </button>
           );
         })}

@@ -27,14 +27,14 @@ const host = new URL(SITE.URL).host.replace(/^www\./u, "");
   description="The page you're looking for doesn't exist."
   noindex
 >
-  <Empty className="flex-1 gap-10 py-16">
-    <div aria-hidden="true" class="w-full max-w-sm px-2">
+  <Empty className="flex-1 gap-10 px-0 py-16">
+    <div aria-hidden="true" class="w-full max-w-72 px-2 sm:max-w-sm">
       <div class="envelope relative">
         <div
           class="airmail relative flex aspect-[16/10] flex-col justify-between rounded-xl p-1.5 shadow-lg"
         >
           <div
-            class="flex h-full flex-col justify-between rounded-lg bg-background p-4 sm:p-5"
+            class="flex h-full flex-col justify-between rounded-lg bg-background p-3 sm:p-5"
           >
             <div class="flex items-start justify-between gap-4">
               <div class="flex items-center gap-2">
@@ -47,14 +47,18 @@ const host = new URL(SITE.URL).host.replace(/^www\./u, "");
                 </div>
               </div>
 
-              <div class="postage flex shrink-0 flex-col items-center justify-center">
+              <div
+                class="postage flex shrink-0 flex-col items-center justify-center max-sm:scale-[0.8] max-sm:origin-top-right"
+              >
                 <div
                   class="flex size-full flex-col items-center justify-center rounded-[2px] bg-foreground outline outline-1 -outline-offset-4 outline-background/40"
                 >
                   <span class="text-xl font-bold tracking-tight tabular-nums">
                     404
                   </span>
-                  <span class="text-[7px] font-medium tracking-widest uppercase">
+                  <span
+                    class="text-[7px] font-medium tracking-widest uppercase"
+                  >
                     Postage
                   </span>
                 </div>
@@ -62,25 +66,29 @@ const host = new URL(SITE.URL).host.replace(/^www\./u, "");
             </div>
 
             <div class="flex w-3/4 flex-col gap-1.5 self-center text-left">
-              <span class="text-[10px] tracking-wider text-muted-foreground uppercase">
+              <span
+                class="text-[10px] tracking-wider text-muted-foreground uppercase"
+              >
                 Deliver to
               </span>
               <span
-                class="truncate font-mono text-sm font-medium"
+                class="truncate font-mono text-xs font-medium sm:text-sm"
                 data-missing-path
               >
                 {host}/…
               </span>
-              <span class="h-1.5 w-28 rounded-full bg-muted"></span>
-              <span class="h-1.5 w-20 rounded-full bg-muted"></span>
+              <span class="h-1.5 w-24 rounded-full bg-muted sm:w-28"></span>
+              <span class="h-1.5 w-16 rounded-full bg-muted sm:w-20"></span>
             </div>
           </div>
         </div>
 
         <div
-          class="return-stamp absolute top-[42%] left-[46%] flex flex-col items-center gap-0.5 rounded-md border-[3px] border-double border-foreground/80 bg-background/85 px-3 py-1.5 font-mono whitespace-nowrap text-foreground/80 backdrop-blur-[1px] max-sm:left-[42%] max-sm:scale-[0.78]"
+          class="return-stamp absolute top-[42%] left-[46%] flex flex-col items-center gap-0.5 rounded-md border-[3px] border-double border-foreground/80 bg-background/85 px-3 py-1.5 font-mono whitespace-nowrap text-foreground/80 backdrop-blur-[1px] max-sm:left-[44%] max-sm:scale-[0.68]"
         >
-          <span class="text-xs font-bold tracking-[0.18em] uppercase sm:text-sm">
+          <span
+            class="text-xs font-bold tracking-[0.18em] uppercase sm:text-sm"
+          >
             Return to sender
           </span>
           <span class="text-[9px] tracking-[0.22em] uppercase sm:text-[10px]">
@@ -100,21 +108,16 @@ const host = new URL(SITE.URL).host.replace(/^www\./u, "");
       </EmptyDescription>
     </EmptyHeader>
     <EmptyContent>
-      <div
-        class="flex w-full flex-col gap-2 *:w-full sm:flex-row sm:justify-center sm:*:w-auto"
-      >
-        <a
-          href={ROUTES.HOME}
-          class={buttonVariants({ variant: "ghost" })}
-        >
-          <ArrowLeftIcon className="size-4" />
+      <div class="flex flex-row flex-wrap items-center justify-center gap-2">
+        <a href={ROUTES.HOME} class={buttonVariants({ variant: "ghost" })}>
+          <ArrowLeftIcon className="max-sm:hidden" />
           Back to home
         </a>
         <a
           href={latest ? `${ROUTES.ISSUES}/${latest.id}` : ROUTES.ISSUES}
           class={buttonVariants({ variant: "default" })}
         >
-          <NewspaperIcon className="size-4" />
+          <NewspaperIcon className="max-sm:hidden" />
           Browse latest issue
         </a>
       </div>
@@ -147,7 +150,8 @@ const host = new URL(SITE.URL).host.replace(/^www\./u, "");
         circle,
         transparent 2px,
         var(--foreground) 2.4px
-      ) -4px -4px / 8px 8px;
+      ) -4px -4px /
+      8px 8px;
     color: var(--background);
     animation: stamp-drop 500ms cubic-bezier(0.22, 1, 0.36, 1) 450ms both;
   }
