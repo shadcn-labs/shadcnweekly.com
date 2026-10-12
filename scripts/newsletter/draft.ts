@@ -302,12 +302,16 @@ export const pickSponsors = (
   };
 };
 
+// Sponsor values may contain quotes; `&quot;` keeps the attribute extractable
+// (see src/lib/kit.ts and src/pages/issues/[...slug].md.ts) and MDX decodes it.
+const escapeAttribute = (value: string) => value.replaceAll('"', "&quot;");
+
 const sponsorComponent = (sponsor: SponsorContent) => {
   const attributes = (
     ["website", "name", "title", "description", "image"] as const
   )
     .filter((key) => sponsor[key])
-    .map((key) => `  ${key}="${sponsor[key]}"`);
+    .map((key) => `  ${key}="${escapeAttribute(String(sponsor[key]))}"`);
   return `<ArchiveSponsorSection\n${attributes.join("\n")}\n/>`;
 };
 
