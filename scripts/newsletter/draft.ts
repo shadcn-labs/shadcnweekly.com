@@ -307,7 +307,7 @@ const sponsorComponent = (sponsor: SponsorContent) => {
     ["website", "name", "title", "description", "image"] as const
   )
     .filter((key) => sponsor[key])
-    .map((key) => `  ${key}={${JSON.stringify(sponsor[key])}}`);
+    .map((key) => `  ${key}="${sponsor[key]}"`);
   return `<ArchiveSponsorSection\n${attributes.join("\n")}\n/>`;
 };
 
