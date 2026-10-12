@@ -56,15 +56,16 @@ jobs:
           cat "$RUNNER_TEMP/links.txt"
           echo "files=$files" >> "$GITHUB_OUTPUT"
 
-      # x.com/twitter.com and linkedin.com reject bots with 4xx regardless of
-      # whether the post exists, so they are excluded rather than reported.
+      # x.com/twitter.com, linkedin.com, and reddit.com reject bots with 4xx
+      # regardless of whether the post exists, so they are excluded rather than
+      # reported.
       - name: Check links
         id: lychee
         if: steps.extract.outputs.files != ''
         uses: lycheeverse/lychee-action@v2
         with:
           args: >-
-            --no-progress --max-retries 3 --retry-wait-time 5 --timeout 30 --max-concurrency 8 --accept 200,206,429 --user-agent 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0 Safari/537.36' --exclude '^https?://([a-z0-9-]+\.)?(x|twitter|linkedin)\.com/' ${{ runner.temp }}/links.txt
+            --no-progress --max-retries 3 --retry-wait-time 5 --timeout 30 --max-concurrency 8 --accept 200,206,429 --user-agent 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0 Safari/537.36' --exclude '^https?://([a-z0-9-]+\.)?(x|twitter|linkedin|reddit)\.com/' ${{ runner.temp }}/links.txt
 
 
           output: ${{ runner.temp }}/lychee.md
