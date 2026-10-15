@@ -1,13 +1,15 @@
 ---
 import { FooterMoreMenu } from "@/components/footer-more-menu";
-import GithubLink from "@/components/github-link.astro";
+import { FooterSocials } from "@/components/footer-socials";
 import { Logo } from "@/components/logo";
 import { ThemeToggle } from "@/components/theme-toggle";
-import XLink from "@/components/x-link.astro";
 import { OTHER_PRODUCTS } from "@/constants/products";
 import { ROUTES } from "@/constants/routes";
 import { SITE } from "@/constants/site";
+import { getGithubStars } from "@/lib/github-stars";
 import { FOOTER_UTM, withUtm } from "@/lib/utm";
+
+const stars = await getGithubStars();
 
 const COLUMNS = [
   {
@@ -54,10 +56,7 @@ const linkClass =
       <p class="max-w-xs text-sm text-muted-foreground">
         {SITE.DESCRIPTION.LONG}
       </p>
-      <div class="-ml-2 flex items-center gap-1">
-        <GithubLink />
-        <XLink />
-      </div>
+      <FooterSocials client:load stars={stars} />
     </div>
 
     <nav aria-label="Footer" class="grid grid-cols-2 gap-8 sm:grid-cols-4">
