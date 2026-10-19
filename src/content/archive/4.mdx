@@ -1,0 +1,119 @@
+---
+date: 2026-10-19
+description: shadcn/ui introduces AI Elements and the Trace primitive for
+  agentic interfaces, alongside an official chatbot template and new community
+  registries.
+highlights:
+  - Official launch of AI Elements for agentic UI patterns
+  - New Trace primitive for agent reasoning and tool executions
+  - shadcn-ui/chatbot-template released for AI SDK
+  - New specialized entries added to the official registry directory
+  - onsystem MCP server and linter for coding agents
+issue: 4
+sponsor: https://www.shadcn-labs.com
+title: AI Elements, Trace & Chatbot Template
+---
+
+### [AI Elements: Agentic UI Patterns](https://ui.shadcn.com/docs/ai-elements)
+
+shadcn/ui introduced AI Elements, a curated collection of component patterns created specifically for building conversational and agentic interfaces.
+
+Each pattern is composed from standard shadcn/ui primitives designed to be copied directly into codebases, standardizing interfaces for agent tool calls, planning, sources, and step restoration.
+
+---
+
+### [Trace: Observability Primitive for Agent Activity](https://x.com/shadcn/status/2110410655165779985)
+
+shadcn released Trace, a dedicated primitive designed to unify agent activity displays under one abstraction. It represents reasoning traces, tool executions, task queues, chains of thought, and subagent routines.
+
+Trace models agent progress as a list of status lines with support for expandable details, links, and nested execution steps.
+
+---
+
+### [Chatbot Template: AI SDK Agent Starter](https://github.com/shadcn-ui/chatbot-template)
+
+The shadcn team published an official minimal chatbot template built with Next.js, Vercel AI SDK, shadcn/ui, shadcn/react, and shadcn/typeset.
+
+Designed to run on the Vercel AI Gateway, the starter serves as a clean starting point for streaming conversational interfaces with typographic defaults and state management built in.
+
+---
+
+## Official Registry Directory Expansions
+
+The official shadcn/ui registry directory added new specialized community components and domain toolkits this week.
+
+- **[@babelize](https://elements.babelize.co)** Open-source localization components including language switchers, relative-time formatters, and translation widgets.
+- **[@liquikit](https://liquikit.dev)** Liquid glass primitives with physically based refraction built on Base UI that work across modern browsers.
+- **[@audio-ui](https://www.audio-ui.dev)** Accessible audio controls including knobs, faders, XY pads, waveforms, and sequencers on headless primitives.
+- **[@bevel](https://bevel-ui.vercel.app)** Tactile skeuomorphic components like guarded switches, split-flap boards, and motorized faders on Tailwind v4.
+- **[@dualkit](https://dualkit.dev)** Bilingual Arabic and English components featuring RTL layouts, Gulf currency formats, and Hijri calendar support.
+- **[@organui](https://organui.com)** Domain components for healthcare and life sciences featuring 3D organ viewers, ECG traces, and lab result trackers.
+
+<ArchiveSponsorSection
+  website="https://www.shadcn-labs.com"
+  description="Pushing the limits of the shadcn/ui ecosystem."
+/>
+
+<SubscribeCta class="not-typeset [margin-block:4rem] [scroll-margin-block-start:4rem]" />
+
+## 📙 Articles, Tutorials & News
+
+### [Building shadcn/ui Registries for Claude Code and Cursor](https://dev.to/preetsuthar17/how-to-build-a-shadcnui-registry-that-claude-code-and-cursor-can-actually-use-19n3)
+
+Preet Suthar outlines the structure, validation steps, and namespace setup required to author custom registries that coding agents can inspect and consume.
+
+### [7 Best shadcn/ui Themes and Theme Generators](https://adminlte.io/blog/shadcn-ui-themes/)
+
+A curated comparison evaluating popular color palette customizers, theme presets, and generators across the shadcn/ui ecosystem.
+
+### [Tailwind CSS v4, shadcn/ui & Dark Mode](https://www.youtube.com/watch?v=zSZPtAHyMOE)
+
+A complete video walkthrough demonstrating how to structure a centralized design system using Tailwind CSS v4 and shadcn/ui primitives.
+
+---
+
+## 📦 Projects, Packages & Tools
+
+### [onsystem: Design System Linter and MCP for Agents](https://github.com/dgesteves/onsystem)
+
+A zero-config tool that combines an MCP server with a linter to prevent coding agents from inventing variants, hardcoding colors, or breaking spacing scales.
+
+### [pie-menu: Radial Interaction Primitive](https://piemenu.jpmarqu.es)
+
+A radial pie menu for shadcn/ui with press-drag-release interaction, full keyboard support, and a headless primitive core.
+
+### [signoff-ui: Human Review Primitives for Agents](https://signoff-ui.vercel.app)
+
+UI components providing multi-file diff reviews with per-hunk decisions, inline comments, tool approvals, and telemetry for AI SDK and AG-UI agents.
+
+### [animate-ui: Lower-Level Primitive Animations](https://animate-ui.com/docs)
+
+An animation toolkit that targets the underlying primitives your components rely on, preserving custom shadcn markup and component source ownership.
+
+### [shadcn-exchange: Cross-Registry Block Search](https://shadcn.exchange)
+
+A directory tool allowing developers to search, preview, and CLI-install blocks across all public community registries.
+
+### [facade-ui: Base UI Marketing Blocks and Templates](https://facadeui.dev)
+
+An open-source registry of accessible marketing blocks, landing page sections, and templates built on Base UI and Tailwind CSS v4.
+
+### [nasaq: Arabic and RTL-First shadcn Registry](https://nasaqui.com)
+
+An open-source registry of React components, themes, and page templates designed with native RTL layout and Arabic typography, paired with an MCP server.
+
+---
+
+## 🌈 Related
+
+### [audiocn-solid: Audio Primitives for Solid](https://audiocn-solid.jhonra121.workers.dev)
+
+A collection of audio UI components ported to SolidJS and distributed as copy-paste source through the shadcn CLI workflow.
+
+### [esuiss: Multi-Platform UI Primitives](https://suiss.app/ui)
+
+A component collection extending shadcn design patterns across React, Next.js, React Native with Expo, SwiftUI, and Jetpack Compose.
+
+### [GooseForum: Go-Powered Self-Hosted Forum](https://github.com/leancodebox/GooseForum)
+
+A self-hosted forum platform featuring shadcn/ui discussion pages, an admin console, and a light and dark theme workbench, distributed as a single Go binary.
