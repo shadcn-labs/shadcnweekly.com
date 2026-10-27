@@ -2,6 +2,7 @@
 import { getCollection } from "astro:content";
 import Layout from "@/layouts/site.astro";
 import SubscribeSection from "@/components/subscribe-section.astro";
+import ColorBends from "@/components/color-bends";
 import { ArrowRightIcon } from "lucide-react";
 import { SITE } from "@/constants/site";
 import { ROUTES } from "@/constants/routes";
@@ -17,10 +18,29 @@ const [latestIssue] = issues.toSorted((a, b) => b.data.issue - a.data.issue);
 <Layout
   title={`${SITE.NAME} - ${SITE.DESCRIPTION.SHORT}`}
   description={`${SITE.DESCRIPTION.LONG} Stay up-to-date with what's happening in the shadcn ecosystem.`}
+  fullWidth
 >
   <div
-    class="flex flex-1 flex-col items-center justify-center text-center gap-3 pt-8 pb-[calc(2rem+var(--header-height)+10svh)]"
+    class="relative isolate flex flex-1 flex-col items-center justify-center text-center gap-3 pt-8 pb-[calc(2rem+var(--header-height)+10svh)]"
   >
+    <div class="pointer-events-none fixed inset-0 -z-10" aria-hidden="true">
+      <ColorBends
+        client:load
+        colors={["#174bff", "#4668ff", "#133ac0"]}
+        rotation={90}
+        speed={0.15}
+        scale={1}
+        frequency={1}
+        warpStrength={1}
+        mouseInfluence={0.35}
+        parallax={0.2}
+        noise={0.03}
+        iterations={1}
+        intensity={1}
+        bandWidth={6}
+        transparent
+      />
+    </div>
     <div class="flex flex-col items-center gap-3">
       {
         latestIssue ? (
