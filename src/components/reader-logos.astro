@@ -1,0 +1,163 @@
+---
+interface Logo {
+  name: string;
+  src: string;
+  darkSrc?: string;
+  darkClass?: string;
+}
+
+const LOGOS: Logo[] = [
+  {
+    name: "Code Agency",
+    src: "https://cdn.codeagency.be/brand/logo-light.svg",
+  },
+  {
+    name: "ThemeSelection",
+    src: "https://themeselection.com/wp-content/uploads/thegem-logos/logo_7f80489ca54577917002dbbdfa36b287_2x.webp",
+  },
+  {
+    darkSrc: "https://shadcnspace.com/images/logo/shadcnspace-white.svg",
+    name: "Shadcn Space",
+    src: "https://shadcnspace.com/images/logo/shadcnspace.svg",
+  },
+  {
+    name: "Relation CRM",
+    src: "https://www.relations-crm.com/images/default-source/site-infrastructure/sunrise-software-logo.png?sfvrsn=7455ed5e_20",
+  },
+  {
+    name: "Fitweb",
+    src: "https://fitweb.com.au/fitweb-logo-about.png",
+  },
+  {
+    darkSrc: "https://www.supersonic-group.com/wp-content/uploads/2022/01/logo_white.svg",
+    name: "Supersonic Group",
+    src: "https://www.supersonic-group.com/wp-content/uploads/2022/01/logo.svg",
+  },
+  {
+    darkClass: "dark:invert",
+    name: "PaceUI",
+    src: "/logos/paceui.svg",
+  },
+  {
+    darkClass: "invert dark:invert-0",
+    name: "Dominium Web",
+    src: "https://dwebtech.ca/wp-content/uploads/2023/03/D-initial-w-plain.svg",
+  },
+  {
+    darkSrc: "https://neon.com/brand/neon-logo-dark-color.svg",
+    name: "Neon",
+    src: "https://neon.com/brand/neon-logo-light-color.svg",
+  },
+  {
+    darkClass: "dark:invert",
+    name: "nuqs",
+    src: "https://nuqs.dev/icon.svg",
+  },
+];
+
+const imageClass =
+  "h-7 w-auto max-w-[180px] object-contain opacity-60 grayscale transition-opacity hover:opacity-90 dark:opacity-70 sm:h-8";
+---
+
+<section
+  aria-labelledby="readers-heading"
+  class="page-container py-12 sm:py-16"
+>
+  <h2
+    id="readers-heading"
+    class="text-center text-sm font-normal text-muted-foreground"
+  >
+    Read by developers from
+  </h2>
+
+  <div class="marquee-mask relative mt-8 overflow-hidden">
+    <div class="marquee-track flex w-max">
+      {
+        [0, 1].map((copy) => (
+          <ul
+            class="marquee-group flex shrink-0 items-center gap-12 pr-12 sm:gap-20 sm:pr-20"
+            aria-hidden={copy === 1 ? "true" : undefined}
+          >
+            {LOGOS.map((logo) => (
+              <li class="flex shrink-0 items-center">
+                <img
+                  src={logo.src}
+                  alt={copy === 0 ? logo.name : ""}
+                  loading="lazy"
+                  decoding="async"
+                  referrerpolicy="no-referrer"
+                  class:list={[
+                    imageClass,
+                    logo.darkSrc
+                      ? "dark:hidden"
+                      : (logo.darkClass ?? "dark:brightness-0 dark:invert"),
+                  ]}
+                />
+                {logo.darkSrc ? (
+                  <img
+                    src={logo.darkSrc}
+                    alt={copy === 0 ? logo.name : ""}
+                    loading="lazy"
+                    decoding="async"
+                    referrerpolicy="no-referrer"
+                    class:list={[imageClass, "hidden dark:block"]}
+                  />
+                ) : null}
+              </li>
+            ))}
+          </ul>
+        ))
+      }
+    </div>
+  </div>
+</section>
+
+<style>
+  .marquee-mask {
+    mask-image: linear-gradient(
+      to right,
+      transparent,
+      black 12%,
+      black 88%,
+      transparent
+    );
+  }
+
+  .marquee-track {
+    animation: marquee 40s linear infinite;
+    will-change: transform;
+  }
+
+  .marquee-track:hover {
+    animation-play-state: paused;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .marquee-mask {
+      mask-image: none;
+    }
+
+    .marquee-track {
+      width: 100%;
+      animation: none;
+    }
+
+    .marquee-track > .marquee-group {
+      width: 100%;
+      flex-wrap: wrap;
+      justify-content: center;
+      padding-right: 0;
+      row-gap: 1.5rem;
+    }
+
+    .marquee-track > .marquee-group[aria-hidden="true"] {
+      display: none;
+    }
+  }
+
+  @keyframes marquee {
+    to {
+      transform: translateX(-50%);
+    }
+  }
+</style>

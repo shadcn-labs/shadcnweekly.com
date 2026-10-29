@@ -1,8 +1,10 @@
 ---
 import { getCollection } from "astro:content";
 import Layout from "@/layouts/site.astro";
-import SubscribeSection from "@/components/subscribe-section.astro";
 import ColorBends from "@/components/color-bends";
+import ReaderLogos from "@/components/reader-logos.astro";
+import SubscribeSection from "@/components/subscribe-section.astro";
+import Testimonials from "@/components/testimonials.astro";
 import { ArrowRightIcon } from "lucide-react";
 import { SITE } from "@/constants/site";
 import { ROUTES } from "@/constants/routes";
@@ -20,9 +22,7 @@ const [latestIssue] = issues.toSorted((a, b) => b.data.issue - a.data.issue);
   description={`${SITE.DESCRIPTION.LONG} Stay up-to-date with what's happening in the shadcn ecosystem.`}
   fullWidth
 >
-  <div
-    class="relative isolate flex flex-1 flex-col items-center justify-center text-center gap-3 pt-8 pb-[calc(2rem+var(--header-height)+10svh)]"
-  >
+  <div class="relative isolate flex flex-1 flex-col">
     <div class="pointer-events-none fixed inset-0 -z-10" aria-hidden="true">
       <ColorBends
         client:load
@@ -41,31 +41,39 @@ const [latestIssue] = issues.toSorted((a, b) => b.data.issue - a.data.issue);
         transparent
       />
     </div>
-    <div class="flex flex-col items-center gap-3">
-      {
-        latestIssue ? (
-          <a
-            href={`${ROUTES.ISSUES}/${latestIssue.id}`}
-            class="group mb-3 inline-flex max-w-fit items-center gap-2 rounded-full border border-border bg-background py-1 pl-1 pr-3 text-xs font-medium text-muted-foreground transition-colors hover:border-foreground/20 hover:bg-muted/50 hover:text-foreground"
-          >
-            <span class="relative inline-flex items-center gap-1.5 rounded-full bg-muted px-2.5 py-0.5 text-xs font-semibold text-foreground ring-1 ring-inset ring-border">
-              <span class="relative flex size-1.5">
-                <span class="absolute inline-flex size-full animate-ping rounded-full bg-primary opacity-75" />
-                <span class="relative inline-flex size-1.5 rounded-full bg-primary" />
+
+    <section
+      class="page-container flex flex-col items-center justify-center gap-3 py-16 text-center sm:py-24"
+    >
+      <div class="flex flex-col items-center gap-3">
+        {
+          latestIssue ? (
+            <a
+              href={`${ROUTES.ISSUES}/${latestIssue.id}`}
+              class="group mb-3 inline-flex max-w-fit items-center gap-2 rounded-full border border-border bg-background py-1 pl-1 pr-3 text-xs font-medium text-muted-foreground transition-colors hover:border-foreground/20 hover:bg-muted/50 hover:text-foreground"
+            >
+              <span class="relative inline-flex items-center gap-1.5 rounded-full bg-muted px-2.5 py-0.5 text-xs font-semibold text-foreground ring-1 ring-inset ring-border">
+                <span class="relative flex size-1.5">
+                  <span class="absolute inline-flex size-full animate-ping rounded-full bg-primary opacity-75" />
+                  <span class="relative inline-flex size-1.5 rounded-full bg-primary" />
+                </span>
+                New
               </span>
-              New
-            </span>
-            <span class="truncate">Issue #{latestIssue.data.issue} is out</span>
-            <ArrowRightIcon className="size-3.5 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5 group-hover:text-foreground" />
-          </a>
-        ) : null
-      }
+              <span class="truncate">Issue #{latestIssue.data.issue} is out</span>
+              <ArrowRightIcon className="size-3.5 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5 group-hover:text-foreground" />
+            </a>
+          ) : null
+        }
 
-      <h1 class="text-4xl font-semibold tracking-tight sm:text-5xl">
-        Stay up-to-date on shadcn
-      </h1>
-    </div>
+        <h1 class="text-4xl font-semibold tracking-tight sm:text-5xl">
+          Stay up-to-date on shadcn
+        </h1>
+      </div>
 
-    <SubscribeSection formClass="mt-5" subscriberCount={subscriberCount} />
+      <SubscribeSection formClass="mt-5" subscriberCount={subscriberCount} />
+    </section>
+
+    <ReaderLogos />
+    <Testimonials />
   </div>
 </Layout>

@@ -1,0 +1,75 @@
+---
+import { TESTIMONIALS } from "@/constants/testimonials";
+
+const splitQuote = (quote: string, highlight: string) => {
+  const index = quote.indexOf(highlight);
+
+  if (index === -1) {
+    return { after: "", before: quote, highlight: "" };
+  }
+
+  return {
+    after: quote.slice(index + highlight.length),
+    before: quote.slice(0, index),
+    highlight,
+  };
+};
+---
+
+<section aria-label="What readers say" class="page-container py-12 sm:py-16">
+  <div class="grid items-start gap-8 md:grid-cols-2 md:gap-10">
+    {
+      TESTIMONIALS.map((testimonial) => {
+        const { after, before, highlight } = splitQuote(
+          testimonial.quote,
+          testimonial.highlight,
+        );
+
+        return (
+          <figure class="flex flex-col gap-4">
+            <blockquote class="text-pretty text-sm leading-relaxed text-muted-foreground sm:text-base">
+              <p>“{before}<span class="font-medium text-foreground">{highlight}</span>{after}”</p>
+            </blockquote>
+            <figcaption class="flex items-center gap-3">
+              <span class="size-9 shrink-0 overflow-hidden rounded-full border border-border">
+                <img
+                  src={testimonial.avatar}
+                  alt=""
+                  width={36}
+                  height={36}
+                  loading="lazy"
+                  decoding="async"
+                  class:list={[
+                    "size-full object-cover",
+                    testimonial.avatarDarkClass,
+                  ]}
+                />
+              </span>
+              <div class="text-left">
+                <a
+                  href={testimonial.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  class="text-sm font-medium text-foreground transition-colors hover:text-foreground/80"
+                >
+                  {testimonial.name}
+                </a>
+                <p class="text-xs text-muted-foreground">
+                  {testimonial.role}{" "}
+                  <a
+                    href={testimonial.project.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    class="link"
+                  >
+                    {testimonial.project.name}
+                  </a>
+                </p>
+              </div>
+            </figcaption>
+          </figure>
+        );
+      })
+    }
+  </div>
+</section>

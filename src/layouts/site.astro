@@ -27,7 +27,7 @@ const { fullWidth = false, ...seoProps } = Astro.props;
   <main
     class:list={[
       "relative flex min-h-[calc(100svh-var(--header-height))] flex-col",
-      fullWidth ? "w-full px-6" : "page-container",
+      fullWidth ? "w-full" : "page-container",
     ]}
   >
     <slot />
