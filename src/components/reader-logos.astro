@@ -2,12 +2,9 @@
 interface Logo {
   name: string;
   src: string;
-  darkSrc?: string;
   darkClass?: string;
   label?: string;
 }
-
-const DARK_INVERT_CLASS = "dark:invert";
 
 const LOGOS: Logo[] = [
   {
@@ -19,7 +16,6 @@ const LOGOS: Logo[] = [
     src: "https://themeselection.com/wp-content/uploads/thegem-logos/logo_7f80489ca54577917002dbbdfa36b287_2x.webp",
   },
   {
-    darkSrc: "https://shadcnspace.com/images/logo/shadcnspace-white.svg",
     name: "Shadcn Space",
     src: "https://shadcnspace.com/images/logo/shadcnspace.svg",
   },
@@ -28,12 +24,10 @@ const LOGOS: Logo[] = [
     src: "https://fitweb.com.au/fitweb-logo-about.png",
   },
   {
-    darkSrc: "https://www.supersonic-group.com/wp-content/uploads/2022/01/logo_white.svg",
     name: "Supersonic Group",
     src: "https://www.supersonic-group.com/wp-content/uploads/2022/01/logo.svg",
   },
   {
-    darkClass: DARK_INVERT_CLASS,
     name: "PaceUI",
     src: "/logos/paceui.svg",
   },
@@ -43,17 +37,14 @@ const LOGOS: Logo[] = [
     src: "https://dwebtech.ca/wp-content/uploads/2023/03/D-initial-w-plain.svg",
   },
   {
-    darkSrc: "https://neon.com/brand/neon-logo-dark-color.svg",
     name: "Neon",
     src: "https://neon.com/brand/neon-logo-light-color.svg",
   },
   {
-    darkClass: DARK_INVERT_CLASS,
     name: "nuqs",
     src: "https://nuqs.dev/icon.svg",
   },
   {
-    darkClass: DARK_INVERT_CLASS,
     label: "Shadcn Studio",
     name: "Shadcn Studio",
     src: "/logos/shadcn-studio.svg",
@@ -61,7 +52,7 @@ const LOGOS: Logo[] = [
 ];
 
 const imageClass =
-  "h-7 w-auto max-w-[180px] object-contain opacity-60 grayscale transition-opacity hover:opacity-90 dark:opacity-70 sm:h-8";
+  "h-7 w-auto max-w-[180px] object-contain opacity-60 grayscale transition-opacity hover:opacity-90 sm:h-8";
 ---
 
 <section
@@ -91,25 +82,10 @@ const imageClass =
                   loading="lazy"
                   decoding="async"
                   referrerpolicy="no-referrer"
-                  class:list={[
-                    imageClass,
-                    logo.darkSrc
-                      ? "dark:hidden"
-                      : (logo.darkClass ?? "dark:brightness-0 dark:invert"),
-                  ]}
+                  class:list={[imageClass, logo.darkClass ?? "dark:invert"]}
                 />
-                {logo.darkSrc ? (
-                  <img
-                    src={logo.darkSrc}
-                    alt={copy === 0 ? logo.name : ""}
-                    loading="lazy"
-                    decoding="async"
-                    referrerpolicy="no-referrer"
-                    class:list={[imageClass, "hidden dark:block"]}
-                  />
-                ) : null}
                 {logo.label ? (
-                  <span class="whitespace-nowrap text-lg font-semibold text-foreground opacity-60 dark:opacity-70">
+                  <span class="whitespace-nowrap text-lg font-semibold text-foreground opacity-60">
                     {logo.label}
                   </span>
                 ) : null}
