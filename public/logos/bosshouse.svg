@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 220 96" fill="none">
+  <path
+    d="M110 6 152 38v24H68V38L110 6Z"
+    stroke="#111111"
+    stroke-width="4.5"
+    stroke-linejoin="round"
+  />
+  <path
+    d="M98 62V46h24v16"
+    stroke="#111111"
+    stroke-width="4.5"
+    stroke-linejoin="round"
+  />
+  <path
+    d="M46 70h128"
+    stroke="#111111"
+    stroke-width="3"
+    stroke-linecap="round"
+  />
+  <text
+    x="110"
+    y="92"
+    fill="#111111"
+    font-family="Arial, Helvetica, sans-serif"
+    font-size="24"
+    font-weight="700"
+    letter-spacing="0.2"
+    text-anchor="middle"
+  >BossHouse</text>
+</svg>

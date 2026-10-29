@@ -4,7 +4,10 @@ interface Logo {
   src: string;
   darkSrc?: string;
   darkClass?: string;
+  label?: string;
 }
+
+const DARK_INVERT_CLASS = "dark:invert";
 
 const LOGOS: Logo[] = [
   {
@@ -21,10 +24,6 @@ const LOGOS: Logo[] = [
     src: "https://shadcnspace.com/images/logo/shadcnspace.svg",
   },
   {
-    name: "Relation CRM",
-    src: "https://www.relations-crm.com/images/default-source/site-infrastructure/sunrise-software-logo.png?sfvrsn=7455ed5e_20",
-  },
-  {
     name: "Fitweb",
     src: "https://fitweb.com.au/fitweb-logo-about.png",
   },
@@ -34,7 +33,7 @@ const LOGOS: Logo[] = [
     src: "https://www.supersonic-group.com/wp-content/uploads/2022/01/logo.svg",
   },
   {
-    darkClass: "dark:invert",
+    darkClass: DARK_INVERT_CLASS,
     name: "PaceUI",
     src: "/logos/paceui.svg",
   },
@@ -49,9 +48,15 @@ const LOGOS: Logo[] = [
     src: "https://neon.com/brand/neon-logo-light-color.svg",
   },
   {
-    darkClass: "dark:invert",
+    darkClass: DARK_INVERT_CLASS,
     name: "nuqs",
     src: "https://nuqs.dev/icon.svg",
+  },
+  {
+    darkClass: DARK_INVERT_CLASS,
+    label: "Shadcn Studio",
+    name: "Shadcn Studio",
+    src: "/logos/shadcn-studio.svg",
   },
 ];
 
@@ -79,7 +84,7 @@ const imageClass =
             aria-hidden={copy === 1 ? "true" : undefined}
           >
             {LOGOS.map((logo) => (
-              <li class="flex shrink-0 items-center">
+              <li class="flex shrink-0 items-center gap-2">
                 <img
                   src={logo.src}
                   alt={copy === 0 ? logo.name : ""}
@@ -102,6 +107,11 @@ const imageClass =
                     referrerpolicy="no-referrer"
                     class:list={[imageClass, "hidden dark:block"]}
                   />
+                ) : null}
+                {logo.label ? (
+                  <span class="whitespace-nowrap text-lg font-semibold text-foreground opacity-60 dark:opacity-70">
+                    {logo.label}
+                  </span>
                 ) : null}
               </li>
             ))}
