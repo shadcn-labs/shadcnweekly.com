@@ -1,14 +1,20 @@
+import { getMetaContent } from "../../src/lib/page-meta.ts";
 import type { Candidate } from "./lib.ts";
 import {
+  hostOf,
+  isIndirectUrl,
   log,
   normalizeUrl,
   readPublishedUrls,
   request,
   requestJson,
   warn,
+  withoutTracking,
 } from "./lib.ts";
 
 const MAX_PER_SOURCE = 60;
+const MAX_DIRECT_LINKS = 8;
+const ENRICH_BATCH = 8;
 
 const toUnix = (isoDate: string) =>
   Math.floor(Date.parse(`${isoDate}T00:00:00Z`) / 1000);
@@ -302,6 +308,117 @@ const collectGithub = async (since: string): Promise<Candidate[]> => {
     }));
 };
 
+// Bare domains in captions, e.g. "Try it at uiseek.vercel.app".
+const BARE_URL =
+  /(?<![\w@./-])(?:https?:\/\/)?(?:[a-z0-9-]+\.)+(?:ai|app|co|com|design|dev|io|me|net|org|page|run|sh|site|so|space|to|xyz)(?:\/[^\s"'<>)\]]*)?/giu;
+const HREF = /href=["'](?<url>https?:\/\/[^"'#\s]+)["']/giu;
+const NOISE_HOST =
+  /(?:^|\.)(?:apple\.com|cloudflare\.com|google\.com|google-analytics\.com|googleapis\.com|googletagmanager\.com|gstatic\.com|jsdelivr\.net|ogp\.me|rlcdn\.com|schema\.org|unpkg\.com|w3\.org)$/u;
+const ASSET_PATH =
+  /\.(?:css|gif|ico|jpe?g|js|json|mjs|png|svg|webp|woff2?|xml)$/iu;
+const GITHUB_REPO = /^https:\/\/github\.com\/(?<repo>[\w.-]+\/[\w.-]+)\/?$/u;
+
+const isProjectLink = (raw: string, sourceHost: string) => {
+  try {
+    const url = new URL(raw);
+    const host = hostOf(raw);
+    return (
+      host !== sourceHost &&
+      !isIndirectUrl(raw) &&
+      !NOISE_HOST.test(host) &&
+      !ASSET_PATH.test(url.pathname)
+    );
+  } catch {
+    return false;
+  }
+};
+
+const githubHomepage = async (url: string) => {
+  const repo = GITHUB_REPO.exec(url)?.groups?.repo;
+  if (!repo) {
+    return;
+  }
+  let homepage: string | null | undefined = null;
+  try {
+    ({ homepage } = await requestJson<{ homepage?: string | null }>(
+      `https://api.github.com/repos/${repo}`,
+      { headers: githubHeaders() },
+      { retries: 1 }
+    ));
+  } catch (error) {
+    warn(`Could not read ${repo} homepage: ${String(error)}`);
+  }
+  return homepage?.startsWith("http") ? homepage : undefined;
+};
+
+// A post or listing about a project (X, Instagram, Reddit, alternatives
+// sites, …) is the wrong destination for its link. Collect the project's own
+// URLs from the caption and page so the draft can link the project directly.
+const directLinks = async (candidate: Candidate): Promise<string[]> => {
+  let page = "";
+  // X pages are rendered client-side; the API already gave text and links.
+  if (candidate.source !== "x") {
+    try {
+      const res = await request(
+        candidate.url,
+        { headers: { Accept: "text/html" } },
+        { retries: 1, timeoutMs: 15_000 }
+      );
+      page = res.ok ? await res.text() : "";
+    } catch (error) {
+      warn(`Could not fetch ${candidate.url}: ${String(error)}`);
+    }
+  }
+  const caption = [
+    candidate.text,
+    getMetaContent(page, "og:description") ??
+      getMetaContent(page, "description") ??
+      "",
+  ].join("\n");
+  const found = [
+    ...(candidate.links ?? []),
+    ...[...caption.matchAll(BARE_URL)].map(([match]) =>
+      (match.startsWith("http") ? match : `https://${match}`).replace(
+        /[.,;:!?]+$/u,
+        ""
+      )
+    ),
+    ...[...page.matchAll(HREF)].map((match) =>
+      (match.groups?.url ?? "").replaceAll("&amp;", "&")
+    ),
+  ];
+  const sourceHost = hostOf(candidate.url);
+  const unique = new Map<string, string>();
+  for (const url of found) {
+    if (isProjectLink(url, sourceHost) && !unique.has(normalizeUrl(url))) {
+      unique.set(normalizeUrl(url), withoutTracking(url));
+    }
+  }
+  const links = [...unique.values()].slice(0, MAX_DIRECT_LINKS);
+  const homepages = await Promise.all(links.map(githubHomepage));
+  return [
+    ...new Set(
+      links.flatMap((link, index) => [link, homepages[index] ?? []].flat())
+    ),
+  ];
+};
+
+const withDirectLinks = async (candidates: Candidate[]) => {
+  const indirect = candidates.filter((candidate) =>
+    isIndirectUrl(candidate.url)
+  );
+  for (let start = 0; start < indirect.length; start += ENRICH_BATCH) {
+    const batch = indirect.slice(start, start + ENRICH_BATCH);
+    // oxlint-disable-next-line eslint/no-await-in-loop -- batches bound concurrent fetches
+    const links = await Promise.all(batch.map(directLinks));
+    for (const [index, candidate] of batch.entries()) {
+      candidate.links = links[index];
+    }
+  }
+  log(`Resolved direct links for ${indirect.length} indirect candidates`);
+  return candidates;
+};
+
 const COLLECTORS = {
   awesome: collectAwesome,
   directory: collectDirectory,
@@ -345,9 +462,11 @@ export const collectCandidates = async (
   }
 
   const bySource = Map.groupBy(byUrl.values(), (candidate) => candidate.source);
-  return [...bySource.values()].flatMap((items) =>
-    items
-      .toSorted((a, b) => (b.score ?? 0) - (a.score ?? 0))
-      .slice(0, MAX_PER_SOURCE)
+  return withDirectLinks(
+    [...bySource.values()].flatMap((items) =>
+      items
+        .toSorted((a, b) => (b.score ?? 0) - (a.score ?? 0))
+        .slice(0, MAX_PER_SOURCE)
+    )
   );
 };

@@ -24,7 +24,7 @@ const decodeEntities = (value: string) =>
       return String.fromCodePoint(Number.parseInt(groups.code ?? "0", 16));
     });
 
-const getMetaContent = (html: string, key: string) => {
+export const getMetaContent = (html: string, key: string) => {
   const patterns = [
     new RegExp(
       `<meta[^>]+(?:property|name)=["']${key}["'][^>]+content=["'](?<content>[^"']+)["']`,

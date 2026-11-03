@@ -15,17 +15,23 @@ import {
 import { TOOL_CATEGORIES } from "../../src/constants/tools.ts";
 import { fetchPageMeta } from "../../src/lib/page-meta.ts";
 import { collectCandidates } from "./collect.ts";
-import type { Candidate, Issue, Tool } from "./lib.ts";
+import type { Candidate, CoveredItem, Issue, Tool } from "./lib.ts";
 import {
   addDays,
   ARCHIVE_DIR,
+  entryName,
+  hostOf,
+  isIndirectUrl,
+  isStableImageUrl,
   log,
   normalizeUrl,
+  readCoverage,
   readIssues,
   readTools,
   requestJson,
   requireEnv,
   setOutput,
+  slugify,
   toIsoDate,
   TOOLS_DIR,
   warn,
@@ -109,7 +115,9 @@ You receive this week's collected items as JSON, each with a numeric "id". Write
 
 Rules:
 - Use ONLY the provided items. Reference them by "id". Never invent facts, numbers, dates or links.
-- Every entry may set "link" to one of that item's "links" when it is the better destination (e.g. the product site an X post announces). Otherwise omit "link".
+- Link the project itself. When an item's "url" is a social post, repost, Reddit thread, video or listing/alternatives site and one of its "links" is the project's own site or repository, set "link" to it. Prefer the project's homepage over its repository, a docs subpage or a changelog. Otherwise omit "link".
+- Never repeat a story from a previous issue (see "Already covered"). The same product, feature or component is a repeat even under a different link: a repost, a directory or alternatives listing, someone else's examples or write-up of it. Include a covered product only when this week's item is a new version or release with new facts, and say what is new.
+- Credit the author of the work, not the site that reposted, listed or wrote about it.
 - Each id appears at most once in the whole issue.
 - "top": 2-4 biggest stories of the week (launches, official shadcn releases, high-engagement posts).
 - "roundup": optional group of 3+ related smaller updates around one theme; null if there is no theme.
@@ -150,9 +158,37 @@ const callModel = async (
   return content.replaceAll(/^```(?:json)?\s*|\s*```$/gu, "");
 };
 
-const sanitizeDraft = (draft: Draft, candidates: Candidate[]): Draft => {
+// Prefer a direct link whose URL names the project: an alternatives listing
+// links many unrelated sites, so "the only link" is not safe to pick blindly.
+const directLinkFor = (candidate: Candidate, name: string) => {
+  const key = slugify(name).replaceAll("-", "");
+  if (key.length < 3) {
+    return;
+  }
+  const matches = (candidate.links ?? []).filter(
+    (link) =>
+      !isIndirectUrl(link) && slugify(link).replaceAll("-", "").includes(key)
+  );
+  return matches.find((link) => hostOf(link) !== "github.com") ?? matches[0];
+};
+
+const sanitizeDraft = (
+  draft: Draft,
+  candidates: Candidate[],
+  covered: CoveredItem[]
+): Draft => {
   const used = new Set<number>();
-  const keep = <T extends { id: number; link?: string }>(entry: T) => {
+  const coveredNames = new Map(
+    covered.map((item) => [slugify(item.name), item.issue])
+  );
+  const coveredUrls = new Map(
+    covered.map((item) => [normalizeUrl(item.url), item.issue])
+  );
+  const keep = (
+    entry: { id: number; link?: string },
+    name: string,
+    existingTool?: string | null
+  ) => {
     const candidate = candidates[entry.id];
     if (!candidate || used.has(entry.id)) {
       warn(`Dropping entry with unknown or duplicate id ${entry.id}`);
@@ -162,15 +198,40 @@ const sanitizeDraft = (draft: Draft, candidates: Candidate[]): Draft => {
     if (entry.link && !candidate.links?.includes(entry.link)) {
       delete entry.link;
     }
+    const direct =
+      !entry.link && isIndirectUrl(candidate.url)
+        ? directLinkFor(candidate, name)
+        : undefined;
+    if (direct) {
+      entry.link = direct;
+    }
+    const nameKey = slugify(name);
+    let repeatOf: number | undefined;
+    if (!existingTool) {
+      repeatOf =
+        coveredNames.get(nameKey) ??
+        coveredUrls.get(normalizeUrl(entry.link ?? candidate.url));
+    } else if (nameKey.startsWith(`${existingTool}-`)) {
+      // "ReUI Trace" updating the ReUI tool: "Trace" itself may be covered.
+      repeatOf = coveredNames.get(nameKey.slice(existingTool.length + 1));
+    }
+    if (repeatOf !== undefined) {
+      warn(`Dropping "${name}": already covered in #${repeatOf}`);
+      return false;
+    }
     return true;
   };
-  const top = draft.top.filter(keep);
-  const roundupItems = draft.roundup?.items.filter(keep) ?? [];
+  const byHeading = (entry: Entry) => keep(entry, entryName(entry.heading));
+  const top = draft.top.filter(byHeading);
+  const roundupItems =
+    draft.roundup?.items.filter((item) => keep(item, item.label)) ?? [];
   return {
     ...draft,
-    articles: draft.articles.filter(keep),
-    projects: draft.projects.filter(keep),
-    related: draft.related.filter(keep),
+    articles: draft.articles.filter(byHeading),
+    projects: draft.projects.filter((project) =>
+      keep(project, project.name, project.existingTool)
+    ),
+    related: draft.related.filter(byHeading),
     roundup:
       draft.roundup && roundupItems.length >= 2
         ? { ...draft.roundup, items: roundupItems }
@@ -179,9 +240,25 @@ const sanitizeDraft = (draft: Draft, candidates: Candidate[]): Draft => {
   };
 };
 
+// Entries the PR reviewer must fix by hand: no direct link could be found.
+const reviewNotes = (draft: Draft, candidates: Candidate[]) =>
+  [
+    ...draft.top.map((entry) => ({ ...entry, label: entry.heading })),
+    ...(draft.roundup?.items ?? []),
+    ...draft.projects.map((entry) => ({ ...entry, label: entry.heading })),
+  ].flatMap((entry) => {
+    const url = entry.link ?? candidates[entry.id].url;
+    return isIndirectUrl(url)
+      ? [
+          `"${entryName(entry.label)}" links to ${url}, not the project; replace it with the project's own site`,
+        ]
+      : [];
+  });
+
 const writeDraft = async (
   candidates: Candidate[],
   tools: Tool[],
+  covered: CoveredItem[],
   styleExample: string
 ): Promise<Draft> => {
   const models = process.env.LLM_MODEL
@@ -194,7 +271,7 @@ const writeDraft = async (
     const messages = [
       { content: SYSTEM_PROMPT, role: "system" },
       {
-        content: `Example of a previous issue (style reference only, do not reuse its items):\n\n${styleExample.slice(0, STYLE_EXAMPLE_CHARS)}\n\nTools already listed on the site:\n\n${JSON.stringify(tools)}\n\nThis week's items:\n\n${JSON.stringify(items)}`,
+        content: `Example of a previous issue (style reference only, do not reuse its items):\n\n${styleExample.slice(0, STYLE_EXAMPLE_CHARS)}\n\nTools already listed on the site:\n\n${JSON.stringify(tools)}\n\nAlready covered in previous issues:\n\n${JSON.stringify(covered)}\n\nThis week's items:\n\n${JSON.stringify(items)}`,
         role: "user",
       },
     ];
@@ -205,7 +282,8 @@ const writeDraft = async (
         content = await callModel(model, messages);
         const draft = sanitizeDraft(
           draftSchema.parse(JSON.parse(content)),
-          candidates
+          candidates,
+          covered
         );
         if (draft.top.length === 0) {
           throw new Error('"top" has no valid entries');
@@ -361,12 +439,19 @@ export const renderIssueMdx = (
   return `---\n${frontmatter}\n---\n\n${lead.join("\n\n---\n\n")}\n\n${middle}\n\n${sections.join("\n\n---\n\n")}\n`;
 };
 
-const slugify = (value: string) =>
-  value
-    .toLowerCase()
-    .normalize("NFKD")
-    .replaceAll(/[^a-z0-9]+/gu, "-")
-    .replaceAll(/^-|-$/gu, "");
+// Identifies a project's site: the GitHub repo, the full URL on hosts shared
+// by many projects, otherwise the hostname.
+const SHARED_HOSTS = new Set(["figma.com", "gitlab.com", "npmjs.com"]);
+const siteKey = (url: string) => {
+  const host = hostOf(url);
+  if (host === "github.com") {
+    const [owner = "", repo = ""] = new URL(url).pathname
+      .split("/")
+      .filter(Boolean);
+    return `${host}/${owner}/${repo}`.toLowerCase();
+  }
+  return SHARED_HOSTS.has(host) ? normalizeUrl(url) : host;
+};
 
 const writeTools = async (
   draft: Draft,
@@ -377,17 +462,25 @@ const writeTools = async (
   const listedSlugs = new Set(
     tools.flatMap((tool) => [tool.slug, slugify(tool.title)])
   );
-  const listedUrls = new Set(tools.map((tool) => normalizeUrl(tool.url)));
+  const listedSites = new Set(
+    tools
+      .filter((tool) => !isIndirectUrl(tool.url))
+      .map((tool) => siteKey(tool.url))
+  );
 
   const bySlug = new Map(
     draft.projects.map((project) => [slugify(project.name), project])
   );
   const fresh = [...bySlug].filter(([slug, project]) => {
     const url = project.link ?? candidates[project.id].url;
+    if (isIndirectUrl(url)) {
+      warn(`Tool ${slug} has no direct link (${url}), not listing it`);
+      return false;
+    }
     const listed =
       (project.existingTool && listedSlugs.has(project.existingTool)) ||
       listedSlugs.has(slug) ||
-      listedUrls.has(normalizeUrl(url));
+      listedSites.has(siteKey(url));
     if (listed) {
       log(`Tool ${project.existingTool ?? slug} already listed, skipping`);
     }
@@ -400,7 +493,7 @@ const writeTools = async (
       const frontmatter = stringifyYaml({
         category: project.category,
         description: project.toolDescription,
-        ...(image ? { image } : {}),
+        ...(image && isStableImageUrl(image) ? { image } : {}),
         issue,
         title: project.name,
         url,
@@ -441,8 +534,13 @@ const main = async () => {
     return;
   }
 
-  const tools = await readTools();
-  const draft = await writeDraft(candidates, tools, previous?.body ?? "");
+  const [tools, covered] = await Promise.all([readTools(), readCoverage()]);
+  const draft = await writeDraft(
+    candidates,
+    tools,
+    covered,
+    previous?.body ?? ""
+  );
   const sponsors = pickSponsors(today);
   await writeFile(
     `${ARCHIVE_DIR}/${issue}.mdx`,
@@ -460,6 +558,11 @@ const main = async () => {
     "sponsors",
     `1st: ${sponsors.primary.website}${sponsors.primaryBooked ? "" : " (house, no booking)"} · 2nd: ${sponsors.secondary?.website ?? "none booked"}`
   );
+  const review = reviewNotes(draft, candidates);
+  for (const note of review) {
+    warn(note);
+  }
+  await setOutput("review", review.map((note) => `- ${note}`).join("\n"));
   log(`Wrote ${ARCHIVE_DIR}/${issue}.mdx`);
 };
 
