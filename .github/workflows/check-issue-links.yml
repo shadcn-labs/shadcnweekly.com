@@ -56,6 +56,24 @@ jobs:
           cat "$RUNNER_TEMP/links.txt"
           echo "files=$files" >> "$GITHUB_OUTPUT"
 
+      # Keeps the draft PR's "Fix before merging" list in sync with the issue
+      # as reviewers replace post/listing links with project sites.
+      - name: Refresh link review in PR description
+        if: steps.extract.outputs.files != '' && startsWith(github.head_ref || inputs.ref, 'newsletter/issue-')
+        # Fork PRs get a read-only token.
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR: ${{ inputs.pr || github.event.pull_request.number }}
+          FILES: ${{ steps.extract.outputs.files }}
+        run: |
+          gh pr view "$PR" --repo "$GITHUB_REPOSITORY" --json body --jq .body > "$RUNNER_TEMP/body.md"
+          # shellcheck disable=SC2086
+          node scripts/newsletter/review.ts $FILES < "$RUNNER_TEMP/body.md" > "$RUNNER_TEMP/new-body.md"
+          if ! cmp -s "$RUNNER_TEMP/body.md" "$RUNNER_TEMP/new-body.md"; then
+            gh pr edit "$PR" --repo "$GITHUB_REPOSITORY" --body-file "$RUNNER_TEMP/new-body.md"
+          fi
+
       # x.com/twitter.com, linkedin.com, and reddit.com reject bots with 4xx
       # regardless of whether the post exists, so they are excluded rather than
       # reported.

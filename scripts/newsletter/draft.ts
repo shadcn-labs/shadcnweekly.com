@@ -15,21 +15,31 @@ import {
 import { TOOL_CATEGORIES } from "../../src/constants/tools.ts";
 import { fetchPageMeta } from "../../src/lib/page-meta.ts";
 import { collectCandidates } from "./collect.ts";
-import type { Candidate, Issue, Tool } from "./lib.ts";
+import type { Candidate, CoveredItem, Issue, Tool } from "./lib.ts";
 import {
   addDays,
   ARCHIVE_DIR,
   log,
-  normalizeUrl,
+  readCoverage,
   readIssues,
   readTools,
   requestJson,
   requireEnv,
   setOutput,
+  slugify,
   toIsoDate,
   TOOLS_DIR,
   warn,
 } from "./lib.ts";
+import { entryName } from "./review.ts";
+import {
+  githubRepo,
+  hostOf,
+  isIndirectUrl,
+  isStableImageUrl,
+  namesProject,
+  normalizeUrl,
+} from "./urls.ts";
 
 const LOOKBACK_DAYS = 7;
 const MIN_CANDIDATES = 5;
@@ -46,6 +56,7 @@ const entrySchema = z.object({
   heading: z.string().min(3),
   id: z.number().int(),
   link: z.string().optional(),
+  newRelease: z.boolean().optional(),
 });
 
 const draftSchema = z.object({
@@ -107,9 +118,13 @@ You receive this week's collected items as JSON, each with a numeric "id". Write
   "related": [{ "id": 5, "heading": "...", "body": "1-2 sentences" }]
 }
 
+Any "top", "articles", "projects" or "related" entry may also set "newRelease": true (see the rules).
+
 Rules:
 - Use ONLY the provided items. Reference them by "id". Never invent facts, numbers, dates or links.
-- Every entry may set "link" to one of that item's "links" when it is the better destination (e.g. the product site an X post announces). Otherwise omit "link".
+- Link the project itself. When an item's "url" is a social post, repost, Reddit thread, video or listing/alternatives site, set "link" to the project's own site or repository from its "links" (written by the author) or "pageLinks" (scraped from the page; most are other projects, so pick one only if it is clearly this project). Prefer the project's homepage over its repository, a docs subpage or a changelog. Otherwise omit "link".
+- Never repeat a story from a previous issue (see "Already covered"). The same product, feature or component is a repeat even under a different link: a repost, a directory or alternatives listing, someone else's examples or write-up of it. Include a covered product only when this week's item is a new version or release with new facts: set "newRelease": true on that entry and say what is new.
+- Credit the author of the work, not the site that reposted, listed or wrote about it.
 - Each id appears at most once in the whole issue.
 - "top": 2-4 biggest stories of the week (launches, official shadcn releases, high-engagement posts).
 - "roundup": optional group of 3+ related smaller updates around one theme; null if there is no theme.
@@ -150,51 +165,234 @@ const callModel = async (
   return content.replaceAll(/^```(?:json)?\s*|\s*```$/gu, "");
 };
 
-const sanitizeDraft = (draft: Draft, candidates: Candidate[]): Draft => {
+// Whether a link plausibly belongs to the entry: the author wrote it, or it
+// (or the GitHub repo it is the homepage of) names the project. Scraped
+// listing links to other projects fail this.
+const linkFits = (link: string, candidate: Candidate, name: string) =>
+  Boolean(candidate.links?.includes(link)) ||
+  namesProject(link, name) ||
+  namesProject(candidate.homepageOf?.[link] ?? "", name);
+
+const directLinkFor = (candidate: Candidate, name: string) => {
+  const matches = [
+    ...(candidate.links ?? []),
+    ...(candidate.pageLinks ?? []),
+  ].filter(
+    (link) =>
+      namesProject(link, name) ||
+      namesProject(candidate.homepageOf?.[link] ?? "", name)
+  );
+  return matches.find((link) => hostOf(link) !== "github.com") ?? matches[0];
+};
+
+interface Dropped {
+  name: string;
+  issue: number;
+}
+
+// Covered names, GitHub repos and URLs -> the issue that covered them.
+interface CoverageIndex {
+  names: Map<string, number>;
+  repos: Map<string, number>;
+  urls: Map<string, number>;
+}
+
+const indexCoverage = (covered: CoveredItem[]): CoverageIndex => ({
+  // Names that slugify to "" (e.g. non-Latin) would all collide; their URLs
+  // are still checked.
+  names: new Map(
+    covered.flatMap((item) => {
+      const key = slugify(item.name);
+      return key ? [[key, item.issue] as const] : [];
+    })
+  ),
+  repos: new Map(
+    covered.flatMap((item) => {
+      const repo = githubRepo(item.url);
+      return repo ? [[repo, item.issue] as const] : [];
+    })
+  ),
+  urls: new Map(covered.map((item) => [normalizeUrl(item.url), item.issue])),
+});
+
+// The issue that already covered this entry, if any.
+const findRepeat = (
+  index: CoverageIndex,
+  entry: { name: string; url: string; offered: string[] },
+  existingTool?: string | null
+) => {
+  const nameKey = slugify(entry.name);
+  if (existingTool) {
+    // Updates to a listed tool reuse its name and site. A covered feature
+    // still repeats: "ReUI Trace" -> "Trace" (#4).
+    if (nameKey === existingTool) {
+      return;
+    }
+    const feature = nameKey.startsWith(`${existingTool}-`)
+      ? nameKey.slice(existingTool.length + 1)
+      : "";
+    return index.names.get(nameKey) ?? index.names.get(feature);
+  }
+  // A renamed project keeping its repo is still the same project.
+  const repos = [
+    entry.url,
+    ...entry.offered.filter((link) => namesProject(link, entry.name)),
+  ]
+    .map(githubRepo)
+    .filter((repo) => repo !== undefined);
+  return (
+    index.names.get(nameKey) ??
+    index.urls.get(normalizeUrl(entry.url)) ??
+    repos
+      .map((repo) => index.repos.get(repo))
+      .find((issue) => issue !== undefined)
+  );
+};
+
+// Keeps the model's link only if offered and plausibly this project's;
+// otherwise picks a direct link that names the project.
+const resolveLink = (
+  entry: { link?: string },
+  candidate: Candidate,
+  name: string,
+  offered: string[]
+) => {
+  if (
+    entry.link &&
+    (!offered.includes(entry.link) || !linkFits(entry.link, candidate, name))
+  ) {
+    delete entry.link;
+  }
+  const direct =
+    !entry.link && isIndirectUrl(candidate.url)
+      ? directLinkFor(candidate, name)
+      : undefined;
+  if (direct) {
+    entry.link = direct;
+  }
+};
+
+const sanitizeDraft = (
+  draft: Draft,
+  candidates: Candidate[],
+  covered: CoveredItem[]
+) => {
   const used = new Set<number>();
-  const keep = <T extends { id: number; link?: string }>(entry: T) => {
+  const dropped: Dropped[] = [];
+  const notes: string[] = [];
+  const index = indexCoverage(covered);
+
+  const keep = (
+    entry: { id: number; link?: string; newRelease?: boolean },
+    name: string,
+    existingTool?: string | null
+  ) => {
     const candidate = candidates[entry.id];
     if (!candidate || used.has(entry.id)) {
       warn(`Dropping entry with unknown or duplicate id ${entry.id}`);
       return false;
     }
     used.add(entry.id);
-    if (entry.link && !candidate.links?.includes(entry.link)) {
-      delete entry.link;
+    const offered = [
+      ...(candidate.links ?? []),
+      ...(candidate.pageLinks ?? []),
+    ];
+    resolveLink(entry, candidate, name, offered);
+    const repeatOf = findRepeat(
+      index,
+      { name, offered, url: entry.link ?? candidate.url },
+      existingTool
+    );
+    if (repeatOf === undefined) {
+      return true;
     }
-    return true;
+    if (entry.newRelease) {
+      notes.push(
+        `"${name}" was covered in #${repeatOf}; kept as a new release, confirm it really is new`
+      );
+      return true;
+    }
+    warn(`Dropping "${name}": already covered in #${repeatOf}`);
+    dropped.push({ issue: repeatOf, name });
+    return false;
   };
-  const top = draft.top.filter(keep);
-  const roundupItems = draft.roundup?.items.filter(keep) ?? [];
+  const byHeading = (entry: Entry) => keep(entry, entryName(entry.heading));
+  const top = draft.top.filter(byHeading);
+  const roundupItems =
+    draft.roundup?.items.filter((item) => keep(item, item.label)) ?? [];
   return {
-    ...draft,
-    articles: draft.articles.filter(keep),
-    projects: draft.projects.filter(keep),
-    related: draft.related.filter(keep),
-    roundup:
-      draft.roundup && roundupItems.length >= 2
-        ? { ...draft.roundup, items: roundupItems }
-        : null,
-    top,
+    draft: {
+      ...draft,
+      articles: draft.articles.filter(byHeading),
+      projects: draft.projects.filter((project) =>
+        keep(project, project.name, project.existingTool)
+      ),
+      related: draft.related.filter(byHeading),
+      roundup:
+        draft.roundup && roundupItems.length >= 2
+          ? { ...draft.roundup, items: roundupItems }
+          : null,
+      top,
+    },
+    dropped,
+    notes,
   };
+};
+
+// Dropped repeats the title, description or highlights still announce.
+const staleMentions = (draft: Draft, dropped: Dropped[]) => {
+  const summary = [draft.title, draft.description, ...draft.highlights]
+    .join("\n")
+    .toLowerCase();
+  return dropped
+    .filter((item) => summary.includes(item.name.toLowerCase()))
+    .map((item) => `"${item.name}" (#${item.issue})`)
+    .join(", ");
+};
+
+interface DraftResult {
+  draft: Draft;
+  notes: string[];
+}
+
+// One model response as a sanitized draft; `stale` lists dropped repeats its
+// summary still announces.
+const parseDraft = (
+  content: string,
+  candidates: Candidate[],
+  covered: CoveredItem[]
+) => {
+  const { draft, dropped, notes } = sanitizeDraft(
+    draftSchema.parse(JSON.parse(content)),
+    candidates,
+    covered
+  );
+  if (draft.top.length === 0) {
+    throw new Error('"top" has no valid entries');
+  }
+  return { draft, notes, stale: staleMentions(draft, dropped) };
 };
 
 const writeDraft = async (
   candidates: Candidate[],
   tools: Tool[],
+  covered: CoveredItem[],
   styleExample: string
-): Promise<Draft> => {
+): Promise<DraftResult> => {
   const models = process.env.LLM_MODEL
     ? [process.env.LLM_MODEL]
     : DEFAULT_MODELS;
   const items = candidates.map((candidate, id) => ({ id, ...candidate }));
   const errors: string[] = [];
+  // A valid draft whose summary still names dropped repeats; used only if no
+  // retry produces a clean one.
+  let fallback: DraftResult | undefined;
 
   for (const model of models) {
     const messages = [
       { content: SYSTEM_PROMPT, role: "system" },
       {
-        content: `Example of a previous issue (style reference only, do not reuse its items):\n\n${styleExample.slice(0, STYLE_EXAMPLE_CHARS)}\n\nTools already listed on the site:\n\n${JSON.stringify(tools)}\n\nThis week's items:\n\n${JSON.stringify(items)}`,
+        content: `Example of a previous issue (style reference only, do not reuse its items):\n\n${styleExample.slice(0, STYLE_EXAMPLE_CHARS)}\n\nTools already listed on the site:\n\n${JSON.stringify(tools)}\n\nAlready covered in previous issues:\n\n${JSON.stringify(covered)}\n\nThis week's items:\n\n${JSON.stringify(items)}`,
         role: "user",
       },
     ];
@@ -203,15 +401,25 @@ const writeDraft = async (
       try {
         // oxlint-disable-next-line eslint/no-await-in-loop -- each retry feeds back the previous error
         content = await callModel(model, messages);
-        const draft = sanitizeDraft(
-          draftSchema.parse(JSON.parse(content)),
-          candidates
+        const { draft, notes, stale } = parseDraft(
+          content,
+          candidates,
+          covered
         );
-        if (draft.top.length === 0) {
-          throw new Error('"top" has no valid entries');
+        if (!stale) {
+          log(`Draft written by ${model} (attempt ${attempt})`);
+          return { draft, notes };
         }
-        log(`Draft written by ${model} (attempt ${attempt})`);
-        return draft;
+        fallback = {
+          draft,
+          notes: [
+            ...notes,
+            `Title, description or highlights still mention ${stale}, dropped as a repeat; rewrite them`,
+          ],
+        };
+        throw new Error(
+          `These entries repeat previous issues and were removed: ${stale}. Leave them out and rewrite the title, description and highlights without them.`
+        );
       } catch (error) {
         const message = error instanceof Error ? error.message : String(error);
         errors.push(`${model}#${attempt}: ${message.slice(0, 500)}`);
@@ -227,6 +435,10 @@ const writeDraft = async (
         }
       }
     }
+  }
+  if (fallback) {
+    warn("Using a draft whose summary still mentions dropped repeats");
+    return fallback;
   }
   throw new Error(`Could not produce a valid draft:\n${errors.join("\n")}`);
 };
@@ -361,12 +573,17 @@ export const renderIssueMdx = (
   return `---\n${frontmatter}\n---\n\n${lead.join("\n\n---\n\n")}\n\n${middle}\n\n${sections.join("\n\n---\n\n")}\n`;
 };
 
-const slugify = (value: string) =>
-  value
-    .toLowerCase()
-    .normalize("NFKD")
-    .replaceAll(/[^a-z0-9]+/gu, "-")
-    .replaceAll(/^-|-$/gu, "");
+// Identifies a project's site: the GitHub repo, the full URL on hosts shared
+// by many projects, otherwise the hostname.
+const SHARED_HOSTS = new Set(["figma.com", "gitlab.com", "npmjs.com"]);
+const siteKey = (url: string) => {
+  const repo = githubRepo(url);
+  if (repo) {
+    return `github.com/${repo}`;
+  }
+  const host = hostOf(url);
+  return SHARED_HOSTS.has(host) ? normalizeUrl(url) : host;
+};
 
 const writeTools = async (
   draft: Draft,
@@ -377,17 +594,25 @@ const writeTools = async (
   const listedSlugs = new Set(
     tools.flatMap((tool) => [tool.slug, slugify(tool.title)])
   );
-  const listedUrls = new Set(tools.map((tool) => normalizeUrl(tool.url)));
+  const listedSites = new Set(
+    tools
+      .filter((tool) => !isIndirectUrl(tool.url))
+      .map((tool) => siteKey(tool.url))
+  );
 
   const bySlug = new Map(
     draft.projects.map((project) => [slugify(project.name), project])
   );
   const fresh = [...bySlug].filter(([slug, project]) => {
     const url = project.link ?? candidates[project.id].url;
+    if (isIndirectUrl(url)) {
+      warn(`Tool ${slug} has no direct link (${url}), not listing it`);
+      return false;
+    }
     const listed =
       (project.existingTool && listedSlugs.has(project.existingTool)) ||
       listedSlugs.has(slug) ||
-      listedUrls.has(normalizeUrl(url));
+      listedSites.has(siteKey(url));
     if (listed) {
       log(`Tool ${project.existingTool ?? slug} already listed, skipping`);
     }
@@ -400,7 +625,7 @@ const writeTools = async (
       const frontmatter = stringifyYaml({
         category: project.category,
         description: project.toolDescription,
-        ...(image ? { image } : {}),
+        ...(image && isStableImageUrl(image) ? { image } : {}),
         issue,
         title: project.name,
         url,
@@ -441,8 +666,13 @@ const main = async () => {
     return;
   }
 
-  const tools = await readTools();
-  const draft = await writeDraft(candidates, tools, previous?.body ?? "");
+  const [tools, covered] = await Promise.all([readTools(), readCoverage()]);
+  const { draft, notes } = await writeDraft(
+    candidates,
+    tools,
+    covered,
+    previous?.body ?? ""
+  );
   const sponsors = pickSponsors(today);
   await writeFile(
     `${ARCHIVE_DIR}/${issue}.mdx`,
@@ -460,6 +690,10 @@ const main = async () => {
     "sponsors",
     `1st: ${sponsors.primary.website}${sponsors.primaryBooked ? "" : " (house, no booking)"} · 2nd: ${sponsors.secondary?.website ?? "none booked"}`
   );
+  for (const note of notes) {
+    warn(note);
+  }
+  await setOutput("notes", notes.map((note) => `- ${note}`).join("\n"));
   log(`Wrote ${ARCHIVE_DIR}/${issue}.mdx`);
 };
 

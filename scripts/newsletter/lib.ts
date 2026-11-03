@@ -3,6 +3,9 @@ import { fileURLToPath } from "node:url";
 
 import { parse as parseYaml } from "yaml";
 
+import { issueEntries } from "./review.ts";
+import { normalizeUrl } from "./urls.ts";
+
 export const ROOT = fileURLToPath(new URL("../../", import.meta.url));
 export const ARCHIVE_DIR = `${ROOT}src/content/archive`;
 export const TOOLS_DIR = `${ROOT}src/content/tools`;
@@ -23,7 +26,12 @@ export interface Candidate {
   text: string;
   date?: string;
   score?: number;
+  // Links the author gave: post facets, caption domains, their repo homepages.
   links?: string[];
+  // Links found on a fetched post/listing page; may include unrelated sites.
+  pageLinks?: string[];
+  // GitHub homepage -> the repository it came from.
+  homepageOf?: Record<string, string>;
 }
 
 export interface Issue {
@@ -95,25 +103,12 @@ export const requestJson = async <T>(
   return (await res.json()) as T;
 };
 
-const TRACKING_PARAM = /^(?:utm_|ref$|ref_src$|s$|t$|si$|fbclid$|gclid$)/u;
-
-export const normalizeUrl = (raw: string): string => {
-  try {
-    const url = new URL(raw.trim());
-    url.hash = "";
-    url.hostname = url.hostname.toLowerCase().replace(/^(?:www|mobile)\./u, "");
-    if (url.hostname === "twitter.com") {
-      url.hostname = "x.com";
-    }
-    url.search = new URLSearchParams(
-      [...url.searchParams].filter(([key]) => !TRACKING_PARAM.test(key))
-    ).toString();
-    const path = url.pathname.replace(/\/+$/u, "");
-    return `${url.protocol}//${url.hostname}${path}${url.search}`;
-  } catch {
-    return raw.trim();
-  }
-};
+export const slugify = (value: string) =>
+  value
+    .toLowerCase()
+    .normalize("NFKD")
+    .replaceAll(/[^a-z0-9]+/gu, "-")
+    .replaceAll(/^-|-$/gu, "");
 
 export const toIsoDate = (date: Date) => date.toISOString().slice(0, 10);
 
@@ -204,11 +199,34 @@ export const readPublishedUrls = async (): Promise<Set<string>> => {
   return urls;
 };
 
+export interface CoveredItem {
+  issue: number;
+  name: string;
+  url: string;
+}
+
+export const readCoverage = async (): Promise<CoveredItem[]> => {
+  const issues = await readIssues();
+  return issues.flatMap((issue) =>
+    issueEntries(issue.body).map(({ name, url }) => ({
+      issue: issue.issue,
+      name,
+      url,
+    }))
+  );
+};
+
 export const setOutput = async (name: string, value: string) => {
   const file = process.env.GITHUB_OUTPUT;
-  if (file) {
-    await appendFile(file, `${name}=${value}\n`);
+  if (!file) {
+    return;
   }
+  if (value.includes("\n")) {
+    const delimiter = `EOF_${crypto.randomUUID()}`;
+    await appendFile(file, `${name}<<${delimiter}\n${value}\n${delimiter}\n`);
+    return;
+  }
+  await appendFile(file, `${name}=${value}\n`);
 };
 
 export const requireEnv = (name: string) => {

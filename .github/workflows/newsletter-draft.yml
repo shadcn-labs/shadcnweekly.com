@@ -82,6 +82,7 @@ jobs:
           ISSUE: ${{ steps.draft.outputs.issue }}
           TITLE: ${{ steps.draft.outputs.title }}
           SPONSORS: ${{ steps.draft.outputs.sponsors }}
+          NOTES: ${{ steps.draft.outputs.notes }}
         run: |
           git add src/content
           if git diff --cached --quiet; then
@@ -100,8 +101,14 @@ jobs:
           - Sponsors (from \`src/data/sponsor-bookings.json\`): $SPONSORS
           - **Merging publishes the issue and emails it to all Kit subscribers.** Close the PR to skip this week.
           EOF
+          if [ -n "$NOTES" ]; then
+            printf '\n**Check before merging:**\n\n%s\n' "$NOTES" >> "$RUNNER_TEMP/body.md"
+          fi
+          # Same section check-issue-links.yml refreshes after later pushes.
+          node scripts/newsletter/review.ts "src/content/archive/$ISSUE.mdx" \
+            < "$RUNNER_TEMP/body.md" > "$RUNNER_TEMP/pr-body.md"
           pr=$(gh pr create --base main --head "$branch" \
-            --title "Newsletter #$ISSUE: $TITLE" --body-file "$RUNNER_TEMP/body.md")
+            --title "Newsletter #$ISSUE: $TITLE" --body-file "$RUNNER_TEMP/pr-body.md")
           echo "$pr"
           echo "branch=$branch" >> "$GITHUB_OUTPUT"
           echo "pr=$pr" >> "$GITHUB_OUTPUT"

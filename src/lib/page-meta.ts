@@ -24,14 +24,17 @@ const decodeEntities = (value: string) =>
       return String.fromCodePoint(Number.parseInt(groups.code ?? "0", 16));
     });
 
-const getMetaContent = (html: string, key: string) => {
+export const getMetaContent = (html: string, key: string) => {
+  // Each value ends at its own quote: content="See John's app" keeps the
+  // apostrophe.
+  const value = String.raw`(?<quote>["'])(?<content>(?:(?!\k<quote>)[\s\S])+)\k<quote>`;
   const patterns = [
     new RegExp(
-      `<meta[^>]+(?:property|name)=["']${key}["'][^>]+content=["'](?<content>[^"']+)["']`,
+      String.raw`<meta[^>]+(?:property|name)=["']${key}["'][^>]+content=${value}`,
       "iu"
     ),
     new RegExp(
-      `<meta[^>]+content=["'](?<content>[^"']+)["'][^>]+(?:property|name)=["']${key}["']`,
+      String.raw`<meta[^>]+content=${value}[^>]+(?:property|name)=["']${key}["']`,
       "iu"
     ),
   ];
