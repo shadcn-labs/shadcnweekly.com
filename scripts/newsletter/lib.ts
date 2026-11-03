@@ -3,6 +3,9 @@ import { fileURLToPath } from "node:url";
 
 import { parse as parseYaml } from "yaml";
 
+import { issueEntries } from "./review.ts";
+import { normalizeUrl } from "./urls.ts";
+
 export const ROOT = fileURLToPath(new URL("../../", import.meta.url));
 export const ARCHIVE_DIR = `${ROOT}src/content/archive`;
 export const TOOLS_DIR = `${ROOT}src/content/tools`;
@@ -23,7 +26,12 @@ export interface Candidate {
   text: string;
   date?: string;
   score?: number;
+  // Links the author gave: post facets, caption domains, their repo homepages.
   links?: string[];
+  // Links found on a fetched post/listing page; may include unrelated sites.
+  pageLinks?: string[];
+  // GitHub homepage -> the repository it came from.
+  homepageOf?: Record<string, string>;
 }
 
 export interface Issue {
@@ -95,110 +103,12 @@ export const requestJson = async <T>(
   return (await res.json()) as T;
 };
 
-const TRACKING_PARAM = /^(?:utm_|ref$|ref_src$|s$|t$|si$|fbclid$|gclid$)/u;
-
-const dropTracking = (url: URL) => {
-  url.search = new URLSearchParams(
-    [...url.searchParams].filter(([key]) => !TRACKING_PARAM.test(key))
-  ).toString();
-};
-
-export const normalizeUrl = (raw: string): string => {
-  try {
-    const url = new URL(raw.trim());
-    url.hash = "";
-    url.hostname = url.hostname.toLowerCase().replace(/^(?:www|mobile)\./u, "");
-    if (url.hostname === "twitter.com") {
-      url.hostname = "x.com";
-    }
-    dropTracking(url);
-    const path = url.pathname.replace(/\/+$/u, "");
-    return `${url.protocol}//${url.hostname}${path}${url.search}`;
-  } catch {
-    return raw.trim();
-  }
-};
-
-export const withoutTracking = (raw: string) => {
-  try {
-    const url = new URL(raw);
-    dropTracking(url);
-    return url.href;
-  } catch {
-    return raw;
-  }
-};
-
-export const hostOf = (raw: string) => {
-  try {
-    return new URL(raw).hostname
-      .toLowerCase()
-      .replace(/^(?:www|mobile|m|old)\./u, "");
-  } catch {
-    return "";
-  }
-};
-
-// Posts, reposts and listings *about* a project. Fine as a source, wrong as the
-// destination of a project link or a tools directory entry.
-const INDIRECT_HOSTS = [
-  "alternativeto.net",
-  "allshadcn.com",
-  "bsky.app",
-  "facebook.com",
-  "instagram.com",
-  "linkedin.com",
-  "mcp.directory",
-  "news.ycombinator.com",
-  "opensourcealternatives.to",
-  "producthunt.com",
-  "reddit.com",
-  "registry.directory",
-  "shadcn.io",
-  "threads.com",
-  "threads.net",
-  "tiktok.com",
-  "twitter.com",
-  "x.com",
-  "youtu.be",
-  "youtube.com",
-];
-
-export const isIndirectUrl = (raw: string) => {
-  const host = hostOf(raw);
-  return INDIRECT_HOSTS.some(
-    (indirect) => host === indirect || host.endsWith(`.${indirect}`)
-  );
-};
-
-// Social CDNs sign image URLs (`oe=`, `X-Amz-Expires=`, …); they 403 within days.
-const UNSTABLE_IMAGE_HOST =
-  /(?:^|\.)(?:cdninstagram\.com|fbcdn\.net|twimg\.com)$/u;
-const SIGNED_IMAGE_PARAM =
-  /^(?:oe|oh|expires|x-amz-expires|x-amz-signature|x-goog-expires|x-goog-signature|se|sig|signature)$/iu;
-
-export const isStableImageUrl = (raw: string) => {
-  try {
-    const url = new URL(raw);
-    return (
-      !UNSTABLE_IMAGE_HOST.test(url.hostname) &&
-      ![...url.searchParams.keys()].some((key) => SIGNED_IMAGE_PARAM.test(key))
-    );
-  } catch {
-    return false;
-  }
-};
-
 export const slugify = (value: string) =>
   value
     .toLowerCase()
     .normalize("NFKD")
     .replaceAll(/[^a-z0-9]+/gu, "-")
     .replaceAll(/^-|-$/gu, "");
-
-// "pdfcn: shadcn/ui for Document Generation" -> "pdfcn"
-export const entryName = (heading: string) =>
-  heading.split(/:\s/u)[0].replaceAll("\\", "").trim();
 
 export const toIsoDate = (date: Date) => date.toISOString().slice(0, 10);
 
@@ -295,18 +205,13 @@ export interface CoveredItem {
   url: string;
 }
 
-// `### [Heading](url)` entries and `- **[Label](url)**` roundup items, as
-// rendered by draft.ts. Labels escape brackets with a backslash.
-const COVERED_ENTRY =
-  /^(?:###\s+|-\s+\*\*)\[(?<label>(?:\\.|[^\]\\])+)\]\((?<url>[^)\s]+)\)/gmu;
-
 export const readCoverage = async (): Promise<CoveredItem[]> => {
   const issues = await readIssues();
   return issues.flatMap((issue) =>
-    [...issue.body.matchAll(COVERED_ENTRY)].map((match) => ({
+    issueEntries(issue.body).map(({ name, url }) => ({
       issue: issue.issue,
-      name: entryName(match.groups?.label ?? ""),
-      url: match.groups?.url ?? "",
+      name,
+      url,
     }))
   );
 };

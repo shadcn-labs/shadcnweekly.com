@@ -1,19 +1,23 @@
 import { getMetaContent } from "../../src/lib/page-meta.ts";
 import type { Candidate } from "./lib.ts";
 import {
-  hostOf,
-  isIndirectUrl,
   log,
-  normalizeUrl,
   readPublishedUrls,
   request,
   requestJson,
+  slugify,
   warn,
-  withoutTracking,
 } from "./lib.ts";
+import {
+  githubRepo,
+  hostOf,
+  isIndirectUrl,
+  normalizeUrl,
+  withoutTracking,
+} from "./urls.ts";
 
 const MAX_PER_SOURCE = 60;
-const MAX_DIRECT_LINKS = 8;
+const MAX_PAGE_LINKS = 8;
 const ENRICH_BATCH = 8;
 
 const toUnix = (isoDate: string) =>
@@ -311,12 +315,35 @@ const collectGithub = async (since: string): Promise<Candidate[]> => {
 // Bare domains in captions, e.g. "Try it at uiseek.vercel.app".
 const BARE_URL =
   /(?<![\w@./-])(?:https?:\/\/)?(?:[a-z0-9-]+\.)+(?:ai|app|co|com|design|dev|io|me|net|org|page|run|sh|site|so|space|to|xyz)(?:\/[^\s"'<>)\]]*)?/giu;
-const HREF = /href=["'](?<url>https?:\/\/[^"'#\s]+)["']/giu;
+const SCHEME = /^https?:\/\//iu;
+// The fragment stays outside the capture: `https://x.dev/#try` -> `https://x.dev/`.
+const HREF = /href=["'](?<url>https?:\/\/[^"'#\s]+)(?:#[^"'\s]*)?["']/giu;
 const NOISE_HOST =
   /(?:^|\.)(?:apple\.com|cloudflare\.com|google\.com|google-analytics\.com|googleapis\.com|googletagmanager\.com|gstatic\.com|jsdelivr\.net|ogp\.me|rlcdn\.com|schema\.org|unpkg\.com|w3\.org)$/u;
 const ASSET_PATH =
   /\.(?:css|gif|ico|jpe?g|js|json|mjs|png|svg|webp|woff2?|xml)$/iu;
-const GITHUB_REPO = /^https:\/\/github\.com\/(?<repo>[\w.-]+\/[\w.-]+)\/?$/u;
+// Title words too generic to tie a page link to the project.
+const GENERIC_WORDS = new Set([
+  "alternative",
+  "alternatives",
+  "best",
+  "component",
+  "components",
+  "free",
+  "from",
+  "instagram",
+  "library",
+  "open",
+  "react",
+  "reddit",
+  "shadcn",
+  "source",
+  "tailwind",
+  "that",
+  "this",
+  "with",
+  "your",
+]);
 
 const isProjectLink = (raw: string, sourceHost: string) => {
   try {
@@ -333,8 +360,18 @@ const isProjectLink = (raw: string, sourceHost: string) => {
   }
 };
 
+const projectLinks = (urls: string[], sourceHost: string) => {
+  const unique = new Map<string, string>();
+  for (const url of urls) {
+    if (isProjectLink(url, sourceHost) && !unique.has(normalizeUrl(url))) {
+      unique.set(normalizeUrl(url), withoutTracking(url));
+    }
+  }
+  return [...unique.values()];
+};
+
 const githubHomepage = async (url: string) => {
-  const repo = GITHUB_REPO.exec(url)?.groups?.repo;
+  const repo = githubRepo(url);
   if (!repo) {
     return;
   }
@@ -351,10 +388,32 @@ const githubHomepage = async (url: string) => {
   return homepage?.startsWith("http") ? homepage : undefined;
 };
 
+// Adds each GitHub repo's homepage right after the repo, recording its origin.
+const withHomepages = async (
+  links: string[],
+  homepageOf: Record<string, string>
+) => {
+  const homepages = await Promise.all(links.map(githubHomepage));
+  return [
+    ...new Set(
+      links.flatMap((link, index) => {
+        const homepage = homepages[index];
+        if (!homepage) {
+          return [link];
+        }
+        homepageOf[homepage] = link;
+        return [link, homepage];
+      })
+    ),
+  ];
+};
+
 // A post or listing about a project (X, Instagram, Reddit, alternatives
 // sites, …) is the wrong destination for its link. Collect the project's own
-// URLs from the caption and page so the draft can link the project directly.
-const directLinks = async (candidate: Candidate): Promise<string[]> => {
+// URLs so the draft can link the project directly. Links the author wrote
+// (caption, post facets) are kept apart from links scraped off the page,
+// which on listing sites are mostly other projects.
+const resolveLinks = async (candidate: Candidate) => {
   let page = "";
   // X pages are rendered client-side; the API already gave text and links.
   if (candidate.source !== "x") {
@@ -375,32 +434,45 @@ const directLinks = async (candidate: Candidate): Promise<string[]> => {
       getMetaContent(page, "description") ??
       "",
   ].join("\n");
-  const found = [
-    ...(candidate.links ?? []),
-    ...[...caption.matchAll(BARE_URL)].map(([match]) =>
-      (match.startsWith("http") ? match : `https://${match}`).replace(
-        /[.,;:!?]+$/u,
-        ""
-      )
-    ),
-    ...[...page.matchAll(HREF)].map((match) =>
+  const sourceHost = hostOf(candidate.url);
+  const authored = projectLinks(
+    [
+      ...(candidate.links ?? []),
+      ...[...caption.matchAll(BARE_URL)].map(([match]) =>
+        (SCHEME.test(match) ? match : `https://${match}`).replace(
+          /[.,;:!?]+$/u,
+          ""
+        )
+      ),
+    ],
+    sourceHost
+  );
+  const known = new Set(authored.map(normalizeUrl));
+  const scraped = projectLinks(
+    [...page.matchAll(HREF)].map((match) =>
       (match.groups?.url ?? "").replaceAll("&amp;", "&")
     ),
-  ];
-  const sourceHost = hostOf(candidate.url);
-  const unique = new Map<string, string>();
-  for (const url of found) {
-    if (isProjectLink(url, sourceHost) && !unique.has(normalizeUrl(url))) {
-      unique.set(normalizeUrl(url), withoutTracking(url));
-    }
-  }
-  const links = [...unique.values()].slice(0, MAX_DIRECT_LINKS);
-  const homepages = await Promise.all(links.map(githubHomepage));
-  return [
-    ...new Set(
-      links.flatMap((link, index) => [link, homepages[index] ?? []].flat())
-    ),
-  ];
+    sourceHost
+  ).filter((url) => !known.has(normalizeUrl(url)));
+  // Links naming the page's subject first, so the cap keeps them.
+  const titleWords = slugify(candidate.title)
+    .split("-")
+    .filter((word) => word.length >= 4 && !GENERIC_WORDS.has(word));
+  const mentionsTitle = (url: string) =>
+    titleWords.some((word) => slugify(url).replaceAll("-", "").includes(word));
+  const ranked = [
+    ...scraped.filter(mentionsTitle),
+    ...scraped.filter((url) => !mentionsTitle(url)),
+  ].slice(0, MAX_PAGE_LINKS);
+
+  const homepageOf: Record<string, string> = {};
+  const [links, pageLinks] = await Promise.all([
+    withHomepages(authored, homepageOf),
+    withHomepages(ranked, homepageOf),
+  ]);
+  candidate.links = links;
+  candidate.pageLinks = pageLinks;
+  candidate.homepageOf = homepageOf;
 };
 
 const withDirectLinks = async (candidates: Candidate[]) => {
@@ -408,12 +480,10 @@ const withDirectLinks = async (candidates: Candidate[]) => {
     isIndirectUrl(candidate.url)
   );
   for (let start = 0; start < indirect.length; start += ENRICH_BATCH) {
-    const batch = indirect.slice(start, start + ENRICH_BATCH);
     // oxlint-disable-next-line eslint/no-await-in-loop -- batches bound concurrent fetches
-    const links = await Promise.all(batch.map(directLinks));
-    for (const [index, candidate] of batch.entries()) {
-      candidate.links = links[index];
-    }
+    await Promise.all(
+      indirect.slice(start, start + ENRICH_BATCH).map(resolveLinks)
+    );
   }
   log(`Resolved direct links for ${indirect.length} indirect candidates`);
   return candidates;
