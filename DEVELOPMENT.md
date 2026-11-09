@@ -83,7 +83,9 @@ Every Monday (06:00 UTC, with a 10:00 UTC safety run) `.github/workflows/newslet
 4. **Open PR** from branch `newsletter/issue-<n>`. Vercel deploys a Preview for review; edit content in the PR as needed. If a previous newsletter PR is still open, drafting is skipped until it is merged or closed.
 5. **Send on merge** (`.github/workflows/newsletter-send.yml`, `scripts/newsletter/send.ts`): when a push to `main` adds an archive issue, wait for `/issues/<n>` to be live, then schedule a Kit broadcast (all subscribers, 5 minutes out). Editing an existing issue never resends it; a broadcast with the same subject is never created twice. Resend manually via "Run workflow" with the issue number.
 
-Required repository secrets: `GEMINI_API_KEY`, `TINYFISH_API_KEY`, `KIT_API_KEY`. Optional: `FIRECRAWL_API_KEY` (search fallback). Run manually from the Actions tab via "Run workflow". Failed runs email the repository owner.
+Required repository secrets: `GEMINI_API_KEY`, `TINYFISH_API_KEY`, `KIT_API_KEY`. Optional: `OPENROUTER_API_KEY` (free drafting fallback), `FIRECRAWL_API_KEY` (search fallback). Run manually from the Actions tab via "Run workflow". Failed runs email the repository owner.
+
+Drafting costs nothing: it uses free tiers only, tried in order: Gemini 3.8 Flash, Gemini 2.5 Flash Lite (separate daily quota on the same key), then OpenRouter's free models (preferred large-context models still listed by OpenRouter, then `openrouter/free`). A model that answers 429/5xx or times out is retried once after a pause (90 s, or the provider's `Retry-After`), then the next model takes over; an invalid draft is retried with the validation error. A failing run makes at most a few requests per model, well under the free daily caps.
 
 ### Email design
 

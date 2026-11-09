@@ -24,8 +24,8 @@ import {
   readIssues,
   readTools,
   requestJson,
-  requireEnv,
   setOutput,
+  sleep,
   slugify,
   toIsoDate,
   TOOLS_DIR,
@@ -45,9 +45,45 @@ const LOOKBACK_DAYS = 7;
 const MIN_CANDIDATES = 5;
 const STYLE_EXAMPLE_CHARS = 8000;
 const ATTEMPTS_PER_MODEL = 3;
-const GEMINI_URL =
-  "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions";
-const DEFAULT_MODELS = ["gemini-3.8-flash", "gemini-3.7-flash"];
+// A busy or rate-limited model (429/5xx/timeout) gets one more try after a
+// pause, then the next model takes over. Retrying faster only burns the free
+// tiers' per-minute and per-day request caps.
+const UNAVAILABLE_TRIES = 2;
+const UNAVAILABLE_WAIT_MS = 90_000;
+const MAX_RETRY_AFTER_MS = 300_000;
+const MODEL_TIMEOUT_MS = 300_000;
+
+// Free tiers only, tried in order. Each Gemini model has its own daily quota
+// on the free tier; OpenRouter's `:free` models share 50 requests a day.
+// The draft prompt is ~75K tokens, so every model needs a large context.
+const PROVIDERS = {
+  gemini: {
+    keyEnv: "GEMINI_API_KEY",
+    url: "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions",
+  },
+  openrouter: {
+    keyEnv: "OPENROUTER_API_KEY",
+    url: "https://openrouter.ai/api/v1/chat/completions",
+  },
+} as const;
+
+type Provider = keyof typeof PROVIDERS;
+
+interface ModelRoute {
+  provider: Provider;
+  model: string;
+  // OpenRouter tries these server-side when `model` is down or rate-limited.
+  fallbacks?: string[];
+}
+
+// Large-context free models that follow JSON instructions well. They come and
+// go, so only those still listed are sent; `openrouter/free` (any free model)
+// is the last resort because it may pick a small, weak one.
+const OPENROUTER_PREFERRED = [
+  "google/gemma-4-31b-it:free",
+  "nvidia/nemotron-3.5-super-vl:free",
+];
+const OPENROUTER_ANY_FREE = "openrouter/free";
 
 const DEFAULT_SUBSCRIBE_SECTION = `<SubscribeCta class="not-typeset [margin-block:4rem] [scroll-margin-block-start:4rem]" />`;
 
@@ -136,28 +172,106 @@ Rules:
 - Plain markdown only inside strings: no HTML, no JSX, no curly braces.
 - Match the tone of the example issue: factual, concise, developer-focused, no hype.`;
 
+const openRouterRoute = async (): Promise<ModelRoute> => {
+  let live = new Set<string>();
+  try {
+    const { data } = await requestJson<{ data: { id: string }[] }>(
+      "https://openrouter.ai/api/v1/models",
+      {},
+      { retries: 1 }
+    );
+    live = new Set(data.map((model) => model.id));
+  } catch (error) {
+    warn(`Could not list OpenRouter models: ${String(error)}`);
+  }
+  const [model = OPENROUTER_ANY_FREE, ...fallbacks] = [
+    ...OPENROUTER_PREFERRED.filter((id) => live.has(id)),
+    OPENROUTER_ANY_FREE,
+  ];
+  return { fallbacks, model, provider: "openrouter" };
+};
+
+// Routes whose API key is set, in order.
+const modelRoutes = async (): Promise<ModelRoute[]> => {
+  const routes: ModelRoute[] = [];
+  if (process.env[PROVIDERS.gemini.keyEnv]) {
+    routes.push(
+      { model: "gemini-3.8-flash", provider: "gemini" },
+      { model: "gemini-2.5-flash-lite", provider: "gemini" }
+    );
+  } else {
+    warn(`${PROVIDERS.gemini.keyEnv} is not set, skipping Gemini`);
+  }
+  if (process.env[PROVIDERS.openrouter.keyEnv]) {
+    routes.push(await openRouterRoute());
+  } else {
+    warn(`${PROVIDERS.openrouter.keyEnv} is not set, skipping OpenRouter`);
+  }
+  if (routes.length === 0) {
+    throw new Error(
+      `Set ${PROVIDERS.gemini.keyEnv} or ${PROVIDERS.openrouter.keyEnv} to draft the issue`
+    );
+  }
+  return routes;
+};
+
+const routeName = (route: ModelRoute) => `${route.provider}/${route.model}`;
+
+// The model is busy, rate-limited or timed out: worth a later retry.
+class ModelUnavailableError extends Error {
+  override name = "ModelUnavailableError";
+  retryAfterMs?: number;
+
+  constructor(message: string, retryAfterMs?: number) {
+    super(message);
+    this.retryAfterMs = retryAfterMs;
+  }
+}
+
 const callModel = async (
-  model: string,
+  route: ModelRoute,
   messages: { role: string; content: string }[]
 ): Promise<string> => {
-  const data = await requestJson<{
-    choices?: { message?: { content?: string } }[];
-  }>(
-    GEMINI_URL,
-    {
+  const { keyEnv, url } = PROVIDERS[route.provider];
+  let res: Response;
+  try {
+    // Plain fetch: `request` would retry 429/5xx itself and hide the status
+    // and Retry-After that writeDraft paces its retries with.
+    res = await fetch(url, {
       body: JSON.stringify({
         messages,
-        model,
+        model: route.model,
+        ...(route.fallbacks?.length ? { models: route.fallbacks } : {}),
         response_format: { type: "json_object" },
       }),
       headers: {
-        Authorization: `Bearer ${requireEnv("GEMINI_API_KEY")}`,
+        Authorization: `Bearer ${process.env[keyEnv]}`,
         "Content-Type": "application/json",
       },
       method: "POST",
-    },
-    { retries: 5, timeoutMs: 300_000 }
-  );
+      signal: AbortSignal.timeout(MODEL_TIMEOUT_MS),
+    });
+  } catch (error) {
+    throw new ModelUnavailableError(`Request failed: ${String(error)}`);
+  }
+  if (res.status === 429 || res.status >= 500) {
+    const retryAfter = Number(res.headers.get("retry-after"));
+    throw new ModelUnavailableError(
+      `${res.status} ${res.statusText}`,
+      retryAfter > 0 ? retryAfter * 1000 : undefined
+    );
+  }
+  if (!res.ok) {
+    const detail = await res.text();
+    throw new Error(`${res.status} ${res.statusText}: ${detail.slice(0, 300)}`);
+  }
+  const data = (await res.json()) as {
+    model?: string;
+    choices?: { message?: { content?: string } }[];
+  };
+  if (data.model && data.model !== route.model) {
+    log(`${routeName(route)} answered with ${data.model}`);
+  }
   const content = data.choices?.[0]?.message?.content;
   if (!content) {
     throw new Error("Model returned no content");
@@ -373,74 +487,124 @@ const parseDraft = (
   return { draft, notes, stale: staleMentions(draft, dropped) };
 };
 
+type Messages = { role: string; content: string }[];
+
+interface RouteContext {
+  candidates: Candidate[];
+  covered: CoveredItem[];
+  errors: string[];
+  // A valid draft whose summary still names dropped repeats; used only if
+  // no model produces a clean one.
+  fallback?: DraftResult;
+}
+
+// A model answer as a clean draft; throws when it is invalid or its summary
+// still names dropped repeats (keeping that draft as the fallback).
+const finishDraft = (content: string, context: RouteContext) => {
+  const { draft, notes, stale } = parseDraft(
+    content,
+    context.candidates,
+    context.covered
+  );
+  if (!stale) {
+    return { draft, notes };
+  }
+  context.fallback = {
+    draft,
+    notes: [
+      ...notes,
+      `Title, description or highlights still mention ${stale}, dropped as a repeat; rewrite them`,
+    ],
+  };
+  throw new Error(
+    `These entries repeat previous issues and were removed: ${stale}. Leave them out and rewrite the title, description and highlights without them.`
+  );
+};
+
+// Up to ATTEMPTS_PER_MODEL tries on one model: invalid drafts are retried
+// with the error, an unavailable model once after a pause, and an outright
+// rejection (bad key, unknown model, prompt too long) moves on.
+const draftWithRoute = async (
+  route: ModelRoute,
+  messages: Messages,
+  context: RouteContext
+): Promise<DraftResult | undefined> => {
+  const name = routeName(route);
+  let unavailable = 0;
+  let attempt = 1;
+  let next = true;
+  while (next && attempt <= ATTEMPTS_PER_MODEL) {
+    let content = "";
+    try {
+      // oxlint-disable-next-line eslint/no-await-in-loop -- each retry depends on the previous answer
+      content = await callModel(route, messages);
+      const result = finishDraft(content, context);
+      log(`Draft written by ${name} (attempt ${attempt})`);
+      return result;
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      context.errors.push(`${name}#${attempt}: ${message.slice(0, 500)}`);
+      warn(`Draft attempt failed (${name} #${attempt}): ${message}`);
+      if (error instanceof ModelUnavailableError) {
+        unavailable += 1;
+        next = unavailable < UNAVAILABLE_TRIES && attempt < ATTEMPTS_PER_MODEL;
+        if (next) {
+          const waitMs = Math.min(
+            error.retryAfterMs ?? UNAVAILABLE_WAIT_MS,
+            MAX_RETRY_AFTER_MS
+          );
+          log(`Waiting ${Math.round(waitMs / 1000)}s before retrying ${name}`);
+          // oxlint-disable-next-line eslint/no-await-in-loop -- paced retry
+          await sleep(waitMs);
+        }
+      } else {
+        next = Boolean(content);
+        messages.push(
+          { content, role: "assistant" },
+          {
+            content: `That response was invalid: ${message.slice(0, 2000)}\nReturn the corrected JSON object only.`,
+            role: "user",
+          }
+        );
+      }
+    }
+    attempt += 1;
+  }
+  return undefined;
+};
+
 const writeDraft = async (
   candidates: Candidate[],
   tools: Tool[],
   covered: CoveredItem[],
   styleExample: string
 ): Promise<DraftResult> => {
-  const models = process.env.LLM_MODEL
-    ? [process.env.LLM_MODEL]
-    : DEFAULT_MODELS;
+  const routes = await modelRoutes();
   const items = candidates.map((candidate, id) => ({ id, ...candidate }));
-  const errors: string[] = [];
-  // A valid draft whose summary still names dropped repeats; used only if no
-  // retry produces a clean one.
-  let fallback: DraftResult | undefined;
+  const prompt = `Example of a previous issue (style reference only, do not reuse its items):\n\n${styleExample.slice(0, STYLE_EXAMPLE_CHARS)}\n\nTools already listed on the site:\n\n${JSON.stringify(tools)}\n\nAlready covered in previous issues:\n\n${JSON.stringify(covered)}\n\nThis week's items:\n\n${JSON.stringify(items)}`;
+  const context: RouteContext = { candidates, covered, errors: [] };
 
-  for (const model of models) {
-    const messages = [
-      { content: SYSTEM_PROMPT, role: "system" },
-      {
-        content: `Example of a previous issue (style reference only, do not reuse its items):\n\n${styleExample.slice(0, STYLE_EXAMPLE_CHARS)}\n\nTools already listed on the site:\n\n${JSON.stringify(tools)}\n\nAlready covered in previous issues:\n\n${JSON.stringify(covered)}\n\nThis week's items:\n\n${JSON.stringify(items)}`,
-        role: "user",
-      },
-    ];
-    for (let attempt = 1; attempt <= ATTEMPTS_PER_MODEL; attempt += 1) {
-      let content = "";
-      try {
-        // oxlint-disable-next-line eslint/no-await-in-loop -- each retry feeds back the previous error
-        content = await callModel(model, messages);
-        const { draft, notes, stale } = parseDraft(
-          content,
-          candidates,
-          covered
-        );
-        if (!stale) {
-          log(`Draft written by ${model} (attempt ${attempt})`);
-          return { draft, notes };
-        }
-        fallback = {
-          draft,
-          notes: [
-            ...notes,
-            `Title, description or highlights still mention ${stale}, dropped as a repeat; rewrite them`,
-          ],
-        };
-        throw new Error(
-          `These entries repeat previous issues and were removed: ${stale}. Leave them out and rewrite the title, description and highlights without them.`
-        );
-      } catch (error) {
-        const message = error instanceof Error ? error.message : String(error);
-        errors.push(`${model}#${attempt}: ${message.slice(0, 500)}`);
-        warn(`Draft attempt failed (${model} #${attempt}): ${message}`);
-        if (content) {
-          messages.push(
-            { content, role: "assistant" },
-            {
-              content: `That response was invalid: ${message.slice(0, 2000)}\nReturn the corrected JSON object only.`,
-              role: "user",
-            }
-          );
-        }
-      }
+  for (const route of routes) {
+    // oxlint-disable-next-line eslint/no-await-in-loop -- models are tried in order
+    const result = await draftWithRoute(
+      route,
+      [
+        { content: SYSTEM_PROMPT, role: "system" },
+        { content: prompt, role: "user" },
+      ],
+      context
+    );
+    if (result) {
+      return result;
     }
   }
-  if (fallback) {
+  if (context.fallback) {
     warn("Using a draft whose summary still mentions dropped repeats");
-    return fallback;
+    return context.fallback;
   }
-  throw new Error(`Could not produce a valid draft:\n${errors.join("\n")}`);
+  throw new Error(
+    `Could not produce a valid draft:\n${context.errors.join("\n")}`
+  );
 };
 
 const mdxText = (text: string) =>
