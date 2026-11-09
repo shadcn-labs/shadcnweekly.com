@@ -85,6 +85,10 @@ const OPENROUTER_ANY_FREE = "openrouter/free";
 
 const DEFAULT_SUBSCRIBE_SECTION = `<SubscribeCta class="not-typeset [margin-block:4rem] [scroll-margin-block-start:4rem]" />`;
 
+// Internal draft fields must never become reader-facing tool descriptions.
+const INTERNAL_TOOL_METADATA =
+  /\b(?:existingTool|newRelease|toolDescription)\b/iu;
+
 const entrySchema = z.object({
   body: z.string().min(20),
   heading: z.string().min(3),
@@ -103,7 +107,13 @@ const draftSchema = z.object({
         category: z.enum(TOOL_CATEGORIES),
         existingTool: z.string().nullish(),
         name: z.string().min(1),
-        toolDescription: z.string().min(20).max(300),
+        toolDescription: z
+          .string()
+          .min(20)
+          .max(300)
+          .describe(
+            "Reader-facing prose only. Keep existingTool, newRelease and other internal metadata in their own fields, never in this description."
+          ),
       })
     )
     .max(10),
@@ -164,6 +174,7 @@ Rules:
 - "roundup": optional group of 3+ related smaller updates around one theme; null if there is no theme.
 - "articles": tutorials, blog posts, news coverage. "projects": libraries, registries, blocks, templates, tools (new registry directory entries belong here). "related": adjacent ecosystem items.
 - "projects" may cover new releases or updates of tools already listed on the site. When a project is one of the listed tools (same product, even if renamed or linked differently), set "existingTool" to that tool's "slug"; otherwise set it to null.
+- "toolDescription" is public copy shown on the tools page: write only a sentence describing the project. Never append field names, JSON, or metadata such as "existingTool: null" or "newRelease: false"; those belong in separate fields.
 - Every project sets "category" to exactly one of ${JSON.stringify(TOOL_CATEGORIES)}: "Components" for component libraries, individual components and effects; "Blocks & Templates" for page blocks, starter kits and app templates; "Themes" for theme builders, presets and styling systems; "Registries" for shadcn registries and registry directories; "Tooling" for CLIs, editor or Figma plugins, generators and developer utilities; "AI" for AI-powered tools, MCP servers and agent skills; "Apps" for products and sites built with shadcn/ui.
 - Skip anything not about shadcn/ui or its ecosystem (e.g. unrelated "shading"/"shader" results), spam, giveaways, and engagement bait.
 - Prefer quality over quantity: leave weak items out.
@@ -459,6 +470,13 @@ const parseDraft = (
   candidates: Candidate[],
   covered: CoveredItem[]
 ) => {
+  for (const [index, project] of output.projects.entries()) {
+    if (INTERNAL_TOOL_METADATA.test(project.toolDescription)) {
+      throw new Error(
+        `projects[${index}].toolDescription for "${project.name}" contains internal draft metadata. Rewrite it as reader-facing prose only; keep existingTool and newRelease in their own fields.`
+      );
+    }
+  }
   const { draft, dropped, notes } = sanitizeDraft(output, candidates, covered);
   if (draft.top.length === 0) {
     throw new Error('"top" has no valid entries');
