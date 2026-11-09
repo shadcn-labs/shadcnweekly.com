@@ -1,5 +1,9 @@
 import { writeFile } from "node:fs/promises";
 
+import { createGoogle } from "@ai-sdk/google";
+import { createOpenRouter } from "@openrouter/ai-sdk-provider";
+import type { ModelMessage } from "ai";
+import { APICallError, generateText, NoObjectGeneratedError, Output } from "ai";
 import { stringify as stringifyYaml } from "yaml";
 import { z } from "zod";
 
@@ -53,21 +57,9 @@ const UNAVAILABLE_WAIT_MS = 90_000;
 const MAX_RETRY_AFTER_MS = 300_000;
 const MODEL_TIMEOUT_MS = 300_000;
 
-// Free tiers only, tried in order. Each Gemini model has its own daily quota
-// on the free tier; OpenRouter's `:free` models share 50 requests a day.
-// The draft prompt is ~75K tokens, so every model needs a large context.
-const PROVIDERS = {
-  gemini: {
-    keyEnv: "GEMINI_API_KEY",
-    url: "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions",
-  },
-  openrouter: {
-    keyEnv: "OPENROUTER_API_KEY",
-    url: "https://openrouter.ai/api/v1/chat/completions",
-  },
-} as const;
-
-type Provider = keyof typeof PROVIDERS;
+// Use provider instances, not model-name strings passed directly to AI SDK:
+// strings use Vercel AI Gateway, whereas these call the providers directly.
+type Provider = "gemini" | "openrouter";
 
 interface ModelRoute {
   provider: Provider;
@@ -194,22 +186,22 @@ const openRouterRoute = async (): Promise<ModelRoute> => {
 // Routes whose API key is set, in order.
 const modelRoutes = async (): Promise<ModelRoute[]> => {
   const routes: ModelRoute[] = [];
-  if (process.env[PROVIDERS.gemini.keyEnv]) {
+  if (process.env.GEMINI_API_KEY) {
     routes.push(
       { model: "gemini-3.8-flash", provider: "gemini" },
       { model: "gemini-2.5-flash-lite", provider: "gemini" }
     );
   } else {
-    warn(`${PROVIDERS.gemini.keyEnv} is not set, skipping Gemini`);
+    warn("GEMINI_API_KEY is not set, skipping Gemini");
   }
-  if (process.env[PROVIDERS.openrouter.keyEnv]) {
+  if (process.env.OPENROUTER_API_KEY) {
     routes.push(await openRouterRoute());
   } else {
-    warn(`${PROVIDERS.openrouter.keyEnv} is not set, skipping OpenRouter`);
+    warn("OPENROUTER_API_KEY is not set, skipping OpenRouter");
   }
   if (routes.length === 0) {
     throw new Error(
-      `Set ${PROVIDERS.gemini.keyEnv} or ${PROVIDERS.openrouter.keyEnv} to draft the issue`
+      "Set GEMINI_API_KEY or OPENROUTER_API_KEY to draft the issue"
     );
   }
   return routes;
@@ -217,66 +209,51 @@ const modelRoutes = async (): Promise<ModelRoute[]> => {
 
 const routeName = (route: ModelRoute) => `${route.provider}/${route.model}`;
 
-// The model is busy, rate-limited or timed out: worth a later retry.
-class ModelUnavailableError extends Error {
-  override name = "ModelUnavailableError";
-  retryAfterMs?: number;
+const callModel = async (route: ModelRoute, messages: ModelMessage[]) => {
+  const model =
+    route.provider === "gemini"
+      ? createGoogle({ apiKey: process.env.GEMINI_API_KEY })(route.model)
+      : createOpenRouter({ apiKey: process.env.OPENROUTER_API_KEY }).chat(
+          route.model,
+          { models: route.fallbacks }
+        );
+  const result = await generateText({
+    abortSignal: AbortSignal.timeout(MODEL_TIMEOUT_MS),
+    instructions: SYSTEM_PROMPT,
+    // The outer loop owns paced retries and provider fallback. SDK retries
+    // must stay off so one attempt means exactly one API request.
+    maxRetries: 0,
+    messages,
+    model,
+    output: Output.object({ schema: draftSchema }),
+  });
+  const answeredModel = result.finalStep.response.modelId;
+  if (answeredModel !== route.model) {
+    log(`${routeName(route)} answered with ${answeredModel}`);
+  }
+  return { draft: result.output, text: result.text };
+};
 
-  constructor(message: string, retryAfterMs?: number) {
-    super(message);
-    this.retryAfterMs = retryAfterMs;
-  }
-}
+const isModelUnavailable = (error: unknown) =>
+  APICallError.isInstance(error)
+    ? error.isRetryable
+    : error instanceof Error &&
+      (error.name === "TimeoutError" || error.name === "AbortError");
 
-const callModel = async (
-  route: ModelRoute,
-  messages: { role: string; content: string }[]
-): Promise<string> => {
-  const { keyEnv, url } = PROVIDERS[route.provider];
-  let res: Response;
-  try {
-    // Plain fetch: `request` would retry 429/5xx itself and hide the status
-    // and Retry-After that writeDraft paces its retries with.
-    res = await fetch(url, {
-      body: JSON.stringify({
-        messages,
-        model: route.model,
-        ...(route.fallbacks?.length ? { models: route.fallbacks } : {}),
-        response_format: { type: "json_object" },
-      }),
-      headers: {
-        Authorization: `Bearer ${process.env[keyEnv]}`,
-        "Content-Type": "application/json",
-      },
-      method: "POST",
-      signal: AbortSignal.timeout(MODEL_TIMEOUT_MS),
-    });
-  } catch (error) {
-    throw new ModelUnavailableError(`Request failed: ${String(error)}`);
-  }
-  if (res.status === 429 || res.status >= 500) {
-    const retryAfter = Number(res.headers.get("retry-after"));
-    throw new ModelUnavailableError(
-      `${res.status} ${res.statusText}`,
-      retryAfter > 0 ? retryAfter * 1000 : undefined
-    );
-  }
-  if (!res.ok) {
-    const detail = await res.text();
-    throw new Error(`${res.status} ${res.statusText}: ${detail.slice(0, 300)}`);
-  }
-  const data = (await res.json()) as {
-    model?: string;
-    choices?: { message?: { content?: string } }[];
-  };
-  if (data.model && data.model !== route.model) {
-    log(`${routeName(route)} answered with ${data.model}`);
-  }
-  const content = data.choices?.[0]?.message?.content;
-  if (!content) {
-    throw new Error("Model returned no content");
-  }
-  return content.replaceAll(/^```(?:json)?\s*|\s*```$/gu, "");
+// Retry-After may be seconds or an HTTP date. Do not exceed the workflow's
+// time budget by sleeping for a daily quota reset.
+const retryDelay = (error: unknown) => {
+  const header = APICallError.isInstance(error)
+    ? error.responseHeaders?.["retry-after"]
+    : undefined;
+  const seconds = Number(header);
+  const delay = Number.isFinite(seconds)
+    ? seconds * 1000
+    : Date.parse(header ?? "") - Date.now();
+  return Math.min(
+    Math.max(UNAVAILABLE_WAIT_MS, Number.isFinite(delay) ? delay : 0),
+    MAX_RETRY_AFTER_MS
+  );
 };
 
 // Whether a link plausibly belongs to the entry: the author wrote it, or it
@@ -472,22 +449,18 @@ interface DraftResult {
 // One model response as a sanitized draft; `stale` lists dropped repeats its
 // summary still announces.
 const parseDraft = (
-  content: string,
+  output: Draft,
   candidates: Candidate[],
   covered: CoveredItem[]
 ) => {
-  const { draft, dropped, notes } = sanitizeDraft(
-    draftSchema.parse(JSON.parse(content)),
-    candidates,
-    covered
-  );
+  const { draft, dropped, notes } = sanitizeDraft(output, candidates, covered);
   if (draft.top.length === 0) {
     throw new Error('"top" has no valid entries');
   }
   return { draft, notes, stale: staleMentions(draft, dropped) };
 };
 
-type Messages = { role: string; content: string }[];
+type Messages = ModelMessage[];
 
 interface RouteContext {
   candidates: Candidate[];
@@ -500,9 +473,9 @@ interface RouteContext {
 
 // A model answer as a clean draft; throws when it is invalid or its summary
 // still names dropped repeats (keeping that draft as the fallback).
-const finishDraft = (content: string, context: RouteContext) => {
+const finishDraft = (output: Draft, context: RouteContext) => {
   const { draft, notes, stale } = parseDraft(
-    content,
+    output,
     context.candidates,
     context.covered
   );
@@ -537,22 +510,23 @@ const draftWithRoute = async (
     let content = "";
     try {
       // oxlint-disable-next-line eslint/no-await-in-loop -- each retry depends on the previous answer
-      content = await callModel(route, messages);
-      const result = finishDraft(content, context);
+      const generated = await callModel(route, messages);
+      content = generated.text;
+      const result = finishDraft(generated.draft, context);
       log(`Draft written by ${name} (attempt ${attempt})`);
       return result;
     } catch (error) {
+      if (NoObjectGeneratedError.isInstance(error)) {
+        content = error.text ?? "";
+      }
       const message = error instanceof Error ? error.message : String(error);
       context.errors.push(`${name}#${attempt}: ${message.slice(0, 500)}`);
       warn(`Draft attempt failed (${name} #${attempt}): ${message}`);
-      if (error instanceof ModelUnavailableError) {
+      if (isModelUnavailable(error)) {
         unavailable += 1;
         next = unavailable < UNAVAILABLE_TRIES && attempt < ATTEMPTS_PER_MODEL;
         if (next) {
-          const waitMs = Math.min(
-            error.retryAfterMs ?? UNAVAILABLE_WAIT_MS,
-            MAX_RETRY_AFTER_MS
-          );
+          const waitMs = retryDelay(error);
           log(`Waiting ${Math.round(waitMs / 1000)}s before retrying ${name}`);
           // oxlint-disable-next-line eslint/no-await-in-loop -- paced retry
           await sleep(waitMs);
@@ -588,10 +562,7 @@ const writeDraft = async (
     // oxlint-disable-next-line eslint/no-await-in-loop -- models are tried in order
     const result = await draftWithRoute(
       route,
-      [
-        { content: SYSTEM_PROMPT, role: "system" },
-        { content: prompt, role: "user" },
-      ],
+      [{ content: prompt, role: "user" }],
       context
     );
     if (result) {
