@@ -3,7 +3,13 @@ import { writeFile } from "node:fs/promises";
 import { createGoogle } from "@ai-sdk/google";
 import { createOpenRouter } from "@openrouter/ai-sdk-provider";
 import type { ModelMessage } from "ai";
-import { APICallError, generateText, NoObjectGeneratedError, Output } from "ai";
+import {
+  APICallError,
+  generateText,
+  NoObjectGeneratedError,
+  NoOutputGeneratedError,
+  Output,
+} from "ai";
 import { stringify as stringifyYaml } from "yaml";
 import { z } from "zod";
 
@@ -494,6 +500,29 @@ const finishDraft = (output: Draft, context: RouteContext) => {
   );
 };
 
+// Schema-invalid and empty SDK output can be corrected. A rejected API call
+// with no generated content (e.g. 401) should move to the next route instead.
+const addValidationFeedback = (
+  messages: Messages,
+  error: unknown,
+  content: string,
+  message: string
+) => {
+  const invalidObject = NoObjectGeneratedError.isInstance(error);
+  const text = invalidObject ? (error.text ?? "") : content;
+  if (!text && !invalidObject && !NoOutputGeneratedError.isInstance(error)) {
+    return false;
+  }
+  if (text) {
+    messages.push({ content: text, role: "assistant" });
+  }
+  messages.push({
+    content: `That response was invalid: ${message.slice(0, 2000)}\nReturn the corrected JSON object only.`,
+    role: "user",
+  });
+  return true;
+};
+
 // Up to ATTEMPTS_PER_MODEL tries on one model: invalid drafts are retried
 // with the error, an unavailable model once after a pause, and an outright
 // rejection (bad key, unknown model, prompt too long) moves on.
@@ -516,9 +545,6 @@ const draftWithRoute = async (
       log(`Draft written by ${name} (attempt ${attempt})`);
       return result;
     } catch (error) {
-      if (NoObjectGeneratedError.isInstance(error)) {
-        content = error.text ?? "";
-      }
       const message = error instanceof Error ? error.message : String(error);
       context.errors.push(`${name}#${attempt}: ${message.slice(0, 500)}`);
       warn(`Draft attempt failed (${name} #${attempt}): ${message}`);
@@ -532,14 +558,7 @@ const draftWithRoute = async (
           await sleep(waitMs);
         }
       } else {
-        next = Boolean(content);
-        messages.push(
-          { content, role: "assistant" },
-          {
-            content: `That response was invalid: ${message.slice(0, 2000)}\nReturn the corrected JSON object only.`,
-            role: "user",
-          }
-        );
+        next = addValidationFeedback(messages, error, content, message);
       }
     }
     attempt += 1;
