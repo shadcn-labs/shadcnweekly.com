@@ -2,6 +2,7 @@
 import MainLayout from "@/layouts/main.astro";
 import SiteHeader from "@/components/site-header.astro";
 import SiteFooter from "@/components/site-footer.astro";
+import { FollowPrompt } from "@/components/follow-prompt";
 
 interface Props {
   title?: string;
@@ -33,4 +34,5 @@ const { fullWidth = false, ...seoProps } = Astro.props;
     <slot />
   </main>
   <SiteFooter />
+  <FollowPrompt client:load />
 </MainLayout>
