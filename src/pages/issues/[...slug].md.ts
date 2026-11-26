@@ -1,3 +1,4 @@
+import { markdownResponse } from "@dualmark/core";
 import type { APIRoute, GetStaticPaths } from "astro";
 import { getCollection } from "astro:content";
 import type { CollectionEntry } from "astro:content";
@@ -6,6 +7,8 @@ import { ROUTES } from "@/constants/routes";
 import { SITE } from "@/constants/site";
 
 export const prerender = true;
+
+const CACHE_CONTROL = "public, max-age=3600, s-maxage=86400";
 
 export const getStaticPaths = (async () => {
   const issues = await getCollection("archive");
@@ -52,7 +55,5 @@ Published ${date} · ${pageUrl}
 ${toMarkdown(issue.body ?? "")}
 `;
 
-  return new Response(body, {
-    headers: { "Content-Type": "text/markdown; charset=utf-8" },
-  });
+  return markdownResponse(body, { cacheControl: CACHE_CONTROL });
 };

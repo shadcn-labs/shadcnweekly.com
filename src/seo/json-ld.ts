@@ -10,8 +10,39 @@ const author = {
   url: SITE.AUTHOR.URL,
 };
 
+// Public location from the maintainer's professional profiles. The street
+// address is intentionally omitted: it is not published anywhere on the site.
+const address = {
+  "@type": "PostalAddress",
+  addressCountry: "IN",
+  addressLocality: "Mumbai",
+  addressRegion: "Maharashtra",
+};
+
+const contactPoint = {
+  "@type": "ContactPoint",
+  availableLanguage: ["English"],
+  contactType: "customer support",
+  email: LINKS.EMAIL,
+  url: absolute(ROUTES.CONTACT),
+};
+
+// Product terms agents can use to understand what this site covers. Kept in
+// sync with the homepage copy and SITE.KEYWORDS.
+const KNOWS_ABOUT = [
+  "shadcn/ui",
+  "shadcn/ui newsletter",
+  "Shadcn Weekly newsletter",
+  "Tailwind CSS",
+  "React components",
+  "UI component libraries",
+  "design systems",
+];
+
 const publisher = {
   "@type": "Organization",
+  address,
+  contactPoint,
   logo: { "@type": "ImageObject", url: absolute(ROUTES.LOGO) },
   name: SITE.NAME,
   url: SITE.URL,
@@ -24,6 +55,7 @@ export const websiteJsonLd = () => ({
   "@type": "WebSite",
   description: SITE.DESCRIPTION.LONG,
   inLanguage: "en-US",
+  keywords: SITE.KEYWORDS.join(", "),
   name: SITE.NAME,
   publisher,
   url: SITE.URL,
@@ -32,8 +64,12 @@ export const websiteJsonLd = () => ({
 export const organizationJsonLd = () => ({
   "@context": SCHEMA_CONTEXT,
   "@type": "Organization",
+  address,
+  contactPoint,
   description: SITE.DESCRIPTION.LONG,
   founder: author,
+  keywords: SITE.KEYWORDS.join(", "),
+  knowsAbout: KNOWS_ABOUT,
   logo: absolute(ROUTES.LOGO),
   name: SITE.NAME,
   parentOrganization: {

@@ -83,6 +83,13 @@ const formattedDate = issue.data.date.toLocaleDateString("en-US", {
       { name: issue.data.title, path: `${ROUTES.ISSUES}/${issue.id}` },
     ])}
   />
+  <link
+    slot="head"
+    rel="alternate"
+    type="text/markdown"
+    href={`${ROUTES.ISSUES}/${issue.id}.md`}
+    title={`${issue.data.title} (Markdown)`}
+  />
 
   <div class="flex flex-1 flex-col items-center py-16">
     <div class="reading-container flex flex-col gap-8">

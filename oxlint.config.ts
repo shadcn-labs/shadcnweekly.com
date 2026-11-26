@@ -5,7 +5,7 @@ import react from "ultracite/oxlint/react";
 
 export default defineConfig({
   extends: [core, astro, react],
-  ignorePatterns: core.ignorePatterns,
+  ignorePatterns: [...(core.ignorePatterns ?? []), "middleware.js"],
   rules: {
     "github/filenames-match-regex": "off",
     "react-doctor/no-inline-exhaustive-style": "off",

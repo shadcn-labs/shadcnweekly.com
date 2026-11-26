@@ -1,5 +1,6 @@
 ---
 import { getCollection } from "astro:content";
+import { markdownResponse } from "@dualmark/core";
 import Layout from "@/layouts/site.astro";
 import ColorBends from "@/components/color-bends";
 import ReaderLogos from "@/components/reader-logos.astro";
@@ -8,13 +9,36 @@ import Testimonials from "@/components/testimonials.astro";
 import { ArrowRightIcon } from "lucide-react";
 import { SITE } from "@/constants/site";
 import { ROUTES } from "@/constants/routes";
+import { homeMarkdown } from "@/lib/agent-markdown";
+import { prefersMarkdown } from "@/lib/content-negotiation";
 import { getSubscriberCount } from "@/lib/kit";
+
+// Rendered on demand so Accept negotiation runs at request time. A prerendered
+// homepage would be served straight from the CDN and skip the middleware.
+export const prerender = false;
 
 const [issues, subscriberCount] = await Promise.all([
   getCollection("archive"),
   getSubscriberCount(),
 ]);
 const [latestIssue] = issues.toSorted((a, b) => b.data.issue - a.data.issue);
+
+if (prefersMarkdown(Astro.request.headers.get("accept"))) {
+  // oxlint-disable-next-line unicorn/prefer-module -- Astro frontmatter may return a Response.
+  return markdownResponse(
+    homeMarkdown(
+      latestIssue
+        ? {
+            description: latestIssue.data.description,
+            id: latestIssue.id,
+            issue: latestIssue.data.issue,
+            title: latestIssue.data.title,
+          }
+        : undefined
+    ),
+    { cacheControl: "public, max-age=3600, s-maxage=86400" }
+  );
+}
 ---
 
 <Layout
@@ -22,6 +46,14 @@ const [latestIssue] = issues.toSorted((a, b) => b.data.issue - a.data.issue);
   description={`${SITE.DESCRIPTION.LONG} Stay up-to-date with what's happening in the shadcn ecosystem.`}
   fullWidth
 >
+  <link
+    slot="head"
+    rel="alternate"
+    type="text/markdown"
+    href="/index.md"
+    title={`${SITE.NAME} Markdown`}
+  />
+
   <div class="relative isolate flex flex-1 flex-col">
     <div class="pointer-events-none fixed inset-0 -z-10" aria-hidden="true">
       <ColorBends
@@ -68,9 +100,79 @@ const [latestIssue] = issues.toSorted((a, b) => b.data.issue - a.data.issue);
         <h1 class="text-4xl font-semibold tracking-tight sm:text-5xl">
           Stay up-to-date on shadcn
         </h1>
+
+        <p class="max-w-xl text-base leading-relaxed text-muted-foreground">
+          The shadcn/ui newsletter for Tailwind CSS and React developers. Get the
+          best components, tutorials, projects and tools every Monday.
+        </p>
       </div>
 
       <SubscribeSection formClass="mt-5" subscriberCount={subscriberCount} />
+    </section>
+
+    <section
+      aria-labelledby="inside-heading"
+      class="page-container py-12 sm:py-16"
+    >
+      <div class="mx-auto flex max-w-2xl flex-col gap-4">
+        <h2
+          id="inside-heading"
+          class="text-2xl font-semibold tracking-tight text-balance"
+        >
+          What's inside every issue
+        </h2>
+
+        <p class="leading-relaxed text-muted-foreground">
+          Shadcn Weekly is a free weekly newsletter covering the shadcn/ui
+          ecosystem. Every Monday we round up the most useful news, tutorials,
+          component libraries, registries, blocks and developer tools for people
+          building interfaces with shadcn/ui, Tailwind CSS, React and Base UI. It
+          is the easiest way to keep up with what shipped, what changed and what
+          is worth trying, without scrolling through X or GitHub all week.
+        </p>
+
+        <ul
+          class="flex list-disc flex-col gap-1.5 pl-5 leading-relaxed text-muted-foreground"
+        >
+          <li>Top stories and releases from the shadcn/ui ecosystem</li>
+          <li>Hand-picked articles, tutorials and migration guides</li>
+          <li>
+            New projects, packages and tools, each added to the tools directory
+          </li>
+          <li>Every issue archived on the site, so you can catch up any time</li>
+        </ul>
+
+        <p class="leading-relaxed text-muted-foreground">
+          Each issue is curated by hand: top stories and releases, articles and
+          migration guides, new projects and packages, and adjacent work worth
+          knowing about. Every project we feature is added to the tools
+          directory, so you can search the archive by category later.
+        </p>
+
+        <p class="leading-relaxed text-muted-foreground">
+          Shadcn Weekly is for frontend engineers, designers and founders who
+          build with shadcn/ui and Tailwind CSS. Subscribing is free, takes one
+          email a week, and you can unsubscribe at any time. If you are new to
+          the ecosystem, start with the latest issue; if you are looking for a
+          specific tool, search the tools directory.
+        </p>
+
+        <p class="leading-relaxed text-muted-foreground">
+          Published every Monday by <a
+            href={SITE.ORG.URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            class="link">{SITE.ORG.NAME}</a
+          > and curated by <a
+            href={SITE.AUTHOR.URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            class="link">{SITE.AUTHOR.NAME}</a
+          >. Read the <a href={ROUTES.ISSUES} class="link">issue archive</a>,
+          browse the <a href={ROUTES.TOOLS} class="link">tools directory</a>, or
+          learn <a href={ROUTES.ABOUT} class="link">how issues are curated</a>.
+        </p>
+      </div>
     </section>
 
     <ReaderLogos />
