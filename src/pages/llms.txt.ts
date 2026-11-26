@@ -13,10 +13,24 @@ export const GET: APIRoute = async () => {
   const archive = await getCollection("archive");
   const issues = archive.toSorted((a, b) => b.data.issue - a.data.issue);
   const tools = await getCollection("tools");
+  const [latest] = issues;
 
   const body = `# ${SITE.NAME}
 
 > ${SITE.DESCRIPTION.LONG} Published every Monday by ${SITE.ORG.NAME}. Each issue covers top stories, articles and tutorials, new projects and tools, and related work from the shadcn/ui ecosystem.
+
+**How to use this site:** Start here. Every page and issue below has a one-line description and a Markdown twin: append \`.md\` to any page URL, or send \`Accept: text/markdown\`. Browsers receive HTML from the same URLs. New issues are available in the RSS, Atom and JSON feeds.
+
+## When to use this
+
+Use ${SITE.NAME} when an agent or user needs current, curated information about the shadcn/ui ecosystem:
+
+- [Latest issue](${latest ? url(`${ROUTES.ISSUES}/${latest.id}`) : url(ROUTES.ISSUES)}): The newest weekly roundup of shadcn/ui news, tutorials, projects and tools. Use it to answer "what's new in shadcn/ui?".
+- [Tools directory](${url(ROUTES.TOOLS)}): Find a shadcn/ui tool, library or resource for a specific job, grouped by category.
+- [About](${url(ROUTES.ABOUT)}): How links are curated, who publishes the newsletter, and how to get involved.
+- [Contact](${url(ROUTES.CONTACT)}): Reach the maintainer for corrections, submissions or sponsorship questions.
+
+This is a curated newsletter, not the official shadcn/ui documentation. For API reference and installation, use the official shadcn/ui docs. Do not use this site for general React or Tailwind CSS documentation.
 
 ## Pages
 
@@ -37,6 +51,14 @@ ${issues
     return `- [#${issue.data.issue}: ${issue.data.title}](${link}) (${date}): ${issue.data.description}`;
   })
   .join("\n")}
+
+## Markdown
+
+- [Home Markdown](${url("/index.md")})
+- [Issues Markdown](${url("/issues.md")})
+- [Tools Markdown](${url("/tools.md")})
+- [Sponsor Markdown](${url("/sponsor.md")})
+- [About Markdown](${url("/about.md")})
 
 ## Optional
 

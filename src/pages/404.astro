@@ -1,5 +1,6 @@
 ---
 import { getCollection } from "astro:content";
+import { markdownResponse } from "@dualmark/core";
 import { ArrowLeftIcon, NewspaperIcon } from "lucide-react";
 
 import { Logo } from "@/components/logo";
@@ -14,8 +15,18 @@ import {
 import { ROUTES } from "@/constants/routes";
 import { SITE } from "@/constants/site";
 import Layout from "@/layouts/site.astro";
+import { notFoundMarkdown } from "@/lib/agent-markdown";
+import { prefersMarkdown } from "@/lib/content-negotiation";
 
-export const prerender = true;
+// Rendered on demand so the 404 body can follow the request's Accept header.
+export const prerender = false;
+
+if (prefersMarkdown(Astro.request.headers.get("accept"))) {
+  // oxlint-disable-next-line unicorn/prefer-module -- Astro frontmatter may return a Response.
+  return markdownResponse(notFoundMarkdown(Astro.url.pathname), {
+    status: 404,
+  });
+}
 
 const archive = await getCollection("archive");
 const [latest] = archive.toSorted((a, b) => b.data.issue - a.data.issue);
