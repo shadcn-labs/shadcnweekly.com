@@ -70,7 +70,9 @@ const [latestIssue] = issues.toSorted((a, b) => b.data.issue - a.data.issue);
         </h1>
       </div>
 
-      <SubscribeSection formClass="mt-5" subscriberCount={subscriberCount} />
+      <div id="subscribe" class="scroll-mt-24">
+        <SubscribeSection formClass="mt-5" subscriberCount={subscriberCount} />
+      </div>
     </section>
 
     <ReaderLogos />
