@@ -27,4 +27,14 @@ describe("follow prompt placement", () => {
     assert.match(prompt, /href="\/#subscribe"/u);
     assert.match(home, /id="subscribe"/u);
   });
+
+  it("uses short labels for the social actions", async () => {
+    const prompt = await readFile(
+      path.join(root, "src/components/follow-prompt.tsx"),
+      "utf-8"
+    );
+
+    assert.match(prompt, /<XLogo \/>\s*Follow\s*<\/a>/u);
+    assert.match(prompt, /Star\s*<\/a>/u);
+  });
 });

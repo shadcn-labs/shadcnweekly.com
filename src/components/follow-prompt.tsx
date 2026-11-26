@@ -137,7 +137,7 @@ export const FollowPrompt = () => {
                   )}
                 >
                   <XLogo />
-                  Follow on X
+                  Follow
                 </a>
                 <a
                   href={LINKS.GITHUB}
